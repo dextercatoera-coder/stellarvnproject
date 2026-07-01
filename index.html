@@ -161,7 +161,16 @@ function cbar(fn){return '<div class="fbar"><label>Display:</label><select oncha
 
 /* ═══════ FIREBASE ═══════ */
 function initCloud(){var c;try{c=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}if(!c||!c.databaseURL)return false;try{if(!firebase.apps.length)firebase.initializeApp(c);db=firebase.database();try{auth=firebase.auth()}catch(e){auth=null}cOn=true;return true}catch(e){return false}}
-function checkAuth(){if(!auth){showMain();return}auth.onAuthStateChanged(function(user){if(user){curUser=user;showMain();syncFromCloud()}else{showLogin()}})}
+function checkAuth(){
+  if(!auth){showMain();return}
+  auth.onAuthStateChanged(function(user){
+    if(user){
+      curUser=user;showMain();
+      syncFromCloud();
+      monitorConnection()
+    }else{showLogin()}
+  })
+}
 function showLogin(){gi('loginScr').style.display='flex';gi('mainApp').style.display='none';gi('lEmail').value='';gi('lPass').value='';gi('lErr').style.display='none';gi('lOk').style.display='none';authMode='login';gi('lTitle').textContent='Sign In';gi('lSub').textContent='Enter your credentials';gi('lBtn').textContent='Sign In';gi('lTog').innerHTML='No account? <a style="color:var(--g);font-weight:600" onclick="togAuth()">Sign Up</a>'}
 function showMain(){gi('loginScr').style.display='none';gi('mainApp').style.display='block';if(curUser){gi('hUser').textContent=curUser.email||'';gi('hUser').style.display='inline';gi('hOut').style.display='inline';gi('hDot').className='dot on';gi('hLbl').textContent='Synced'}else{gi('hUser').style.display='none';gi('hOut').style.display='none'}load();cTot();nav();doRender()}
 window.togAuth=function(){authMode=authMode==='login'?'signup':'login';gi('lErr').style.display='none';gi('lOk').style.display='none';if(authMode==='signup'){gi('lTitle').textContent='Create Account';gi('lSub').textContent='Register to access project';gi('lBtn').textContent='Sign Up';gi('lTog').innerHTML='Have account? <a style="color:var(--g);font-weight:600" onclick="togAuth()">Sign In</a>'}else{gi('lTitle').textContent='Sign In';gi('lSub').textContent='Enter your credentials';gi('lBtn').textContent='Sign In';gi('lTog').innerHTML='No account? <a style="color:var(--g);font-weight:600" onclick="togAuth()">Sign Up</a>'}};
@@ -174,60 +183,118 @@ function mapE(c){var m={'auth/user-not-found':'No account.','auth/wrong-password
 
 /* ═══════ CLOUD SAVE / SYNC ═══════ */
 function cSave(){
-  if(!db)return;skipSync=true;
+  if(!db)return;
+  skipSync=true;
   try{
-    Promise.all([
-      db.ref('ss/tasks').set(D.tasks),
-      db.ref('ss/costs').set(D.costs),
-      db.ref('ss/pays').set(D.pays),
-      db.ref('ss/upds').set(D.upds),
-      db.ref('ss/safety').set(D.safety),
-      db.ref('ss/vgc').set(D.vgc),
-      db.ref('ss/vn').set(D.vn)
-    ]).then(function(){setTimeout(function(){skipSync=false},800)}).catch(function(e){console.error('Save error:',e);skipSync=false})
-  }catch(e){skipSync=false}
+    var updates={};
+    updates['ss/tasks']=D.tasks;
+    updates['ss/costs']=D.costs;
+    updates['ss/pays']=D.pays;
+    updates['ss/upds']=D.upds;
+    updates['ss/safety']=D.safety;
+    updates['ss/vgc']=D.vgc;
+    updates['ss/vn']=D.vn;
+    updates['ss/_ts']=Date.now();
+    db.ref().update(updates)
+      .then(function(){setTimeout(function(){skipSync=false},1000)})
+      .catch(function(e){
+        console.error('cSave error:',e);
+        skipSync=false;
+        setTimeout(function(){cSave()},3000)
+      })
+  }catch(e){console.error('cSave exception:',e);skipSync=false}
 }
 function syncFromCloud(){
   if(!db)return;
-  var nodes=['tasks','costs','pays','upds','safety','vgc','vn'];
-  var pend=nodes.length;
-  function done(){pend--;if(pend<=0){cTot();doRender();setupLiveSync()}}
-  nodes.forEach(function(key){
-    db.ref('ss/'+key).once('value').then(function(snap){
-      var val=snap.val();
-      if(val!==null&&val!==undefined&&((Array.isArray(val)&&val.length)||(!Array.isArray(val)&&Object.keys(val).length))){
-        D[key]=val;localStorage.setItem('ss_'+key,JSON.stringify(val))
-      }else{try{db.ref('ss/'+key).set(D[key])}catch(e){}}
-      done()
-    }).catch(function(){done()})
+  db.ref('ss').once('value').then(function(snap){
+    var val=snap.val();
+    if(!val)return;
+    var changed=false;
+    ['tasks','costs','pays','upds','safety','vgc','vn'].forEach(function(key){
+      if(val[key]!==undefined&&val[key]!==null){
+        var empty=Array.isArray(val[key])?!val[key].length:!Object.keys(val[key]).length;
+        if(!empty){
+          D[key]=val[key];
+          localStorage.setItem('ss_'+key,JSON.stringify(val[key]));
+          changed=true;
+        }else{
+          try{db.ref('ss/'+key).set(D[key])}catch(e){}
+        }
+      }
+    });
+    if(changed){cTot();doRender()}
+    setupLiveSync()
+  }).catch(function(e){
+    console.error('syncFromCloud error:',e);
+    setupLiveSync()
   })
 }
 function setupLiveSync(){
+  function setupLiveSync(){
   if(!db)return;
-  ['tasks','costs','pays','upds','safety','vgc','vn'].forEach(function(key){
-    var ref=db.ref('ss/'+key);ref.off();
-    ref.on('value',function(snap){
+  var ref=db.ref('ss');
+  ref.off();
+  ref.on('value',function(snap){
+    if(skipSync)return;
+    var val=snap.val();
+    if(!val)return;
+    var changed=false;
+    ['tasks','costs','pays','upds','safety','vgc','vn'].forEach(function(key){
+      if(val[key]!==undefined&&val[key]!==null){
+        D[key]=val[key];
+        localStorage.setItem('ss_'+key,JSON.stringify(val[key]));
+        changed=true;
+      }
+    });
+    if(changed){cTot();doRender()}
+  });
+  if(window._syncTimer)clearInterval(window._syncTimer);
+  window._syncTimer=setInterval(function(){
+    if(!db||skipSync)return;
+    db.ref('ss').once('value').then(function(snap){
       if(skipSync)return;
       var val=snap.val();
-      if(val!==null&&val!==undefined){
-        D[key]=val;localStorage.setItem('ss_'+key,JSON.stringify(val));cTot();doRender()
-      }
-    })
-  });
-  if(!window._syncInterval){
-    window._syncInterval=setInterval(function(){
-      if(!db||!cOn)return;
+      if(!val)return;
+      var changed=false;
       ['tasks','costs','pays','upds','safety','vgc','vn'].forEach(function(key){
-        db.ref('ss/'+key).once('value').then(function(snap){
-          var val=snap.val();
-          if(val!==null&&val!==undefined){D[key]=val;localStorage.setItem('ss_'+key,JSON.stringify(val))}
-        }).catch(function(){})
-      });cTot()
-    },45000)
-  }
+        if(val[key]!==undefined&&val[key]!==null){
+          if(JSON.stringify(D[key])!==JSON.stringify(val[key])){
+            D[key]=val[key];
+            localStorage.setItem('ss_'+key,JSON.stringify(val[key]));
+            changed=true;
+          }
+        }
+      });
+      if(changed){cTot();doRender()}
+    }).catch(function(){})
+  },10000)
 }
-
-/* ═══════ LOCAL SAVE / LOAD ═══════ */
+   /* ═══════ CONNECTION MONITORING ═══════ */
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden&&db&&!skipSync)syncFromCloud()
+});
+window.addEventListener('focus',function(){
+  if(db&&!skipSync)syncFromCloud()
+});
+window.addEventListener('online',function(){
+  if(db)setTimeout(syncFromCloud,1000)
+});
+function monitorConnection(){
+  if(!db)return;
+  db.ref('.info/connected').on('value',function(snap){
+    if(snap.val()===true){
+      cOn=true;
+      gi('hDot').className='dot on';
+      gi('hLbl').textContent='Synced';
+      syncFromCloud()
+    }else{
+      cOn=false;
+      gi('hDot').className='dot off';
+      gi('hLbl').textContent='Offline'
+    }
+  })
+}
+   /* ═══════ LOCAL SAVE / LOAD ═══════ */
 function save(){localStorage.setItem('ss_tasks',JSON.stringify(D.tasks));localStorage.setItem('ss_costs',JSON.stringify(D.costs));localStorage.setItem('ss_pays',JSON.stringify(D.pays));localStorage.setItem('ss_upds',JSON.stringify(D.upds));localStorage.setItem('ss_photos',JSON.stringify(D.photos));localStorage.setItem('ss_safety',JSON.stringify(D.safety));localStorage.setItem('ss_vn',JSON.stringify(D.vn));localStorage.setItem('ss_vgc',JSON.stringify(D.vgc));cSave()}
 function lj(k,d){try{var v=JSON.parse(localStorage.getItem('ss_'+k));if(v&&((Array.isArray(v)&&v.length)||(!Array.isArray(v)&&Object.keys(v).length)))return v}catch(e){}return d}
 function cTot(){for(var i=0;i<D.costs.length;i++)D.costs[i].total=(D.costs[i].cost||0)+(D.costs[i].dut||0)+(D.costs[i].vat||0)+(D.costs[i].log||0)}
@@ -402,10 +469,77 @@ function showCur(){var rate=cvF===cvT?1:FX[cvT].r/FX[cvF].r,result=cv(cvA,cvF,cv
 window.doCv=function(){cvA=parseFloat(gi('cvA').value)||0;cvF=gi('cvF').value;cvT=gi('cvT').value;showCur()};
 
 /* ═══════ CLOUD ═══════ */
-function showCloud(){var cfg;try{cfg=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}var h='<div style="margin-bottom:10px"><span class="ct">Cloud Sync</span>'+(cOn?' <span class="badge bg2">Connected</span>':' <span class="badge bx2">Not Connected</span>')+'</div>';if(curUser)h+='<div class="card" style="border-left:3px solid var(--g);margin-bottom:10px"><div style="font-size:.76rem;font-weight:600;color:var(--g)">Logged in: '+esc(curUser.email)+'</div></div>';if(cOn){h+='<div class="card" style="border-left:3px solid var(--g);margin-bottom:10px"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button class="btn bp" onclick="forceSync()">Force Sync Now</button><button class="btn bd" onclick="localStorage.removeItem(\'ss_cloud\');location.reload()">Disconnect</button><span style="font-size:.66rem;color:var(--t3)">Auto-sync every 45s</span></div></div><div class="card"><div class="ch"><span class="ct">Sync Status</span></div><div class="tw"><table><thead><tr><th>Data</th><th style="text-align:right">Items</th><th style="text-align:right">Status</th></tr></thead><tbody>';var si=[['Tasks',D.tasks.length],['Costs',D.costs.length],['Payments',D.pays.length],['Updates',D.upds.length],['Safety',D.safety.entries?D.safety.entries.length:0],['Vendors',Object.keys(D.vgc).length]];for(var i=0;i<si.length;i++)h+='<tr><td style="font-weight:600">'+si[i][0]+'</td><td style="text-align:right;font-family:JetBrains Mono">'+si[i][1]+'</td><td style="text-align:right"><span class="badge bg2">synced</span></td></tr>';h+='</tbody></table></div></div>'}h+='<div class="card"><div class="ch"><span class="ct">Firebase Setup</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">API Key</label><input type="text" id="cfgK" value="'+(cfg?esc(cfg.apiKey):'')+'"></div><div class="fg"><label class="fl">Database URL</label><input type="text" id="cfgU" value="'+(cfg?esc(cfg.databaseURL):'')+'"></div><div class="fg"><label class="fl">Project ID</label><input type="text" id="cfgP" value="'+(cfg?esc(cfg.projectId):'')+'"></div><div class="fg" style="display:flex;align-items:flex-end"><button class="btn bp" onclick="doConnect()">Connect</button></div></div></div><div class="card"><div class="ch"><span class="ct">Setup Guide</span></div><div style="font-size:.74rem;color:var(--t2);line-height:1.8"><b>1.</b> Create Firebase project at console.firebase.google.com<br><b>2.</b> Enable Realtime Database (test mode)<br><b>3.</b> Authentication > Sign-in method > Enable Email/Password<br><b>4.</b> Project Settings > Copy API Key, Database URL, Project ID<br><b>5.</b> Paste above and click Connect<br><b>6.</b> Sign up with email<br><b>7.</b> Share URL with team<br><br><b>Security Rules:</b><br><code style="background:var(--s2);padding:2px 6px;border-radius:3px;font-size:.66rem">{ "rules": { "ss": { ".read": "auth != null", ".write": "auth != null" } } }</code></div></div>';gi('app').innerHTML=h}
-window.forceSync=function(){if(!db){notify('Not connected');return}notify('Syncing...');syncFromCloud();setTimeout(function(){cTot();doRender();notify('Sync complete')},2000)};
-window.doConnect=function(){var k=gi('cfgK').value.trim(),u=gi('cfgU').value.trim();if(!k||!u){alert('Required');return}localStorage.setItem('ss_cloud',JSON.stringify({apiKey:k,databaseURL:u,projectId:gi('cfgP').value.trim()||''}));location.reload()};
-
+function function showCloud(){
+  var cfg;try{cfg=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}
+  var h='<div style="margin-bottom:10px"><span class="ct">Cloud Sync</span>'+(cOn?' <span class="badge bg2">Connected</span>':' <span class="badge bx2">Offline</span>')+'</div>';
+  if(curUser)h+='<div class="card" style="border-left:3px solid var(--g);margin-bottom:10px"><div style="font-size:.76rem;font-weight:600;color:var(--g)">Logged in: '+esc(curUser.email)+'</div></div>';
+  if(cOn){
+    h+='<div class="card" style="border-left:3px solid var(--g);margin-bottom:10px">';
+    h+='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
+    h+='<button class="btn bp" onclick="forceSync()">Force Sync Now</button>';
+    h+='<button class="btn bd" onclick="localStorage.removeItem(\'ss_cloud\');location.reload()">Disconnect</button>';
+    h+='<span style="font-size:.66rem;color:var(--t3)">Auto-sync every 10s + on focus</span>';
+    h+='</div></div>';
+    h+='<div class="card"><div class="ch"><span class="ct">Sync Status</span></div>';
+    h+='<div class="tw"><table><thead><tr><th>Data</th><th style="text-align:right">Items</th><th>Status</th></tr></thead><tbody>';
+    var si=[['Tasks',D.tasks.length],['Costs',D.costs.length],['Payments',D.pays.length],['Updates',D.upds.length],['Safety',D.safety.entries?D.safety.entries.length:0],['Vendors',Object.keys(D.vgc).length],['Vendor Notes',Object.keys(D.vn).length]];
+    for(var i=0;i<si.length;i++)h+='<tr><td style="font-weight:600">'+si[i][0]+'</td><td style="text-align:right;font-family:JetBrains Mono">'+si[i][1]+'</td><td><span class="badge bg2">synced</span></td></tr>';
+    h+='</tbody></table></div></div>';
+    h+='<div class="card" style="border-left:3px solid var(--bl)"><div class="ch"><span class="ct">How Sync Works</span></div>';
+    h+='<div style="font-size:.72rem;color:var(--t2);line-height:1.7">';
+    h+='<b>Real-time:</b> Changes appear instantly across devices<br>';
+    h+='<b>Safety net:</b> Re-checks every 10 seconds<br>';
+    h+='<b>On focus:</b> Re-syncs when you switch back to this tab<br>';
+    h+='<b>On reconnect:</b> Re-syncs when your internet comes back<br>';
+    h+='<b>Force Sync:</b> Manual full refresh from Firebase';
+    h+='</div></div>';
+  }
+  h+='<div class="card"><div class="ch"><span class="ct">Firebase Setup</span></div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+  h+='<div class="fg"><label class="fl">API Key</label><input type="text" id="cfgK" value="'+(cfg?esc(cfg.apiKey):'')+'"></div>';
+  h+='<div class="fg"><label class="fl">Database URL</label><input type="text" id="cfgU" value="'+(cfg?esc(cfg.databaseURL):'')+'"></div>';
+  h+='<div class="fg"><label class="fl">Project ID</label><input type="text" id="cfgP" value="'+(cfg?esc(cfg.projectId):'')+'"></div>';
+  h+='<div class="fg" style="display:flex;align-items:flex-end"><button class="btn bp" onclick="doConnect()">Connect</button></div>';
+  h+='</div></div>';
+  h+='<div class="card"><div class="ch"><span class="ct">Troubleshooting</span></div>';
+  h+='<div style="font-size:.74rem;color:var(--t2);line-height:1.8">';
+  h+='<b>If sync is not working:</b><br>';
+  h+='<b>1.</b> Check Firebase Console > Realtime Database > Rules:<br>';
+  h+='<code style="background:var(--s2);padding:2px 6px;border-radius:3px;font-size:.66rem">{ "rules": { "ss": { ".read": "auth != null", ".write": "auth != null" } } }</code><br>';
+  h+='<b>2.</b> Check both devices show <span class="badge bg2">Connected</span><br>';
+  h+='<b>3.</b> Click <b>Force Sync Now</b> on the device that shows old data<br>';
+  h+='<b>4.</b> Both devices must be logged in with same or different accounts<br>';
+  h+='<b>5.</b> Check browser console (F12) for red errors<br>';
+  h+='<b>6.</b> Try disconnecting and re-connecting';
+  h+='</div></div>';
+  gi('app').innerHTML=h
+}
+window.forceSync=function(){
+  if(!db){notify('Not connected');return}
+  notify('Syncing...');
+  gi('hDot').className='dot off';
+  gi('hLbl').textContent='Syncing...';
+  db.ref('ss').once('value').then(function(snap){
+    var val=snap.val();
+    if(!val){notify('No data on server');return}
+    var changed=false;
+    ['tasks','costs','pays','upds','safety','vgc','vn'].forEach(function(key){
+      if(val[key]!==undefined&&val[key]!==null){
+        D[key]=val[key];
+        localStorage.setItem('ss_'+key,JSON.stringify(val[key]));
+        changed=true
+      }
+    });
+    cTot();doRender();
+    gi('hDot').className='dot on';
+    gi('hLbl').textContent='Synced';
+    notify(changed?'Sync complete - data updated':'Already up to date')
+  }).catch(function(e){
+    gi('hDot').className='dot off';
+    gi('hLbl').textContent='Error';
+    notify('Sync failed: '+e.message)
+  })
+};
 /* ═══════ EXPORT ALL ═══════ */
 window.expAll=function(){if(typeof XLSX==='undefined'){alert('XLSX not loaded');return}cTot();var cs=costS();var d1=[['CURRENCY: '+DC],[],['DESCRIPTION','VENDOR','TOTAL','REMARKS']];for(var i=0;i<D.costs.length;i++){var c=D.costs[i];d1.push([c.desc,c.vendor,c.total,c.rem])}d1.push(['TOTAL','','',cs.tc]);var d2=[['WBS','Task','Cat','Dur','Start','End','%','Status']];for(var i=0;i<D.tasks.length;i++){var t=D.tasks[i];d2.push([t.wbs,t.name,t.cat,t.dur,t.s,t.e,t.prog+'%',t.st])}var d3=[['#','Date','Vendor','Category','Fund','Amount','Cur','PHP','Remarks']];for(var i=0;i<D.pays.length;i++){var p=D.pays[i];d3.push([i+1,p.date,p.vendor,getPayCat(p),p.fund||'VN Fund',p.amt,p.cur,p.aphp,p.rem])}var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d1),'Costs');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d2),'Tasks');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d3),'Payments');XLSX.writeFile(wb,'StellarSeeds_'+td()+'.xlsx');notify('Exported')};
 
