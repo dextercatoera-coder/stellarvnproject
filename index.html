@@ -25,7 +25,7 @@ button{font-family:inherit;cursor:pointer}a{cursor:pointer}
 .logo-sb{font-family:'JetBrains Mono',monospace;font-size:.38rem;color:var(--t3);letter-spacing:.08em;text-transform:uppercase}
 .hdr-r{display:flex;align-items:center;gap:8px}
 .hdr-usr{font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--bl);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dot{width:7px;height:7px;border-radius:50%}.dot.on{background:var(--g);box-shadow:0 0 6px rgba(45,138,50,.4)}.dot.off{background:var(--b1)}
+.dot{width:7px;height:7px;border-radius:50%}.dot.on{background:var(--g);box-shadow:0 0 6px rgba(45,138,50,.4)}.dot.off{background:var(--b1)}.dot.wr{background:var(--or);box-shadow:0 0 6px rgba(212,147,13,.4)}
 .dot-lb{font-family:'JetBrains Mono',monospace;font-size:.54rem;color:var(--t3)}
 .btn{font-weight:600;font-size:.72rem;padding:5px 12px;border-radius:var(--r);border:1px solid var(--b1);background:var(--s1);color:var(--t1);transition:all .12s;white-space:nowrap}.btn:hover{background:var(--s3)}
 .bp{background:var(--g);border-color:var(--g);color:#fff}.bp:hover{background:var(--gb)}
@@ -124,10 +124,13 @@ select,input[type="text"],input[type="password"],input[type="number"],input[type
 <div class="modal" id="mdl"><div class="mbox"><div class="mhdr"><h3 id="mTi"></h3><button class="mx" onclick="mClose()">&times;</button></div><div class="mbd" id="mBd"></div><div class="mft" id="mFt"></div></div></div>
 <div class="toast" id="tst"></div>
 <script>
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════════════
    STELLAR SEEDS VIETNAM - CONSTRUCTION
    MANAGEMENT SYSTEM
-   ═══════════════════════════════════════ */
+   v2 — Fixed sync with atomic writes,
+   single-listener architecture, and
+   connection monitoring
+   ═══════════════════════════════════════════ */
 var D={tasks:[],costs:[],pays:[],upds:[],photos:[],safety:{},vn:{},vgc:{}};
 var curUser=null,auth=null,db=null,cOn=false,skipSync=false;
 var tab='dash',vgSel='site',selLI=[],pendPh=null,slideI=0,slideT=null;
@@ -160,28 +163,9 @@ function fmtD(v){return fmtC(toD(v),DC)}
 function cbar(fn){return '<div class="fbar"><label>Display:</label><select onchange="'+fn+'"><option value="PHP"'+(DC==='PHP'?' selected':'')+'>PHP</option><option value="VND"'+(DC==='VND'?' selected':'')+'>VND</option><option value="USD"'+(DC==='USD'?' selected':'')+'>USD</option></select><span style="font-size:.56rem;color:var(--g);font-family:JetBrains Mono;padding:2px 6px;background:var(--gc);border-radius:var(--r)">1 USD = '+Math.round(FX.VND.r).toLocaleString()+' VND</span></div>'}
 
 /* ═══════ FIREBASE ═══════ */
-function initCloud(){var c;try{c=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}if(!c||!c.databaseURL)return false;try{if(!firebase.apps.length)firebase.initializeApp(c);db=firebase.database();try{auth=firebase.auth()}catch(e){auth=null}cOn=true;return true}catch(e){return false}}
-function checkAuth(){
-  if(!auth){showMain();return}
-  auth.onAuthStateChanged(function(user){
-    if(user){
-      curUser=user;showMain();
-      syncFromCloud();
-      monitorConnection()
-    }else{showLogin()}
-  })
-}
-function showLogin(){gi('loginScr').style.display='flex';gi('mainApp').style.display='none';gi('lEmail').value='';gi('lPass').value='';gi('lErr').style.display='none';gi('lOk').style.display='none';authMode='login';gi('lTitle').textContent='Sign In';gi('lSub').textContent='Enter your credentials';gi('lBtn').textContent='Sign In';gi('lTog').innerHTML='No account? <a style="color:var(--g);font-weight:600" onclick="togAuth()">Sign Up</a>'}
-function showMain(){gi('loginScr').style.display='none';gi('mainApp').style.display='block';if(curUser){gi('hUser').textContent=curUser.email||'';gi('hUser').style.display='inline';gi('hOut').style.display='inline';gi('hDot').className='dot on';gi('hLbl').textContent='Synced'}else{gi('hUser').style.display='none';gi('hOut').style.display='none'}load();cTot();nav();doRender()}
-window.togAuth=function(){authMode=authMode==='login'?'signup':'login';gi('lErr').style.display='none';gi('lOk').style.display='none';if(authMode==='signup'){gi('lTitle').textContent='Create Account';gi('lSub').textContent='Register to access project';gi('lBtn').textContent='Sign Up';gi('lTog').innerHTML='Have account? <a style="color:var(--g);font-weight:600" onclick="togAuth()">Sign In</a>'}else{gi('lTitle').textContent='Sign In';gi('lSub').textContent='Enter your credentials';gi('lBtn').textContent='Sign In';gi('lTog').innerHTML='No account? <a style="color:var(--g);font-weight:600" onclick="togAuth()">Sign Up</a>'}};
-window.doLogin=function(){var em=gi('lEmail').value.trim(),pw=gi('lPass').value;if(!em||!pw){lErr('Required');return}if(!auth){lErr('Enable Email/Password in Firebase Console.');return}gi('lBtn').textContent='Wait...';gi('lErr').style.display='none';if(authMode==='signup'){auth.createUserWithEmailAndPassword(em,pw).then(function(){lOk('Created!')}).catch(function(e){gi('lBtn').textContent='Sign Up';lErr(mapE(e.code))})}else{auth.signInWithEmailAndPassword(em,pw).then(function(){}).catch(function(e){gi('lBtn').textContent='Sign In';lErr(mapE(e.code))})}};
-window.doLogout=function(){if(auth)auth.signOut();else{curUser=null;showLogin()}};
-window.skipAuth=function(){curUser=null;showMain();notify('Local mode')};
-function lErr(m){var e=gi('lErr');e.textContent=m;e.style.display='block';gi('lOk').style.display='none'}
-function lOk(m){var e=gi('lOk');e.textContent=m;e.style.display='block';gi('lErr').style.display='none'}
-function mapE(c){var m={'auth/user-not-found':'No account.','auth/wrong-password':'Wrong password.','auth/email-already-in-use':'Already registered.','auth/weak-password':'Min 6 chars.','auth/invalid-email':'Invalid email.','auth/invalid-credential':'Invalid credentials.','auth/configuration-not-found':'Enable Email/Password in Firebase Console.'};return m[c]||c}
+function initCloud(){var c;try{c=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}if(!c||!c.databaseURL)return false;try{if(!firebase.apps.length)firebase.initializeApp(c);db=firebase.database();try{auth=firebase.auth()}catch(e){auth=null}cOn=true;return true}catch(e){console.error('initCloud error:',e);return false}}
 
-/* ═══════ CLOUD SAVE / SYNC ═══════ */
+/* ═══════ CLOUD SAVE — ATOMIC WRITE ═══════ */
 function cSave(){
   if(!db)return;
   skipSync=true;
@@ -196,14 +180,21 @@ function cSave(){
     updates['ss/vn']=D.vn;
     updates['ss/_ts']=Date.now();
     db.ref().update(updates)
-      .then(function(){setTimeout(function(){skipSync=false},1000)})
+      .then(function(){
+        setTimeout(function(){skipSync=false},1000)
+      })
       .catch(function(e){
         console.error('cSave error:',e);
         skipSync=false;
         setTimeout(function(){cSave()},3000)
       })
-  }catch(e){console.error('cSave exception:',e);skipSync=false}
+  }catch(e){
+    console.error('cSave exception:',e);
+    skipSync=false
+  }
 }
+
+/* ═══════ SYNC FROM CLOUD — SINGLE FETCH ═══════ */
 function syncFromCloud(){
   if(!db)return;
   db.ref('ss').once('value').then(function(snap){
@@ -212,11 +203,11 @@ function syncFromCloud(){
     var changed=false;
     ['tasks','costs','pays','upds','safety','vgc','vn'].forEach(function(key){
       if(val[key]!==undefined&&val[key]!==null){
-        var empty=Array.isArray(val[key])?!val[key].length:!Object.keys(val[key]).length;
+        var empty=Array.isArray(val[key])?!val[key].length:Object.keys(val[key]).length===0;
         if(!empty){
           D[key]=val[key];
           localStorage.setItem('ss_'+key,JSON.stringify(val[key]));
-          changed=true;
+          changed=true
         }else{
           try{db.ref('ss/'+key).set(D[key])}catch(e){}
         }
@@ -229,8 +220,9 @@ function syncFromCloud(){
     setupLiveSync()
   })
 }
+
+/* ═══════ LIVE SYNC — SINGLE PARENT LISTENER ═══════ */
 function setupLiveSync(){
-  function setupLiveSync(){
   if(!db)return;
   var ref=db.ref('ss');
   ref.off();
@@ -243,7 +235,7 @@ function setupLiveSync(){
       if(val[key]!==undefined&&val[key]!==null){
         D[key]=val[key];
         localStorage.setItem('ss_'+key,JSON.stringify(val[key]));
-        changed=true;
+        changed=true
       }
     });
     if(changed){cTot();doRender()}
@@ -261,7 +253,7 @@ function setupLiveSync(){
           if(JSON.stringify(D[key])!==JSON.stringify(val[key])){
             D[key]=val[key];
             localStorage.setItem('ss_'+key,JSON.stringify(val[key]));
-            changed=true;
+            changed=true
           }
         }
       });
@@ -269,9 +261,12 @@ function setupLiveSync(){
     }).catch(function(){})
   },10000)
 }
-   /* ═══════ CONNECTION MONITORING ═══════ */
+
+/* ═══════ CONNECTION MONITORING ═══════ */
 document.addEventListener('visibilitychange',function(){
-  if(!document.hidden&&db&&!skipSync)syncFromCloud()
+  if(!document.hidden&&db&&!skipSync){
+    syncFromCloud()
+  }
 });
 window.addEventListener('focus',function(){
   if(db&&!skipSync)syncFromCloud()
@@ -294,7 +289,32 @@ function monitorConnection(){
     }
   })
 }
-   /* ═══════ LOCAL SAVE / LOAD ═══════ */
+
+/* ═══════ AUTH ═══════ */
+function checkAuth(){
+  if(!auth){showMain();return}
+  auth.onAuthStateChanged(function(user){
+    if(user){
+      curUser=user;
+      showMain();
+      syncFromCloud();
+      monitorConnection()
+    }else{
+      showLogin()
+    }
+  })
+}
+function showLogin(){gi('loginScr').style.display='flex';gi('mainApp').style.display='none';gi('lEmail').value='';gi('lPass').value='';gi('lErr').style.display='none';gi('lOk').style.display='none';authMode='login';gi('lTitle').textContent='Sign In';gi('lSub').textContent='Enter your credentials';gi('lBtn').textContent='Sign In';gi('lTog').innerHTML='No account? <a style="color:var(--g);font-weight:600" onclick="togAuth()">Sign Up</a>'}
+function showMain(){gi('loginScr').style.display='none';gi('mainApp').style.display='block';if(curUser){gi('hUser').textContent=curUser.email||'';gi('hUser').style.display='inline';gi('hOut').style.display='inline';gi('hDot').className='dot on';gi('hLbl').textContent='Synced'}else{gi('hUser').style.display='none';gi('hOut').style.display='none'}load();cTot();nav();doRender()}
+window.togAuth=function(){authMode=authMode==='login'?'signup':'login';gi('lErr').style.display='none';gi('lOk').style.display='none';if(authMode==='signup'){gi('lTitle').textContent='Create Account';gi('lSub').textContent='Register to access project';gi('lBtn').textContent='Sign Up';gi('lTog').innerHTML='Have account? <a style="color:var(--g);font-weight:600" onclick="togAuth()">Sign In</a>'}else{gi('lTitle').textContent='Sign In';gi('lSub').textContent='Enter your credentials';gi('lBtn').textContent='Sign In';gi('lTog').innerHTML='No account? <a style="color:var(--g);font-weight:600" onclick="togAuth()">Sign Up</a>'}};
+window.doLogin=function(){var em=gi('lEmail').value.trim(),pw=gi('lPass').value;if(!em||!pw){lErr('Required');return}if(!auth){lErr('Enable Email/Password in Firebase Console.');return}gi('lBtn').textContent='Wait...';gi('lErr').style.display='none';if(authMode==='signup'){auth.createUserWithEmailAndPassword(em,pw).then(function(){lOk('Created!')}).catch(function(e){gi('lBtn').textContent='Sign Up';lErr(mapE(e.code))})}else{auth.signInWithEmailAndPassword(em,pw).then(function(){}).catch(function(e){gi('lBtn').textContent='Sign In';lErr(mapE(e.code))})}};
+window.doLogout=function(){if(auth)auth.signOut();else{curUser=null;showLogin()}};
+window.skipAuth=function(){curUser=null;showMain();notify('Local mode')};
+function lErr(m){var e=gi('lErr');e.textContent=m;e.style.display='block';gi('lOk').style.display='none'}
+function lOk(m){var e=gi('lOk');e.textContent=m;e.style.display='block';gi('lErr').style.display='none'}
+function mapE(c){var m={'auth/user-not-found':'No account.','auth/wrong-password':'Wrong password.','auth/email-already-in-use':'Already registered.','auth/weak-password':'Min 6 chars.','auth/invalid-email':'Invalid email.','auth/invalid-credential':'Invalid credentials.','auth/configuration-not-found':'Enable Email/Password in Firebase Console.'};return m[c]||c}
+
+/* ═══════ LOCAL SAVE / LOAD ═══════ */
 function save(){localStorage.setItem('ss_tasks',JSON.stringify(D.tasks));localStorage.setItem('ss_costs',JSON.stringify(D.costs));localStorage.setItem('ss_pays',JSON.stringify(D.pays));localStorage.setItem('ss_upds',JSON.stringify(D.upds));localStorage.setItem('ss_photos',JSON.stringify(D.photos));localStorage.setItem('ss_safety',JSON.stringify(D.safety));localStorage.setItem('ss_vn',JSON.stringify(D.vn));localStorage.setItem('ss_vgc',JSON.stringify(D.vgc));cSave()}
 function lj(k,d){try{var v=JSON.parse(localStorage.getItem('ss_'+k));if(v&&((Array.isArray(v)&&v.length)||(!Array.isArray(v)&&Object.keys(v).length)))return v}catch(e){}return d}
 function cTot(){for(var i=0;i<D.costs.length;i++)D.costs[i].total=(D.costs[i].cost||0)+(D.costs[i].dut||0)+(D.costs[i].vat||0)+(D.costs[i].log||0)}
@@ -456,7 +476,7 @@ window.costFileDropped=function(e){if(e.dataTransfer.files.length)processCostFil
 window.setCostMode=function(mode){costUploadMode=mode;var r=gi('optReplace'),a=gi('optAdd');r.className='cost-up-opt'+(mode==='replace'?' sel-r':'');a.className='cost-up-opt'+(mode==='add'?' sel-a':'');if(gi('costSummary')&&costUploadData)gi('costSummary').textContent=costUploadData.length+' items ready to import ('+mode+' mode)'};
 function processCostFile(f){var rd=new FileReader();rd.onload=function(e){try{var wb=XLSX.read(e.target.result,{type:'array'});var ws=wb.Sheets[wb.SheetNames[0]];var data=XLSX.utils.sheet_to_json(ws,{header:1});if(data.length<2){alert('No data rows found.');return}var hd=[];for(var i=0;i<data[0].length;i++)hd.push(String(data[0][i]||'').toLowerCase().trim());var dI=-1,vI=-1,cI=-1,duI=-1,vaI=-1,lI=-1,rI=-1;for(var i=0;i<hd.length;i++){var h=hd[i];if(h.indexOf('desc')>=0||h.indexOf('item')>=0||h.indexOf('name')>=0||h.indexOf('particular')>=0)dI=i;else if(h.indexOf('vendor')>=0||h.indexOf('supplier')>=0||h.indexOf('contractor')>=0)vI=i;else if((h.indexOf('cost')>=0||h.indexOf('amount')>=0||h.indexOf('base')>=0||h.indexOf('value')>=0)&&cI<0)cI=i;else if(h.indexOf('duty')>=0)duI=i;else if(h.indexOf('vat')>=0||h.indexOf('tax')>=0)vaI=i;else if(h.indexOf('log')>=0||h.indexOf('ship')>=0||h.indexOf('freight')>=0||h.indexOf('transport')>=0)lI=i;else if(h.indexOf('rem')>=0||h.indexOf('note')>=0||h.indexOf('remark')>=0)rI=i}if(dI<0)dI=0;if(vI<0)vI=1;if(cI<0)cI=2;var rows=[];for(var i=1;i<data.length;i++){var row=data[i];if(!row||(!row[dI]&&!row[cI]))continue;var desc=String(row[dI]||'').trim(),vendor=String(row[vI>=0?vI:1]||'').trim(),cost=parseFloat(String(row[cI]||'0').replace(/,/g,''))||0,dut=duI>=0?(parseFloat(String(row[duI]||'0').replace(/,/g,''))||0):0,vat=vaI>=0?(parseFloat(String(row[vaI]||'0').replace(/,/g,''))||0):0,log=lI>=0?(parseFloat(String(row[lI]||'0').replace(/,/g,''))||0):0,rem=rI>=0?String(row[rI]||'').trim():'';if(desc||cost>0)rows.push({desc:desc,vendor:vendor,cost:cost,dut:dut,vat:vat,log:log,rem:rem})}if(!rows.length){alert('No valid data rows found.');return}costUploadData=rows;gi('costFName').textContent=f.name+' ('+rows.length+' rows detected)';gi('costUploadPreview').style.display='block';gi('costUpBtn').disabled=false;gi('costSummary').textContent=rows.length+' items ready to import ('+costUploadMode+' mode)';var pt='<div class="tw" style="max-height:150px;overflow-y:auto"><table><thead><tr><th>Description</th><th>Vendor</th><th style="text-align:right">Cost</th><th style="text-align:right">Duty</th><th style="text-align:right">VAT</th><th style="text-align:right">Logistics</th><th>Remarks</th></tr></thead><tbody>';var show=rows.slice(0,5);for(var i=0;i<show.length;i++){var r=show[i];pt+='<tr><td>'+esc(r.desc)+'</td><td>'+esc(r.vendor)+'</td><td style="text-align:right;font-family:JetBrains Mono">'+fmtN(r.cost)+'</td><td style="text-align:right;font-family:JetBrains Mono">'+fmtN(r.dut)+'</td><td style="text-align:right;font-family:JetBrains Mono">'+fmtN(r.vat)+'</td><td style="text-align:right;font-family:JetBrains Mono">'+fmtN(r.log)+'</td><td>'+esc(r.rem)+'</td></tr>'}if(rows.length>5)pt+='<tr><td colspan="7" style="text-align:center;color:var(--t3);font-size:.66rem">... and '+(rows.length-5)+' more rows</td></tr>';pt+='</tbody></table></div>';gi('costPreviewTable').innerHTML=pt}catch(err){alert('Error reading file: '+err.message)}};rd.readAsArrayBuffer(f)}
 window.doCostUpload=function(){if(!costUploadData||!costUploadData.length){alert('No data loaded');return}var mode=costUploadMode,msg=mode==='replace'?'Replace all '+D.costs.length+' existing items with '+costUploadData.length+' new items?\n\nThis cannot be undone.':'Add '+costUploadData.length+' items to existing '+D.costs.length+' items?';if(!confirm(msg))return;if(mode==='replace')D.costs=[];var cnt=0;for(var i=0;i<costUploadData.length;i++){var r=costUploadData[i];D.costs.push({id:++nC,desc:r.desc,vendor:r.vendor,cost:r.cost,dut:r.dut,vat:r.vat,log:r.log,rem:r.rem});cnt++}cTot();save();mClose();notify(cnt+' items '+(mode==='replace'?'replaced':'added')+' successfully');showCostT()};
-window.dlCostTpl=function(){if(typeof XLSX==='undefined'){alert('XLSX not loaded');return}var wb=XLSX.utils.book_new();var d=[['Description','Vendor','Cost (PHP)','Duty','VAT','Logistics','Remarks'],['RECEIVING','SONACONS',42800586.70,0,3424046.94,0,''],['SHELLING','SONACONS',14927609.40,0,1194208.75,0,''],['WARM WARE','SONACONS',29525540.80,0,2362043.26,0,''],['COLD STORAGE','SONACONS',40111965.40,0,3208957.23,0,''],['ENGG WORK','SONACONS',1818474.39,0,145477.95,0,''],['OFFICE/CAN','SONACONS',12935613.20,0,1034849.06,0,''],['','','','','','',''],['','','','','','','']];var ws=XLSX.utils.aoa_to_sheet(d);ws['!cols']=[{wch:22},{wch:15},{wch:16},{wch:14},{wch:14},{wch:14},{wch:22}];XLSX.utils.book_append_sheet(wb,ws,'Cost Template');XLSX.writeFile(wb,'Cost_Template.xlsx');notify('Template downloaded')};
+window.dlCostTpl=function(){if(typeof XLSX==='undefined'){alert('XLSX not loaded');return}var wb=XLSX.utils.book_new();var d=[['Description','Vendor','Cost (PHP)','Duty','VAT','Logistics','Remarks'],['RECEIVING','SONACONS',42800586.70,0,3424046.94,0,''],['SHELLING','SONACONS',14927609.40,0,1194208.75,0,''],['WARM WARE','SONACONS',29525540.80,0,2362043.26,0,''],['COLD STORAGE','SONACONS',40111965.40,0,3208957.23,0,''],['ENGG WORK','SONACONS',1818474.39,0,145477.95,0,''],['OFFICE/CAN','SONACONS',12935613.20,0,1034849.06,0,''],['SUBSTATION','SONACONS',6739151.92,0,539132.15,0,''],['UNDERGROUNDS','SONACONS',2777225.46,0,222178.04,0,''],['ROAD/PARKING','SONACONS',18183091.50,0,1454647.32,0,''],['','','','','','','']];var ws=XLSX.utils.aoa_to_sheet(d);ws['!cols']=[{wch:22},{wch:15},{wch:16},{wch:14},{wch:14},{wch:14},{wch:22}];XLSX.utils.book_append_sheet(wb,ws,'Cost Template');XLSX.writeFile(wb,'Cost_Template.xlsx');notify('Template downloaded')};
 window.expCostT=function(){if(typeof XLSX==='undefined'){alert('XLSX not loaded');return}cTot();var d=[['#','Description','Vendor','Cost','Duty','VAT','Logistics','Total','Remarks']];for(var i=0;i<D.costs.length;i++){var c=D.costs[i];d.push([i+1,c.desc,c.vendor,c.cost,c.dut,c.vat,c.log,c.total,c.rem])}var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Costs');XLSX.writeFile(wb,'StellarSeeds_Costs_'+td()+'.xlsx');notify('Exported')};
 
 /* ═══════ VENDORS ═══════ */
@@ -469,7 +489,7 @@ function showCur(){var rate=cvF===cvT?1:FX[cvT].r/FX[cvF].r,result=cv(cvA,cvF,cv
 window.doCv=function(){cvA=parseFloat(gi('cvA').value)||0;cvF=gi('cvF').value;cvT=gi('cvT').value;showCur()};
 
 /* ═══════ CLOUD ═══════ */
-function function showCloud(){
+function showCloud(){
   var cfg;try{cfg=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}
   var h='<div style="margin-bottom:10px"><span class="ct">Cloud Sync</span>'+(cOn?' <span class="badge bg2">Connected</span>':' <span class="badge bx2">Offline</span>')+'</div>';
   if(curUser)h+='<div class="card" style="border-left:3px solid var(--g);margin-bottom:10px"><div style="font-size:.76rem;font-weight:600;color:var(--g)">Logged in: '+esc(curUser.email)+'</div></div>';
@@ -508,9 +528,17 @@ function function showCloud(){
   h+='<code style="background:var(--s2);padding:2px 6px;border-radius:3px;font-size:.66rem">{ "rules": { "ss": { ".read": "auth != null", ".write": "auth != null" } } }</code><br>';
   h+='<b>2.</b> Check both devices show <span class="badge bg2">Connected</span><br>';
   h+='<b>3.</b> Click <b>Force Sync Now</b> on the device that shows old data<br>';
-  h+='<b>4.</b> Both devices must be logged in with same or different accounts<br>';
+  h+='<b>4.</b> Both devices must be logged in (not in local mode)<br>';
   h+='<b>5.</b> Check browser console (F12) for red errors<br>';
-  h+='<b>6.</b> Try disconnecting and re-connecting';
+  h+='<b>6.</b> Try disconnecting and re-connecting<br><br>';
+  h+='<b>Setup Guide:</b><br>';
+  h+='<b>1.</b> Create Firebase project at console.firebase.google.com<br>';
+  h+='<b>2.</b> Enable Realtime Database (test mode)<br>';
+  h+='<b>3.</b> Authentication > Sign-in method > Enable Email/Password<br>';
+  h+='<b>4.</b> Project Settings > Copy API Key, Database URL, Project ID<br>';
+  h+='<b>5.</b> Paste above and click Connect<br>';
+  h+='<b>6.</b> Sign up with email<br>';
+  h+='<b>7.</b> Share URL with team';
   h+='</div></div>';
   gi('app').innerHTML=h
 }
@@ -540,6 +568,8 @@ window.forceSync=function(){
     notify('Sync failed: '+e.message)
   })
 };
+window.doConnect=function(){var k=gi('cfgK').value.trim(),u=gi('cfgU').value.trim();if(!k||!u){alert('Required');return}localStorage.setItem('ss_cloud',JSON.stringify({apiKey:k,databaseURL:u,projectId:gi('cfgP').value.trim()||''}));location.reload()};
+
 /* ═══════ EXPORT ALL ═══════ */
 window.expAll=function(){if(typeof XLSX==='undefined'){alert('XLSX not loaded');return}cTot();var cs=costS();var d1=[['CURRENCY: '+DC],[],['DESCRIPTION','VENDOR','TOTAL','REMARKS']];for(var i=0;i<D.costs.length;i++){var c=D.costs[i];d1.push([c.desc,c.vendor,c.total,c.rem])}d1.push(['TOTAL','','',cs.tc]);var d2=[['WBS','Task','Cat','Dur','Start','End','%','Status']];for(var i=0;i<D.tasks.length;i++){var t=D.tasks[i];d2.push([t.wbs,t.name,t.cat,t.dur,t.s,t.e,t.prog+'%',t.st])}var d3=[['#','Date','Vendor','Category','Fund','Amount','Cur','PHP','Remarks']];for(var i=0;i<D.pays.length;i++){var p=D.pays[i];d3.push([i+1,p.date,p.vendor,getPayCat(p),p.fund||'VN Fund',p.amt,p.cur,p.aphp,p.rem])}var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d1),'Costs');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d2),'Tasks');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d3),'Payments');XLSX.writeFile(wb,'StellarSeeds_'+td()+'.xlsx');notify('Exported')};
 
