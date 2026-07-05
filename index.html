@@ -446,9 +446,68 @@ function showVendors(){
 }
 
 /* ═══════ CURRENCY ═══════ */
-var cvA=1,cvF='USD',cvT='VND';
-function showCur(){var rate=cvF===cvT?1:FX[cvT].r/FX[cvF].r,result=cv(cvA,cvF,cvT);var h='<div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--rl);overflow:hidden"><div style="background:linear-gradient(135deg,#1a2416,#243322);padding:12px 16px;color:#fff"><div style="font-family:Space Grotesk;font-size:.95rem;font-weight:700">Currency Converter</div></div><div style="padding:14px"><div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:12px;flex-wrap:wrap"><div style="flex:1;min-width:120px"><label style="display:block;font-size:.66rem;font-weight:600;color:var(--t2);margin-bottom:2px">Amount</label><input type="number" id="cvA" value="'+cvA+'" oninput="doCv()" step="any" style="font-family:JetBrains Mono;font-size:.95rem;font-weight:600"></div><div style="flex:1;min-width:120px"><label style="display:block;font-size:.66rem;font-weight:600;color:var(--t2);margin-bottom:2px">From</label><select id="cvF" onchange="doCv()"><option value="USD"'+(cvF==='USD'?' selected':'')+'>USD</option><option value="VND"'+(cvF==='VND'?' selected':'')+'>VND</option><option value="PHP"'+(cvF==='PHP'?' selected':'')+'>PHP</option></select></div><button style="width:34px;height:34px;border-radius:50%;background:var(--g);border:0;color:#fff;font-size:.95rem;display:flex;align-items:center;justify-content:center;flex-shrink:0" onclick="var t=cvF;cvF=cvT;cvT=t;showCur()">&#8646;</button><div style="flex:1;min-width:120px"><label style="display:block;font-size:.66rem;font-weight:600;color:var(--t2);margin-bottom:2px">To</label><select id="cvT" onchange="doCv()"><option value="USD"'+(cvT==='USD'?' selected':'')+'>USD</option><option value="VND"'+(cvT==='VND'?' selected':'')+'>VND</option><option value="PHP"'+(cvT==='PHP'?' selected':'')+'>PHP</option></select></div></div><div style="background:var(--s2);border:1px solid var(--b1);border-radius:var(--rl);padding:12px;text-align:center;margin-bottom:12px"><div style="font-family:Space Grotesk;font-size:1.5rem;font-weight:700;color:var(--g)">'+fmtC(result,cvT)+'</div><div style="font-family:JetBrains Mono;font-size:.64rem;color:var(--t3);margin-top:3px">1 '+cvF+' = '+rate.toFixed(cvT==='VND'?4:6)+' '+cvT+'</div></div></div></div>';gi('app').innerHTML=h}
-window.doCv=function(){cvA=parseFloat(gi('cvA').value)||0;cvF=gi('cvF').value;cvT=gi('cvT').value;showCur()};
+// Exchange rate data
+var FX = {USD:{r:1}, VND:{r:26307}, PHP:{r:61.2623}};
+var SY = {USD:'$', VND:'\u0110', PHP:'P'};
+var currencyMode = 'fixed';
+var liveLastUpdated = null;
+var liveFetching = false;
+
+// Set currency mode (fixed or live)
+function setCurMode(mode) {
+    currencyMode = mode;
+    localStorage.setItem('ss_curMode', mode);
+    localStorage.setItem('ss_curRates', JSON.stringify({VND: FX.VND.r, PHP: FX.PHP.r}));
+    if (mode === 'live') fetchLiveRates();
+    showCur();
+}
+
+// Save a fixed exchange rate manually
+function saveFixedRate(cur, val) {
+    var r = parseFloat(val) || 0;
+    if (r <= 0) return;
+    FX[cur].r = r;
+    localStorage.setItem('ss_curRates', JSON.stringify({VND: FX.VND.r, PHP: FX.PHP.r}));
+    notify(cur + ' updated');
+}
+
+// Fetch live rates from Frankfurter API
+function fetchLiveRates() {
+    if (typeof fetch === 'undefined') {
+        notify('Not supported');
+        return;
+    }
+    liveFetching = true;
+    if (tab === 'cur') showCur();
+
+    var to = setTimeout(function() {
+        liveFetching = false;
+        notify('Timeout');
+        if (tab === 'cur') showCur();
+    }, 12000);
+
+    fetch('https://api.frankfurter.app/latest?from=USD&to=VND,PHP')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            clearTimeout(to);
+            if (data && data.rates) {
+                if (data.rates.VND) FX.VND.r = data.rates.VND;
+                if (data.rates.PHP) FX.PHP.r = data.rates.PHP;
+                liveLastUpdated = new Date().toLocaleString();
+                localStorage.setItem('ss_curRates', JSON.stringify({VND: FX.VND.r, PHP: FX.PHP.r}));
+                localStorage.setItem('ss_curLiveTS', liveLastUpdated);
+                notify('Rates updated!');
+            }
+            liveFetching = false;
+            doRender();
+        })
+        .catch(function() {
+            clearTimeout(to);
+            liveFetching = false;
+            notify('Using cached');
+            if (tab === 'cur') showCur();
+        });
+}
 
 /* ═══════ CLOUD + SYNC TOOLS ═══════ */
 function showCloud(){
