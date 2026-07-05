@@ -415,28 +415,201 @@ function doRender(){try{if(R[tab])R[tab]()}catch(e){gi('app').innerHTML='<div cl
 function showDash(){cTot();var cs=costS(),oa=oProg(),s=D.safety,dLTI=dd(s.startDate,td());var dc=0,ac=0;for(var i=0;i<D.tasks.length;i++){if(D.tasks[i].st==='done')dc++;else if(D.tasks[i].st==='active')ac++}var sc=oa>=60?'var(--g)':oa>=30?'var(--or)':'var(--bl)';var m=mainT();var h='<div class="stats">';h+='<div class="si" style="border-left:3px solid '+sc+'"><div class="sl">Overall</div><div class="sv" style="color:'+sc+'">'+oa+'%</div></div>';h+='<div class="si" style="border-left:3px solid var(--bl)"><div class="sl">Tasks</div><div class="sv">'+dc+'/'+D.tasks.length+'</div><div class="sn">'+ac+' active</div></div>';h+='<div class="si" style="border-left:3px solid var(--am)"><div class="sl">Budget</div><div class="sv">'+fmtD(cs.tc)+'</div><div class="sn">'+cs.op+'% paid</div></div>';h+='<div class="si" style="border-left:3px solid var(--g)"><div class="sl">Safe Hours</div><div class="sv" style="color:var(--g)">'+s.safeHours.toLocaleString()+'</div><div class="sn">'+dLTI+' days w/o LTI</div></div></div>';h+='<div class="card"><div class="ch"><span class="ct">Main Tasks</span></div>';for(var i=0;i<m.length;i++){var cc=m[i].prog>=80?'var(--g)':m[i].prog>=40?'var(--or)':m[i].prog>0?'var(--bl)':'var(--t3)';h+='<div class="hbr"><div class="hbl" style="width:140px">'+esc(m[i].wbs+' '+m[i].name)+'</div><div class="hbt"><div class="hbf" style="width:'+m[i].prog+'%;background:'+cc+'"></div></div><div class="hbv" style="font-weight:700;color:'+cc+'">'+m[i].prog+'%</div></div>'}h+='</div>';h+='<div class="card"><div class="ch"><span class="ct">Budget</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';h+='<div style="padding:8px;background:var(--blc);border-radius:var(--r);text-align:center"><div style="font-size:.52rem;color:var(--bl)">Contract</div><div style="font-family:Space Grotesk;font-size:1.1rem;font-weight:700;color:var(--bl)">'+fmtD(cs.tc)+'</div></div>';h+='<div style="padding:8px;background:var(--gc);border-radius:var(--r);text-align:center"><div style="font-size:.52rem;color:var(--g)">Paid</div><div style="font-family:Space Grotesk;font-size:1.1rem;font-weight:700;color:var(--g)">'+fmtD(cs.tp)+'</div></div>';h+='<div style="padding:8px;background:var(--orc);border-radius:var(--r);text-align:center"><div style="font-size:.52rem;color:var(--or)">Remaining</div><div style="font-family:Space Grotesk;font-size:1.1rem;font-weight:700;color:var(--or)">'+fmtD(cs.rem)+'</div></div>';h+='<div style="padding:8px;background:var(--s2);border-radius:var(--r);text-align:center"><div style="font-size:.52rem;color:var(--t3)">Done</div><div style="font-family:Space Grotesk;font-size:1.1rem;font-weight:700">'+cs.op+'%</div></div></div></div>';gi('app').innerHTML=h}
 
 /* GANTT */
-function showGantt(){var vK=Object.keys(D.vgc);var h='<div class="fbar"><label>Gantt:</label><select onchange="vgSel=this.value;showGantt()">';h+='<option value="site"'+(vgSel==='site'?' selected':'')+'>Site Gantt</option>';for(var i=0;i<vK.length;i++)h+='<option value="'+esc(vK[i])+'"'+(vgSel===vK[i]?' selected':'')+'>'+esc(vK[i])+'</option>';h+='</select><button class="btn bs bp" onclick="addVG()">+ Vendor</button><button class="btn bs bb" onclick="expGantt()">Export</button>';if(vgSel!=='site'){h+='<button class="btn bs" onclick="upVGImg()">Upload</button><button class="btn bs" onclick="addVGT(\''+esc(vgSel)+'\')">+ Task</button><button class="btn bs bd" onclick="delVG(\''+esc(vgSel)+'\')">Delete</button>'}h+='</div>';if(vgSel==='site')h+=siteGantt();else h+=vendorGantt(vgSel);gi('app').innerHTML=h}
-function siteGantt(){var GS=new Date(2026,0,1),ppd=3;function dPx(ds){var p=ds.split('-');return Math.round((new Date(+p[0],+p[1]-1,+p[2])-GS)/86400000)*ppd}var sc2={done:'var(--g)',active:'var(--bl)',pending:'#999'};var oa=oProg(),m=mainT();var mo=[];for(var i=0;i<14;i++){var yr=i<12?2026:2027,mi=i<12?i:i-12,d1=new Date(yr,mi,1),d2=new Date(yr,mi+1,1);mo.push({l:d1.toLocaleString('en',{month:'short',year:'2-digit'}),lp:dPx(yr+'-'+String(mi+1).padStart(2,'0')+'-01'),lw:Math.round((d2-d1)/86400000)*ppd})}var h='<div class="card" style="border-left:4px solid var(--bl)"><div class="ch"><span class="ct">Site Gantt Chart</span><span style="font-family:JetBrains Mono;font-size:.6rem;color:var(--t3)">'+D.tasks.length+' tasks &bull; '+oa+'%</span></div></div>';h+='<div class="gw"><div class="ghdr"><div class="ghdr-l">WBS</div><div class="ghdr-m">';for(var i=0;i<mo.length;i++)h+='<div class="gmo" style="left:'+mo[i].lp+'px;width:'+mo[i].lw+'px">'+mo[i].l+'</div>';var tPx=dPx(td());if(tPx>0)h+='<div class="gtd" style="left:'+tPx+'px"></div>';h+='</div></div>';for(var gi2=0;gi2<m.length;gi2++){var g=m[gi2],gw=wavg(g.wbs),gc=gw>=80?'var(--g)':gw>=40?'var(--or)':gw>0?'var(--bl)':'var(--t3)';h+='<div class="gmain"><span>'+esc(g.wbs)+' '+esc(g.name)+'</span><span class="gmp" style="background:'+(gw>=80?'var(--gc)':gw>=40?'var(--orc)':'var(--blc)')+';color:'+gc+'">'+gw+'%</span></div>';var ch=[];for(var i=0;i<D.tasks.length;i++){if(D.tasks[i].wbs.indexOf(g.wbs+'.')===0&&D.tasks[i].wbs!==g.wbs)ch.push(i)}if(!ch.length){var lx=dPx(g.s),wx=Math.max(4,g.dur*ppd);h+='<div class="grow" onclick="edG('+gi2+')"><div class="glbl"><span class="wb">'+esc(g.wbs)+'</span><span>'+esc(g.name)+'</span></div><div class="gba"><div class="gbar" style="left:'+lx+'px;width:'+wx+'px;background:'+(sc2[g.st]||'#999')+'"><div class="gfill" style="width:'+g.prog+'%"></div>'+(wx>38?g.prog+'%':'')+'</div></div></div>'}else{for(var cj=0;cj<ch.length;cj++){var idx=ch[cj],t=D.tasks[idx],lx2=dPx(t.s),wx2=Math.max(4,t.dur*ppd);h+='<div class="grow" onclick="edG('+idx+')"><div class="glbl"><span class="wb">'+esc(t.wbs)+'</span><span>'+esc(t.name)+'</span></div><div class="gba"><div class="gbar" style="left:'+lx2+'px;width:'+wx2+'px;background:'+(sc2[t.st]||'#999')+'"><div class="gfill" style="width:'+t.prog+'%"></div>'+(wx2>38?t.prog+'%':'')+'</div></div></div>'}}}h+='</div>';return h}
-function vendorGantt(vendor){var vg=D.vgc[vendor];if(!vg)return'<div class="card">Vendor not found.</div>';var tasks=vg.tasks||[];var h='<div class="card" style="border-left:4px solid var(--pu)"><div class="ch"><span class="ct" style="color:var(--pu)">'+esc(vendor)+' Gantt</span><span style="font-family:JetBrains Mono;font-size:.6rem;color:var(--t3)">'+tasks.length+' tasks</span></div>';if(!vg.image&&!tasks.length)h+='<div style="text-align:center;padding:24px;color:var(--t3)"><div style="font-size:1.6rem;margin-bottom:6px">&#128202;</div>No data yet</div>';h+='</div>';if(vg.image){if(!imgZoom[vendor])imgZoom[vendor]=1;var z=imgZoom[vendor];h+='<div class="card"><div class="ch"><span class="ct">Uploaded Schedule</span><div style="display:flex;gap:4px;align-items:center">';h+='<button class="btn bs" onclick="zoomImg(\''+esc(vendor)+'\',-0.25)">&#8722;</button>';h+='<span style="font-family:JetBrains Mono;font-size:.6rem;color:var(--t3);min-width:40px;text-align:center">'+Math.round(z*100)+'%</span>';h+='<button class="btn bs" onclick="zoomImg(\''+esc(vendor)+'\',0.25)">&#43;</button>';h+='<button class="btn bs" onclick="zoomImg(\''+esc(vendor)+'\',0,1)">Reset</button>';h+='<button class="btn bs bd" onclick="rmVGI(\''+esc(vendor)+'\')">Remove</button></div></div>';h+='<div class="zoom-wrap"><img src="'+vg.image+'" style="transform:scale('+z+');transform-origin:top left;transition:transform .2s ease;max-width:none;display:block"></div></div>'}if(!vg.image)h+='<div class="card"><div class="dropzone" onclick="document.getElementById(\'vgF\').click()" ondragover="event.preventDefault();this.classList.add(\'drag\')" ondragleave="this.classList.remove(\'drag\')" ondrop="vgDrop(event,\''+esc(vendor)+'\')"><div style="font-size:1.3rem">&#128202;</div><div style="font-size:.76rem;color:var(--t2)">Upload image</div><input type="file" id="vgF" accept="image/*" style="display:none" onchange="vgProc(this,\''+esc(vendor)+'\')"></div></div>';if(tasks.length){var GS=new Date(2026,0,1),ppd=3;function dPx(ds){var p=ds.split('-');return Math.round((new Date(+p[0],+p[1]-1,+p[2])-GS)/86400000)*ppd}var mo=[];for(var i=0;i<14;i++){var yr=i<12?2026:2027,mi=i<12?i:i-12,d1=new Date(yr,mi,1),d2=new Date(yr,mi+1,1);mo.push({l:d1.toLocaleString('en',{month:'short',year:'2-digit'}),lp:dPx(yr+'-'+String(mi+1).padStart(2,'0')+'-01'),lw:Math.round((d2-d1)/86400000)*ppd})}h+='<div class="card"><div class="ch"><span class="ct">Schedule</span></div><div class="gw"><div class="ghdr"><div class="ghdr-l">#</div><div class="ghdr-m">';for(var i=0;i<mo.length;i++)h+='<div class="gmo" style="left:'+mo[i].lp+'px;width:'+mo[i].lw+'px">'+mo[i].l+'</div>';var tPx=dPx(td());if(tPx>0)h+='<div class="gtd" style="left:'+tPx+'px"></div>';h+='</div></div>';for(var i=0;i<tasks.length;i++){var t=tasks[i],dur=dd(t.s,t.e),lx=dPx(t.s),wx=Math.max(4,dur*ppd),bc=t.prog>=80?'var(--g)':t.prog>=40?'var(--or)':t.prog>0?'var(--bl)':'#999';h+='<div class="grow" onclick="edVGT(\''+esc(vendor)+'\','+i+')"><div class="glbl"><span class="wb">'+(i+1)+'</span><span>'+esc(t.name)+'</span></div><div class="gba"><div class="gbar" style="left:'+lx+'px;width:'+wx+'px;background:'+bc+'"><div class="gfill" style="width:'+t.prog+'%"></div>'+(wx>38?t.prog+'%':'')+'</div></div></div>'}h+='</div></div>'}return h}
-window.zoomImg=function(v,d,r){if(!imgZoom[v])imgZoom[v]=1;if(r)imgZoom[v]=1;else imgZoom[v]=Math.max(0.25,Math.min(5,imgZoom[v]+d));showGantt()};
-window.expGantt=function(){if(typeof XLSX==='undefined')return;var wb=XLSX.utils.book_new();var sd=[['WBS','Task','Category','Duration','Start','End','Progress %','Status']];for(var i=0;i<D.tasks.length;i++){var t=D.tasks[i];sd.push([t.wbs,t.name,t.cat,t.dur,t.s,t.e,t.prog,t.st])}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),'Site Tasks');var vK=Object.keys(D.vgc);for(var v=0;v<vK.length;v++){var vendor=vK[v],tasks=D.vgc[vendor].tasks||[];var vd=[['#','Task','Start','End','Duration','Progress %']];for(var i=0;i<tasks.length;i++){var t=tasks[i];vd.push([i+1,t.name,t.s,t.e,dd(t.s,t.e),t.prog])}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(vd),vendor.substring(0,28))}XLSX.writeFile(wb,'StellarSeeds_Gantt_'+td()+'.xlsx');notify('Exported')};
-window.addVG=function(){mOpen('Add Vendor','<div class="fg"><label class="fl">Vendor Name</label><input type="text" id="newVN" placeholder="KP, DTC..."></div>','<button class="btn" onclick="mClose()">Cancel</button><button class="btn bp" onclick="savNewVG()">Add</button>')};
-window.savNewVG=function(){var n=gi('newVN').value.trim().toUpperCase();if(!n){alert('Required');return}if(D.vgc[n]){alert('Exists');return}D.vgc[n]={image:null,tasks:[]};save();vgSel=n;mClose();notify('Added');showGantt()};
-window.delVG=function(v){if(!confirm('Delete '+v+'?'))return;delete D.vgc[v];save();vgSel='site';notify('Deleted');showGantt()};
-window.upVGImg=function(){var el=document.getElementById('vgF');if(el)el.click()};
-window.vgProc=function(inp,vendor){var f=inp.files[0];if(f)vgFileP(f,vendor);inp.value=''};
-window.vgDrop=function(e,vendor){e.preventDefault();e.currentTarget.classList.remove('drag');if(e.dataTransfer.files.length)vgFileP(e.dataTransfer.files[0],vendor)};
-function vgFileP(f,vendor){if(!f.type.startsWith('image/')){alert('Image only');return}var rd=new FileReader();rd.onload=function(e){var img=new Image();img.onload=function(){var c=document.createElement('canvas'),w=img.width,h=img.height,mx=1200;if(w>mx){h=Math.round(h*mx/w);w=mx}c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);try{D.vgc[vendor].image=c.toDataURL('image/jpeg',.65);save();notify('Uploaded');showGantt()}catch(err){alert('Too large')}};img.src=e.target.result};rd.readAsDataURL(f)}
-window.rmVGI=function(v){if(!confirm('Remove?'))return;D.vgc[v].image=null;save();notify('Removed');showGantt()};
-window.addVGT=function(vendor){mOpen('Add Task','<div class="fg"><label class="fl">Name</label><input type="text" id="vgtN"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">Start</label><input type="date" id="vgtS" value="'+td()+'"></div><div class="fg"><label class="fl">End</label><input type="date" id="vgtE" value="'+addD(td(),30)+'"></div></div><div class="fg"><label class="fl">Progress %</label><input type="number" id="vgtP" value="0"></div>','<button class="btn" onclick="mClose()">Cancel</button><button class="btn bp" onclick="savNewVGT(\''+esc(vendor)+'\')">Add</button>')};
-window.savNewVGT=function(vendor){var n=gi('vgtN').value.trim();if(!n){alert('Required');return}D.vgc[vendor].tasks.push({name:n,s:gi('vgtS').value,e:gi('vgtE').value,prog:parseInt(gi('vgtP').value)||0});save();mClose();notify('Added');showGantt()};
-window.edVGT=function(vendor,idx){var t=D.vgc[vendor].tasks[idx];mOpen('Edit Task','<div class="fg"><label class="fl">Name</label><input type="text" id="evgtN" value="'+esc(t.name)+'"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">Start</label><input type="date" id="evgtS" value="'+t.s+'"></div><div class="fg"><label class="fl">End</label><input type="date" id="evgtE" value="'+t.e+'"></div></div><div class="fg"><label class="fl">Progress %</label><input type="number" id="evgtP" value="'+t.prog+'"></div>','<button class="btn" onclick="mClose()">Cancel</button><button class="btn bd" onclick="delVGT(\''+esc(vendor)+'\','+idx+')">Delete</button><button class="btn bp" onclick="savVGT(\''+esc(vendor)+'\','+idx+')">Save</button>')};
-window.savVGT=function(vendor,idx){D.vgc[vendor].tasks[idx]={name:gi('evgtN').value.trim(),s:gi('evgtS').value,e:gi('evgtE').value,prog:parseInt(gi('evgtP').value)||0};save();mClose();notify('Updated');showGantt()};
-window.delVGT=function(vendor,idx){if(!confirm('Delete?'))return;D.vgc[vendor].tasks.splice(idx,1);save();mClose();notify('Deleted');showGantt()};
-window.edG=function(i){var t=D.tasks[i];mOpen('Edit '+t.wbs,'<div style="margin-bottom:10px"><span style="font-family:JetBrains Mono;font-size:.68rem;color:var(--t3)">'+esc(t.wbs)+'</span> <b>'+esc(t.name)+'</b></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">Start</label><input type="date" id="gS" value="'+t.s+'"></div><div class="fg"><label class="fl">End</label><input type="date" id="gE" value="'+t.e+'"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">Progress %</label><input type="number" id="gP" value="'+t.prog+'"></div><div class="fg"><label class="fl">Status</label><select id="gSt"><option value="pending"'+(t.st==='pending'?' selected':'')+'>Pending</option><option value="active"'+(t.st==='active'?' selected':'')+'>Active</option><option value="done"'+(t.st==='done'?' selected':'')+'>Done</option></select></div></div>','<button class="btn" onclick="mClose()">Cancel</button><button class="btn bp" onclick="savG('+i+')">Save</button>')};
-window.savG=function(i){D.tasks[i].s=gi('gS').value;D.tasks[i].e=gi('gE').value;D.tasks[i].dur=dd(D.tasks[i].s,D.tasks[i].e);D.tasks[i].prog=parseInt(gi('gP').value)||0;D.tasks[i].st=gi('gSt').value;save();mClose();notify('Updated');doRender()};
+/* ===== ENHANCED GANTT EDITING ===== */
 
-/* S-CURVE, SAFETY, TASKS, TEAM, PHOTOS, FINANCE, PAYMENTS, COST TABLE, VENDORS — same as v5 */
+// Replace the siteGantt() function with this version that has edit buttons on each row:
+function siteGantt(){
+  var GS=new Date(2026,0,1),ppd=3;
+  function dPx(ds){var p=ds.split('-');return Math.round((new Date(+p[0],+p[1]-1,+p[2])-GS)/86400000)*ppd}
+  var sc2={done:'var(--g)',active:'var(--bl)',pending:'#999'};
+  var oa=oProg(),m=mainT();
+
+  var mo=[];
+  for(var i=0;i<14;i++){
+    var yr=i<12?2026:2027,mi=i<12?i:i-12,d1=new Date(yr,mi,1),d2=new Date(yr,mi+1,1);
+    mo.push({l:d1.toLocaleString('en',{month:'short',year:'2-digit'}),lp:dPx(yr+'-'+String(mi+1).padStart(2,'0')+'-01'),lw:Math.round((d2-d1)/86400000)*ppd})
+  }
+
+  var h='<div class="card" style="border-left:4px solid var(--bl)"><div class="ch"><span class="ct">Site Gantt Chart</span><span style="font-family:JetBrains Mono;font-size:.6rem;color:var(--t3)">'+D.tasks.length+' tasks &bull; '+oa+'%</span></div></div>';
+
+  // Add task button at top
+  h+='<div style="display:flex;gap:6px;margin-bottom:8px"><button class="btn bp bs" onclick="addT()">+ Add Task</button><button class="btn bs bb" onclick="expGantt()">Export</button></div>';
+
+  h+='<div class="gw"><div class="ghdr"><div class="ghdr-l" style="width:240px">WBS</div><div class="ghdr-m">';
+  for(var i=0;i<mo.length;i++)h+='<div class="gmo" style="left:'+mo[i].lp+'px;width:'+mo[i].lw+'px">'+mo[i].l+'</div>';
+  var tPx=dPx(td());
+  if(tPx>0)h+='<div class="gtd" style="left:'+tPx+'px"></div>';
+  h+='</div></div>';
+
+  for(var gi2=0;gi2<m.length;gi2++){
+    var g=m[gi2],gw=wavg(g.wbs),gc=gw>=80?'var(--g)':gw>=40?'var(--or)':gw>0?'var(--bl)':'var(--t3)';
+    h+='<div class="gmain"><span>'+esc(g.wbs)+' '+esc(g.name)+'</span><div style="display:flex;align-items:center;gap:4px"><span class="gmp" style="background:'+(gw>=80?'var(--gc)':gw>=40?'var(--orc)':'var(--blc)')+';color:'+gc+'">'+gw+'%</span></div></div>';
+
+    var ch=[];
+    for(var i=0;i<D.tasks.length;i++){
+      if(D.tasks[i].wbs.indexOf(g.wbs+'.')===0&&D.tasks[i].wbs!==g.wbs)ch.push(i);
+    }
+
+    if(!ch.length){
+      // Single main task with no children — editable
+      var lx=dPx(g.s),wx=Math.max(4,g.dur*ppd);
+      var stBadge=g.st==='done'?'bg2':g.st==='active'?'bb2':'bx2';
+      h+='<div class="grow">';
+      h+='<div class="glbl" style="width:240px;justify-content:space-between">';
+      h+='<div style="display:flex;align-items:center;gap:3px;overflow:hidden"><span class="wb">'+esc(g.wbs)+'</span><span>'+esc(g.name)+'</span></div>';
+      h+='<div style="display:flex;gap:2px;flex-shrink:0"><span class="badge '+stBadge+'" style="font-size:.48rem">'+g.st+'</span>';
+      h+='<button class="btn bs" onclick="edG('+gi2+')" title="Edit" style="padding:1px 5px;font-size:.56rem">&#9998;</button>';
+      h+='<button class="btn bs bd" onclick="delG('+gi2+')" title="Delete" style="padding:1px 4px;font-size:.56rem">&times;</button></div>';
+      h+='</div>';
+      h+='<div class="gba"><div class="gbar" style="left:'+lx+'px;width:'+wx+'px;background:'+(sc2[g.st]||'#999')+'"><div class="gfill" style="width:'+g.prog+'%"></div>'+(wx>38?g.prog+'%':'')+'</div></div>';
+      h+='</div>';
+    } else {
+      // Has children
+      for(var cj=0;cj<ch.length;cj++){
+        var idx=ch[cj],t=D.tasks[idx],lx2=dPx(t.s),wx2=Math.max(4,t.dur*ppd);
+        var stBadge2=t.st==='done'?'bg2':t.st==='active'?'bb2':'bx2';
+        h+='<div class="grow">';
+        h+='<div class="glbl" style="width:240px;justify-content:space-between">';
+        h+='<div style="display:flex;align-items:center;gap:3px;overflow:hidden"><span class="wb">'+esc(t.wbs)+'</span><span>'+esc(t.name)+'</span></div>';
+        h+='<div style="display:flex;gap:2px;flex-shrink:0"><span class="badge '+stBadge2+'" style="font-size:.48rem">'+t.st+'</span>';
+        h+='<button class="btn bs" onclick="edG('+idx+')" title="Edit" style="padding:1px 5px;font-size:.56rem">&#9998;</button>';
+        h+='<button class="btn bs bd" onclick="delG('+idx+')" title="Delete" style="padding:1px 4px;font-size:.56rem">&times;</button></div>';
+        h+='</div>';
+        h+='<div class="gba"><div class="gbar" style="left:'+lx2+'px;width:'+wx2+'px;background:'+(sc2[t.st]||'#999')+'"><div class="gfill" style="width:'+t.prog+'%"></div>'+(wx2>38?t.prog+'%':'')+'</div></div>';
+        h+='</div>';
+      }
+      // Add subtask button under children
+      h+='<div style="padding:3px 8px;border-bottom:1px solid var(--b2)"><button class="btn bs bp" onclick="addSubT(\''+esc(g.wbs)+'\')" style="font-size:.56rem">+ Add Subtask</button></div>';
+    }
+  }
+  h+='</div>';
+  return h;
+}
+
+// Enhanced edit modal with ALL fields editable
+window.edG=function(i){
+  var t=D.tasks[i];
+  var catOpts='';
+  var cats=['General','Initiation','Design','Permits','Construction','Temp','Earthwork','Buildings','Infrastructure','Site','MEP','Closeout'];
+  for(var c=0;c<cats.length;c++){
+    catOpts+='<option value="'+cats[c]+'"'+(t.cat===cats[c]?' selected':'')+'>'+cats[c]+'</option>';
+  }
+
+  var b='';
+  b+='<div style="margin-bottom:12px;padding:8px;background:var(--s2);border-radius:var(--r)">';
+  b+='<span style="font-family:JetBrains Mono;font-size:.72rem;color:var(--t3)">'+esc(t.wbs)+'</span>';
+  b+='</div>';
+
+  b+='<div class="fg"><label class="fl">Task Name</label><input type="text" id="gNm" value="'+esc(t.name)+'"></div>';
+
+  b+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+  b+='<div class="fg"><label class="fl">Category</label><select id="gCat">'+catOpts+'</select></div>';
+  b+='<div class="fg"><label class="fl">WBS Code</label><input type="text" id="gWbs" value="'+esc(t.wbs)+'" style="font-family:JetBrains Mono"></div>';
+  b+='</div>';
+
+  b+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+  b+='<div class="fg"><label class="fl">Start Date</label><input type="date" id="gS" value="'+t.s+'"></div>';
+  b+='<div class="fg"><label class="fl">End Date</label><input type="date" id="gE" value="'+t.e+'"></div>';
+  b+='</div>';
+
+  b+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+  b+='<div class="fg"><label class="fl">Duration (days)</label><input type="number" id="gD" value="'+t.dur+'" readonly style="background:var(--s2);color:var(--t3)"></div>';
+  b+='<div class="fg"><label class="fl">Progress %</label><input type="number" id="gP" value="'+t.prog+'" min="0" max="100"></div>';
+  b+='</div>';
+
+  b+='<div class="fg"><label class="fl">Status</label><select id="gSt">';
+  b+='<option value="pending"'+(t.st==='pending'?' selected':'')+'>Pending</option>';
+  b+='<option value="active"'+(t.st==='active'?' selected':'')+'>Active</option>';
+  b+='<option value="done"'+(t.st==='done'?' selected':'')+'>Done</option>';
+  b+='</select></div>';
+
+  // Auto-calculate duration when dates change
+  b+='<script>document.getElementById("gS").addEventListener("change",function(){var s=new Date(this.value),e=new Date(document.getElementById("gE").value);if(s&&e)document.getElementById("gD").value=Math.round((e-s)/86400000)});document.getElementById("gE").addEventListener("change",function(){var s=new Date(document.getElementById("gS").value),e=new Date(this.value);if(s&&e)document.getElementById("gD").value=Math.round((e-s)/86400000)})<\/script>';
+
+  mOpen('Edit Task '+t.wbs,b,
+    '<button class="btn" onclick="mClose()">Cancel</button>'
+    +'<button class="btn bd" onclick="delG('+i+')">Delete</button>'
+    +'<button class="btn bp" onclick="savG('+i+')">Save</button>'
+  );
+};
+
+// Enhanced save with all fields
+window.savG=function(i){
+  var newName=gi('gNm').value.trim();
+  if(!newName){alert('Task name required');return}
+
+  D.tasks[i].name=newName;
+  D.tasks[i].cat=gi('gCat').value;
+  D.tasks[i].wbs=gi('gWbs').value.trim();
+  D.tasks[i].s=gi('gS').value;
+  D.tasks[i].e=gi('gE').value;
+  D.tasks[i].dur=dd(D.tasks[i].s,D.tasks[i].e);
+  D.tasks[i].prog=Math.min(100,Math.max(0,parseInt(gi('gP').value)||0));
+  D.tasks[i].st=gi('gSt').value;
+
+  save();
+  mClose();
+  notify('Task updated');
+  doRender();
+};
+
+// Delete from Gantt
+window.delG=function(i){
+  if(!confirm('Delete task "'+D.tasks[i].name+'"?'))return;
+  D.tasks.splice(i,1);
+  save();
+  mClose();
+  notify('Task deleted');
+  doRender();
+};
+
+// Quick add subtask under a parent WBS
+window.addSubT=function(parentWbs){
+  mOpen('Add Subtask to '+parentWbs,
+    '<div class="fg"><label class="fl">Name</label><input type="text" id="astN"></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<div class="fg"><label class="fl">Start</label><input type="date" id="astS" value="'+td()+'"></div>'
+    +'<div class="fg"><label class="fl">End</label><input type="date" id="astE" value="'+addD(td(),30)+'"></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<div class="fg"><label class="fl">Category</label><select id="astC"><option value="General">General</option><option value="Buildings">Buildings</option><option value="Infrastructure">Infrastructure</option><option value="Site">Site</option><option value="MEP">MEP</option><option value="Closeout">Closeout</option></select></div>'
+    +'<div class="fg"><label class="fl">Progress %</label><input type="number" id="astP" value="0" min="0" max="100"></div>'
+    +'</div>',
+    '<button class="btn" onclick="mClose()">Cancel</button>'
+    +'<button class="btn bp" onclick="savSubT(\''+esc(parentWbs)+'\')">Add</button>'
+  );
+};
+
+window.savSubT=function(parentWbs){
+  var n=gi('astN').value.trim();
+  if(!n){alert('Required');return}
+
+  // Find next available WBS number
+  var mx=0;
+  for(var i=0;i<D.tasks.length;i++){
+    if(D.tasks[i].wbs.indexOf(parentWbs+'.')===0){
+      var num=parseInt(D.tasks[i].wbs.substring(parentWbs.length+1));
+      if(!isNaN(num)&&num>mx)mx=num;
+    }
+  }
+
+  D.tasks.push({
+    wbs:parentWbs+'.'+(mx+1),
+    name:n,
+    dur:dd(gi('astS').value,gi('astE').value),
+    s:gi('astS').value,
+    e:gi('astE').value,
+    prog:parseInt(gi('astP').value)||0,
+    st:'pending',
+    cat:gi('astC').value
+  });
+
+  save();
+  mClose();
+  notify('Subtask added');
+  doRender();
+};
+   /* S-CURVE, SAFETY, TASKS, TEAM, PHOTOS, FINANCE, PAYMENTS, COST TABLE, VENDORS — same as v5 */
 function showSCurve(){cTot();var m=mainT(),oa=oProg(),tdD=new Date(td()),tDur=0;for(var i=0;i<m.length;i++)tDur+=m[i].dur;if(!tDur){gi('app').innerHTML='<div class="card">No tasks</div>';return}var months=[],planned=[],actual=[],monthDates=[];for(var mi=0;mi<14;mi++){var yr=mi<12?2026:2027,mo=mi<12?mi:mi-12,me=new Date(yr,mo+1,0);months.push(new Date(yr,mo,1).toLocaleString('en',{month:'short',year:'2-digit'}));monthDates.push(me);var mp=0,ma=0;for(var j=0;j<m.length;j++){var t=m[j],w=t.dur/tDur,ts=new Date(t.s),te=new Date(t.e),pc=0;if(me>=te)pc=1;else if(me>=ts)pc=Math.min(1,(me-ts)/Math.max(1,te-ts));mp+=w*pc;var ac2=0;if(t.prog>=100){if(me>=te)ac2=1;else if(me>=ts)ac2=Math.min(1,(me-ts)/Math.max(1,te-ts))}else if(me<=tdD&&me>=ts){ac2=(t.prog/100)*Math.min(1,(me-ts)/Math.max(1,tdD-ts))}else if(me>tdD){ac2=t.prog/100}ma+=w*ac2}planned.push(Math.round(mp*100));actual.push(Math.round(ma*100))}scData={planned:planned,actual:actual,months:months,monthDates:monthDates,tdD:tdD,oa:oa};var pNow=0;for(var i=0;i<months.length;i++){if(monthDates[i]>=tdD){pNow=planned[i];break}}var vr=oa-pNow,vrC=vr>=0?'var(--g)':'var(--rd)';var dM=0,firstB='';for(var i=0;i<planned.length;i++){if(actual[i]<planned[i]-2){dM++;if(!firstB)firstB=months[i]}}var mE=0;for(var i=0;i<months.length;i++)if(monthDates[i]<=tdD)mE++;var rate=mE>0?oa/mE:0;var fD=new Date(tdD);fD.setMonth(fD.getMonth()+(rate>0?Math.ceil((100-oa)/rate):99));var nR=(100-oa)/Math.max(1,14-mE);var h='<div style="margin-bottom:10px"><span class="ct" style="font-size:.92rem">S-Curve Analysis</span></div>';h+='<div class="stats">';h+='<div class="si" style="border-left:4px solid var(--g)"><div class="sl">Actual</div><div class="sv" style="color:var(--g)">'+oa+'%</div></div>';h+='<div class="si" style="border-left:4px solid var(--bl)"><div class="sl">Planned</div><div class="sv" style="color:var(--bl)">'+pNow+'%</div></div>';h+='<div class="si" style="border-left:4px solid '+vrC+'"><div class="sl">Variance</div><div class="sv" style="color:'+vrC+'">'+(vr>=0?'+':'')+vr+'%</div><div class="sn">'+(vr>=-3?'On Track':vr>=-10?'Behind':'Critical')+'</div></div>';h+='<div class="si" style="border-left:4px solid var(--am)"><div class="sl">Forecast</div><div class="sv" style="color:var(--am)">'+fD.toLocaleString('en',{month:'short',year:'numeric'})+'</div></div>';h+='<div class="si" style="border-left:4px solid var(--t1)"><div class="sl">Req. Rate</div><div class="sv">'+nR.toFixed(1)+'%/mo</div></div>';h+='<div class="si" style="border-left:4px solid var(--rd)"><div class="sl">Behind</div><div class="sv" style="color:var(--rd)">'+dM+' mo</div><div class="sn">'+(firstB||'None')+'</div></div>';h+='</div>';h+='<div class="card"><div class="ch"><span class="ct">Progress Trend</span></div><canvas id="scC" width="900" height="320" style="width:100%;height:auto;display:block"></canvas></div>';h+='<div class="card" style="border-left:4px solid var(--pu)"><div class="ch"><span class="ct" style="color:var(--pu)">Scenario Analysis</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"><span style="font-size:.68rem;font-weight:600;color:var(--t2);line-height:26px">Presets:</span><button class="btn bs" onclick="fillScenario(\'linear\')">Linear</button><button class="btn bs" onclick="fillScenario(\'aggressive\')">Aggressive</button><button class="btn bs" onclick="fillScenario(\'conservative\')">Conservative</button><button class="btn bs bd" onclick="fillScenario(\'clear\')">Clear</button></div><div style="font-size:.72rem;font-weight:600;color:var(--t2);margin-bottom:6px">Target % per Month</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-bottom:14px">';for(var mi=0;mi<14;mi++){var yr2=mi<12?2026:2027,mo2=mi<12?mi:mi-12,me2=new Date(yr2,mo2+1,0);if(me2<tdD)continue;var mk=yr2+'-'+String(mo2+1).padStart(2,'0');var ml2=new Date(yr2,mo2,1).toLocaleString('en',{month:'short',year:'numeric'});var val=scenarioTgts[mk]!==undefined?scenarioTgts[mk]:'';h+='<div style="padding:6px 8px;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r)"><div style="font-size:.54rem;color:var(--t3);font-family:JetBrains Mono;margin-bottom:2px">'+ml2+'</div><input type="number" id="sM_'+mk+'" value="'+val+'" min="0" max="100" style="width:100%;padding:4px;font-size:.85rem;font-family:Space Grotesk;font-weight:600;text-align:center" placeholder="--"></div>'}h+='</div><div style="text-align:center"><button class="btn bu" style="padding:10px 32px;font-size:.84rem" onclick="runScenario()">&#9654; Run Scenario</button></div><div id="scRes"></div></div>';gi('app').innerHTML=h;var sLine=bldScenarioLine(scenarioTgts,oa,monthDates);drawSCurveChart(planned,actual,months,tdD,sLine);if(Object.keys(scenarioTgts).length>=2)showScenarioResults(calcScenario(oa,scenarioTgts))}
 function mkFromD(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
 function mkIdx(mk,md){for(var i=0;i<md.length;i++){if(mkFromD(md[i])===mk)return i}return-1}
