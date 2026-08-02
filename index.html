@@ -339,23 +339,22 @@ function ensureInps(){
   var clean=[];
   for(var i=0;i<S.inspections.length;i++){
     var ins=S.inspections[i];if(!ins)continue;
-    var did=ins.id||('d_'+ins.date+'_'+ins.inspector+'_'+ins.area);
-    var mkey=(ins.date||'')+'_'+(ins.inspector||'')+'_'+(ins.area||'');
+    var did=ins.id||('d_'+Date.now()+'_'+i);
     if(deletedInspIds.indexOf(did)>=0)continue;
-    if(deletedInspIds.indexOf(mkey)>=0)continue;
     clean.push(ins);
   }
   S.inspections=clean;
-  /* Dedupe */
+  /* Dedupe by ID only */
   if(!inspReady){
     var seen={},deduped=[];
     for(var i=0;i<S.inspections.length;i++){
       var ins2=S.inspections[i];
-      var id=ins2.id||('m_'+Date.now()+i);
-      var mk=(ins2.date||'')+'_'+(ins2.inspector||'')+'_'+(ins2.area||'');
-      if(!seen[id]&&!seen[mk]){seen[id]=1;seen[mk]=1;deduped.push(ins2)}
+      var id=ins2.id;
+      if(!id){ins2.id=Date.now()+i;id=ins2.id}
+      if(!seen[id]){seen[id]=1;deduped.push(ins2)}
     }
-    S.inspections=deduped;inspReady=true;
+    S.inspections=deduped;
+    inspReady=true;
   }
 }
 
@@ -370,23 +369,17 @@ function startInspSync(){
       ensureInps();
       var existMap={};
       for(var i=0;i<S.inspections.length;i++){
-        var ex=S.inspections[i];
-        existMap[ex.id]=true;
-        existMap[(ex.date||'')+'_'+(ex.inspector||'')+'_'+(ex.area||'')]=true;
+        existMap[S.inspections[i].id]=true;
       }
       var added=0;
       for(var key in val){
         if(!val[key]||typeof val[key]!=='object')continue;
         var item=val[key];
         if(!item.id)item.id='sync_'+key;
-        var mk=(item.date||'')+'_'+(item.inspector||'')+'_'+(item.area||'');
         if(existMap[item.id])continue;
-        if(existMap[mk])continue;
         if(deletedInspIds.indexOf(item.id)>=0)continue;
-        if(deletedInspIds.indexOf(mk)>=0)continue;
         S.inspections.push(item);
         existMap[item.id]=true;
-        existMap[mk]=true;
         added++;
       }
       if(added){
