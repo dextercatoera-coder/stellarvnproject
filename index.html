@@ -322,28 +322,76 @@ function expProj(){if(typeof XLSX==='undefined')return notify('XLSX not loaded')
 /* === INSPECTION === */
 var selectedInps=[];
 var inspReady=false;
+var syncedInps=[];
 
 function ensureInps(){
+  /* Convert object to array if Firebase broke it */
+  if(S.inspections&&!Array.isArray(S.inspections)){
+    var arr=[];
+    for(var k in S.inspections){if(S.inspections[k])arr.push(S.inspections[k])}
+    S.inspections=arr;
+  }
   if(!Array.isArray(S.inspections))S.inspections=[];
+  /* Dedupe once */
   if(!inspReady){
-    /* dedupe by id */
     var seen={},clean=[];
     for(var i=0;i<S.inspections.length;i++){
-      var id=S.inspections[i].id||Date.now()+i;
-      if(!seen[id]){seen[id]=1;clean.push(S.inspections[i])}
+      var ins=S.inspections[i];
+      var id=ins.id||('m_'+Date.now()+i);
+      if(!seen[id]){seen[id]=1;clean.push(ins)}
     }
     S.inspections=clean;inspReady=true;
   }
 }
 
+/* --- Real-time listener for Power Automate sync --- */
+function startInspSync(){
+  if(!db)return;
+  try{
+    db.ref('ss/inspectionsSync').on('value',function(snap){
+      var val=snap.val();
+      if(!val)return;
+      var items=[];
+      for(var key in val){
+        if(val[key]&&typeof val[key]==='object'){
+          var item=val[key];
+          if(!item.id)item.id='sync_'+key;
+          items.push(item);
+        }
+      }
+      if(!items.length)return;
+      ensureInps();
+      /* Build map of existing IDs */
+      var existMap={};
+      for(var i=0;i<S.inspections.length;i++){
+        existMap[S.inspections[i].id]=true;
+      }
+      /* Merge new synced items */
+      var added=0;
+      for(var i=0;i<items.length;i++){
+        if(!existMap[items[i].id]){
+          S.inspections.push(items[i]);
+          added++;
+        }
+      }
+      if(added){
+        inspReady=false;
+        save();
+        notify(added+' new inspection(s) synced');
+        if(tab==='insp')doRender();
+      }
+    });
+  }catch(e){console.log('Insp sync error:',e)}
+}
+
+/* --- Tab render --- */
 R.insp=function(){
 ensureInps();
 var inps=S.inspections;
 var total=inps.length,conf=0,rev=0,nonConf=0;
 var discCount={},contractorCount={},statusCount={},dateCount={};
 for(var i=0;i<total;i++){
-  var ins=inps[i];
-  if(!ins)continue;
+  var ins=inps[i];if(!ins)continue;
   var c=ins.conformance||'';
   if(c==='Conforming'||c==='Yes')conf++;
   else if(c==='For Review')rev++;
@@ -359,7 +407,6 @@ var syncBadge=cOn?'<span class="sync-ind"><span class="sp"></span>Live</span>':'
 
 var h='<div class="val-hero"><div><h2>Daily Construction Validation</h2><p style="font-size:.76rem;opacity:.8">Stellar Seeds Vietnam</p><div style="margin-top:6px">'+syncBadge+'</div></div><div style="text-align:center"><a href="'+MF+'" target="_blank" class="val-cta">Conduct Inspection</a></div></div>';
 
-/* No data banner */
 if(!total){
   h+='<div class="card" style="border-left:4px solid var(--or);background:var(--orc)">';
   h+='<div style="display:flex;justify-content:space-between;align-items:center"><div>';
@@ -369,7 +416,6 @@ if(!total){
   h+='</div><div style="display:flex;gap:6px"><button class="btn" onclick="showInspSetup()">Auto-Sync Guide</button><button class="btn bp" onclick="massUploadInsp()">Upload Excel</button></div></div></div>';
 }
 
-/* Metrics */
 h+='<div class="stats">';
 h+='<div class="val-metric green"><div class="vm-l">Total</div><div class="vm-v" style="color:var(--g)">'+total+'</div></div>';
 h+='<div class="val-metric green"><div class="vm-l">Conforming</div><div class="vm-v" style="color:var(--g)">'+conf+'</div></div>';
@@ -379,10 +425,7 @@ h+='<div class="val-metric purple"><div class="vm-l">Rate</div><div class="vm-v"
 h+='</div>';
 
 if(total>0){
-
-  /* Conformance donut + Discipline bars */
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:14px">';
-
   h+='<div class="card"><div class="ch"><span class="ct" style="color:var(--g)">Conformance</span></div>';
   h+='<div style="display:flex;align-items:center;gap:20px">';
   h+='<canvas id="confDonut" width="140" height="140" style="width:140px;height:140px;flex-shrink:0"></canvas>';
@@ -403,9 +446,7 @@ if(total>0){
   }
   h+='</div></div>';
 
-  /* Contractor + Status bars */
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:14px">';
-
   h+='<div class="card"><div class="ch"><span class="ct">By Contractor</span></div>';
   var conItems=[];for(var k in contractorCount)conItems.push({l:k,v:contractorCount[k]});
   conItems.sort(function(a,b){return b.v-a.v});
@@ -427,11 +468,9 @@ if(total>0){
   }
   h+='</div></div>';
 
-  /* Daily chart */
   h+='<div class="card"><div class="ch"><span class="ct">Inspections Per Day</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+Object.keys(dateCount).length+' days</span></div>';
   h+='<canvas id="dateChart" width="900" height="200" style="width:100%;height:auto;display:block"></canvas></div>';
 
-  /* Log table */
   h+='<div class="card"><div class="ch"><span class="ct">Inspection Log</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+total+' records</span></div>';
   h+='<div class="tw"><table><thead><tr>';
   h+='<th style="width:30px"><input type="checkbox" onchange="toggleAllInps(this.checked)" style="cursor:pointer"></th>';
@@ -447,12 +486,13 @@ if(total>0){
     var isChecked=selectedInps.indexOf(i)>=0;
     var cb=(ins.conformance==='Conforming'||ins.conformance==='Yes')?'bg2':ins.conformance==='For Review'?'by2':'bd2';
     var sb=ins.status==='Completed'||ins.status==='Closed'?'bg2':ins.status==='In Progress'?'bx2':'by2';
+    var src=ins.autoSync?'<span style="font-size:.48rem;color:var(--pu)" title="Auto-synced">●</span> ':'';
     h+='<tr'+(isChecked?' style="background:var(--blc)"':'')+'>';
     h+='<td><input type="checkbox" '+(isChecked?'checked':'')+' onchange="toggleInp('+i+',this.checked)" style="cursor:pointer"></td>';
     h+='<td style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+(i+1)+'</td>';
     h+='<td style="font-family:JetBrains Mono;font-size:.64rem;white-space:nowrap">'+H(ins.date)+'</td>';
     h+='<td>'+H(ins.area)+'</td>';
-    h+='<td>'+H(ins.inspector)+'</td>';
+    h+='<td>'+src+H(ins.inspector)+'</td>';
     h+='<td style="font-size:.64rem">'+H(ins.email||'-')+'</td>';
     h+='<td>'+H(ins.contractor||'-')+'</td>';
     h+='<td style="font-size:.64rem">'+H(ins.discipline||'-')+'</td>';
@@ -483,7 +523,6 @@ if(total>0){
   h+='</div>';
 }
 
-/* Action bar */
 h+='<div class="fbar">';
 h+='<button class="btn bp" onclick="addInsp()">+ Record</button>';
 h+='<button class="btn" onclick="massUploadInsp()" style="border-color:var(--pu);color:var(--pu)">Mass Upload Excel</button>';
@@ -493,17 +532,13 @@ h+='<span style="flex:1"></span>';
 h+='<button class="btn bs" onclick="exportInspData()">Export</button>';
 h+='</div>';
 
-var wasFocused=document.activeElement&&document.activeElement.id==='dPQ';
-var curPos=wasFocused?document.activeElement.selectionStart:0;
 $('app').innerHTML=h;
-if(wasFocused)setTimeout(function(){var dq=$('dPQ');if(dq){dq.focus();dq.setSelectionRange(curPos,curPos)}},0);
 if(total>0)setTimeout(function(){
   drawDonut('confDonut',[{v:conf,c:'#2d8a32'},{v:rev,c:'#2874a6'},{v:nonConf,c:'#cc3333'}],total);
   drawDateChart(dateCount);
 },50);
 };
 
-/* --- Donut chart --- */
 function drawDonut(canvasId,segs,total){
   var cv=$(canvasId);if(!cv||!total)return;
   var ctx=cv.getContext('2d'),cx=70,cy=70,rad=58,ir=35;
@@ -521,7 +556,6 @@ function drawDonut(canvasId,segs,total){
   ctx.font='9px JetBrains Mono';ctx.fillStyle='#999';ctx.fillText('total',cx,cy+11);
 }
 
-/* --- Daily bar chart --- */
 function drawDateChart(dateCount){
   var cv=$('dateChart');if(!cv)return;
   var W=cv.width,H2=cv.height,pL=50,pR=15,pT=15,pB=45,cW=W-pL-pR,cH=H2-pT-pB;
@@ -548,7 +582,6 @@ function drawDateChart(dateCount){
   }
 }
 
-/* --- Add --- */
 function addInsp(){
 mO('New Inspection',
 '<div class="fg"><label class="fl">Start Time</label><input type="datetime-local" id="iST" value="'+td()+'T08:00" style="width:100%"></div>'+
@@ -612,7 +645,6 @@ S.inspections.unshift({
 save();mC();notify('Recorded');doRender();
 }
 
-/* --- Edit --- */
 function editInsp(i){
 ensureInps();
 var ins=S.inspections[i];if(!ins)return;
@@ -672,14 +704,12 @@ ins.discussedWith=$('eiDW').value.trim();ins.remarks=$('eiRm').value.trim();ins.
 save();mC();notify('Updated');doRender();
 }
 
-/* --- Delete --- */
 function delInsp(i){
 ensureInps();
 if(!confirm('Delete inspection #'+(i+1)+'?'))return;
 S.inspections.splice(i,1);save();notify('Deleted');doRender();
 }
 
-/* --- Multi-select --- */
 function toggleInp(i,checked){
   var idx=selectedInps.indexOf(i);
   if(checked&&idx<0)selectedInps.push(i);
@@ -703,7 +733,6 @@ function delSelectedInps(){
   selectedInps=[];save();notify('Deleted');doRender();
 }
 
-/* --- Export --- */
 function exportInspData(){
 ensureInps();
 if(typeof XLSX==='undefined')return notify('XLSX loading...');
@@ -714,7 +743,6 @@ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'Inspections');
 XLSX.writeFile(wb,'Inspections_'+td()+'.xlsx');notify('Exported');
 }
 
-/* --- Mass Upload --- */
 function massUploadInsp(){
 mO('Mass Upload',
 '<div style="font-size:.72rem;color:var(--t2);margin-bottom:12px"><b>Upload Excel from Microsoft Form.</b><br>Steps: Form &rarr; Responses &rarr; Open in Excel &rarr; Upload here.<br>Auto-detects columns by header name.</div>'+
@@ -795,20 +823,27 @@ save();mC();notify('Imported '+added+' inspections');doRender();
 rd.readAsArrayBuffer(file);
 }
 
-/* --- Auto-Sync Guide --- */
 function showInspSetup(){
 var cld;try{cld=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){cld=null}
 var fbUrl=cld&&cld.databaseURL?cld.databaseURL:'';
-var fbPath=fbUrl?fbUrl+'/ss/inspections.json':'Not configured — set up Cloud tab first';
+var fbPath=fbUrl?fbUrl+'/ss/inspectionsSync.json':'Not configured — set up Cloud tab first';
 var bd='<div style="font-size:.74rem;line-height:1.7">';
-bd+='<div style="background:var(--blc);padding:12px;border-radius:var(--r);margin-bottom:14px;border-left:3px solid var(--bl)"><div style="font-weight:700;color:var(--bl);margin-bottom:4px">How it works</div>MS Form stores data in Microsoft. This app reads from Firebase. Power Automate copies each form submission to Firebase automatically.</div>';
-bd+='<div style="font-weight:700;font-size:.84rem;margin-bottom:10px;color:var(--g)">Step-by-Step Setup</div>';
-bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 1: Copy your Firebase URL</div><div style="display:flex;align-items:center;gap:8px"><code style="flex:1;font-size:.62rem;background:var(--s1);padding:6px 10px;border-radius:4px;border:1px solid var(--b1);word-break:break-all;color:var(--bl)">'+H(fbPath)+'</code>'+(fbUrl?'<button class="btn bs bp" onclick="navigator.clipboard.writeText(\''+H(fbPath)+'\');notify(\'Copied!\')">Copy</button>':'<span style="font-size:.62rem;color:var(--rd)">Set Cloud first</span>')+'</div></div>';
-bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 2: Open Power Automate</div><a href="https://flow.microsoft.com" target="_blank" style="color:var(--bl);font-weight:700">flow.microsoft.com</a></div>';
-bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 3: Create flow</div><div>Trigger: <code style="font-size:.64rem;background:var(--s1);padding:1px 5px;border-radius:3px">When a new response is submitted</code></div><div>Action 1: <code style="font-size:.64rem;background:var(--s1);padding:1px 5px;border-radius:3px">Get response details</code></div><div>Action 2: <code style="font-size:.64rem;background:var(--s1);padding:1px 5px;border-radius:3px">HTTP</code> POST to Firebase URL</div></div>';
-bd+='<div style="background:var(--gc);padding:10px 12px;border-radius:var(--r);border-left:3px solid var(--g);margin-top:10px"><div style="font-weight:700;color:var(--g);margin-bottom:4px">Quick alternative</div>Form &rarr; Responses &rarr; Open in Excel &rarr; Upload via "Mass Upload Excel"</div>';
+bd+='<div style="background:var(--blc);padding:12px;border-radius:var(--r);margin-bottom:14px;border-left:3px solid var(--bl)"><div style="font-weight:700;color:var(--bl);margin-bottom:4px">How it works</div>MS Form &rarr; Power Automate &rarr; Firebase (inspectionsSync) &rarr; This app reads and merges automatically.</div>';
+bd+='<div style="font-weight:700;font-size:.84rem;margin-bottom:10px;color:var(--g)">Step-by-Step</div>';
+bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 1: Copy this URL</div><div style="display:flex;align-items:center;gap:8px"><code style="flex:1;font-size:.62rem;background:var(--s1);padding:6px 10px;border-radius:4px;border:1px solid var(--b1);word-break:break-all;color:var(--bl)">'+H(fbPath)+'</code>'+(fbUrl?'<button class="btn bs bp" onclick="navigator.clipboard.writeText(\''+H(fbPath)+'\');notify(\'Copied!\')">Copy</button>':'<span style="font-size:.62rem;color:var(--rd)">Set Cloud first</span>')+'</div></div>';
+bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 2: Power Automate HTTP action</div><div>Method: <b>POST</b></div><div>URI: paste the URL above</div><div>Header: <code style="font-size:.64rem;background:var(--s1);padding:1px 5px;border-radius:3px">Content-Type: application/json</code></div><div>Body: map all form fields to JSON</div></div>';
+bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 3: Add this to Body</div><div>Add <code style="font-size:.64rem;background:var(--s1);padding:1px 5px;border-radius:3px">"autoSync": true</code> to mark as auto-synced</div></div>';
+bd+='<div style="background:var(--gc);padding:10px 12px;border-radius:var(--r);border-left:3px solid var(--g);margin-top:10px"><div style="font-weight:700;color:var(--g);margin-bottom:4px">What happens next</div>New submissions appear here automatically. Mass uploaded data is preserved. Both merge together.</div>';
 bd+='</div>';
 mO('Auto-Sync Setup',bd,'<button class="btn" onclick="mC()">Close</button><button class="btn bp" onclick="window.open(\'https://flow.microsoft.com\',\'_blank\');mC()">Power Automate</button><button class="btn bb" onclick="mC();massUploadInsp()">Upload Excel</button>');
+}
+  /* Auto-start inspection sync when Firebase connects */
+var _origConnect=connectFirebase;
+if(typeof connectFirebase==='function'){
+  connectFirebase=function(){
+    _origConnect.apply(this,arguments);
+    setTimeout(startInspSync,2000);
+  };
 }
 /* === TEAM === */
 R.team=function(){function ac(n){var c2=['#2d8a32','#2874a6','#d4930d','#b89630','#cc3333','#9b59b6'],h2=0;for(var i=0;i<n.length;i++)h2=n.charCodeAt(i)+((h2<<5)-h2);return c2[Math.abs(h2)%c2.length]}function ai(n){return n.substring(0,2).toUpperCase()}var h='<div style="margin-bottom:10px"><span class="ct">Team</span></div><div class="card"><div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:6px;margin-bottom:6px"><div class="fg" style="margin:0"><input type="text" id="uA" placeholder="Author" style="width:100%"></div><div class="fg" style="margin:0"><input type="text" id="uR" placeholder="Role" style="width:100%"></div><div class="fg" style="margin:0"><select id="uT" style="width:100%"><option>update</option><option>milestone</option><option>blocker</option></select></div></div><div class="fg" style="margin-bottom:5px"><textarea id="uC" rows="2" placeholder="Share..." style="width:100%"></textarea></div><div style="display:flex;justify-content:flex-end"><button class="btn bp" onclick="postU()">Post</button></div></div><div style="max-width:600px">';for(var i=0;i<S.upds.length;i++){var u=S.upds[i],tc=u.t==='milestone'?'var(--g)':u.t==='blocker'?'var(--rd)':'var(--bl)',tb=u.t==='milestone'?'bg2':u.t==='blocker'?'bd2':'bx2';h+='<div class="fpost" style="border-left:3px solid '+tc+'"><div class="fhead"><div class="av" style="background:'+ac(u.a)+'">'+ai(u.a)+'</div><div style="flex:1"><div style="font-weight:600;font-size:.78rem">'+H(u.a)+' <span style="font-weight:400;font-size:.66rem;color:var(--t3)">'+H(u.r)+'</span></div><div style="font-size:.6rem;color:var(--t3);font-family:JetBrains Mono">'+new Date(u.ts).toLocaleString()+'</div></div><span class="badge '+tb+'">'+u.t+'</span></div><div style="font-size:.78rem;color:var(--t2)">'+H(u.c)+'</div></div>'}h+='</div>';$('app').innerHTML=h};
