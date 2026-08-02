@@ -802,6 +802,41 @@ mO('Mass Upload',
 '<input type="file" id="massInspF" accept=".xlsx,.xls" style="display:none" onchange="processMassInsp(this.files[0])"></div>',
 '<button class="btn" onclick="mC()">Close</button>');
 }
+  function clearAllSync(){
+  /* Approach 1: Try via db variable */
+  var dbRef=null;
+  try{if(db)dbRef=db}catch(e){}
+  /* Approach 2: Try via firebase.database() */
+  if(!dbRef){try{dbRef=firebase.database()}catch(e){}}
+  /* Approach 3: Try via any global */
+  if(!dbRef){try{dbRef=window.db||window.database||window.fbDb}catch(e){}}
+
+  if(dbRef){
+    dbRef.ref('ss/inspectionsSync').remove().then(function(){
+      notify('Sync cleared. Refreshing...');
+      setTimeout(function(){location.reload()},1000);
+    }).catch(function(e){
+      notify('Firebase clear failed, clearing locally...');
+      clearInspLocal();
+    });
+  }else{
+    notify('Firebase not available, clearing locally...');
+    clearInspLocal();
+  }
+}
+
+function clearInspLocal(){
+  /* Remove all inspections, clear sync data, clear deleted list */
+  S.inspections=[];
+  inspReady=false;
+  selectedInps=[];
+  deletedInspIds=[];
+  try{localStorage.removeItem('ss_del_insp')}catch(e){}
+  try{localStorage.removeItem('ss_inspections')}catch(e){}
+  save();
+  notify('All inspection data cleared. Refreshing...');
+  setTimeout(function(){location.reload()},1000);
+}
 
 function processMassInsp(file){
 if(!file)return;
