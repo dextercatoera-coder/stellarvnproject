@@ -352,28 +352,27 @@ function startInspSync(){
     db.ref('ss/inspectionsSync').on('value',function(snap){
       var val=snap.val();
       if(!val)return;
-      var items=[];
-      for(var key in val){
-        if(val[key]&&typeof val[key]==='object'){
-          var item=val[key];
-          if(!item.id)item.id='sync_'+key;
-          items.push(item);
-        }
-      }
-      if(!items.length)return;
       ensureInps();
-      /* Build map of existing IDs */
       var existMap={};
       for(var i=0;i<S.inspections.length;i++){
         existMap[S.inspections[i].id]=true;
       }
-      /* Merge new synced items */
       var added=0;
-      for(var i=0;i<items.length;i++){
-        if(!existMap[items[i].id]){
-          S.inspections.push(items[i]);
-          added++;
+      for(var key in val){
+        if(!val[key]||typeof val[key]!=='object')continue;
+        var item=val[key];
+        if(!item.id)item.id='sync_'+key;
+        /* Skip items that already exist OR were deleted locally */
+        if(existMap[item.id])continue;
+        /* Extra check: skip if this item was manually removed */
+        var wasDeleted=false;
+        for(var d=0;d<S.inspections.length;d++){
+          if(S.inspections[d].date===item.date&&S.inspections[d].inspector===item.inspector&&S.inspections[d].area===item.area)wasDeleted=true;
         }
+        if(wasDeleted)continue;
+        S.inspections.push(item);
+        existMap[item.id]=true;
+        added++;
       }
       if(added){
         inspReady=false;
@@ -708,9 +707,25 @@ save();mC();notify('Updated');doRender();
 function delInsp(i){
 ensureInps();
 if(!confirm('Delete inspection #'+(i+1)+'?'))return;
+var ins=S.inspections[i];
+/* Remove from Firebase sync node if it was auto-synced */
+if(ins&&ins.id&&db){try{db.ref('ss/inspectionsSync/'+ins.id).remove()}catch(e){}}
 S.inspections.splice(i,1);save();notify('Deleted');doRender();
 }
 
+function delSelectedInps(){
+ensureInps();
+if(!selectedInps.length)return;
+if(!confirm('Delete '+selectedInps.length+' inspection(s)?'))return;
+selectedInps.sort(function(a,b){return b-a});
+for(var i=0;i<selectedInps.length;i++){
+  var ins=S.inspections[selectedInps[i]];
+  if(ins&&ins.id&&db){try{db.ref('ss/inspectionsSync/'+ins.id).remove()}catch(e){}}
+  S.inspections.splice(selectedInps[i],1);
+}
+selectedInps=[];save();notify('Deleted');doRender();
+}
+  
 function toggleInp(i,checked){
   var idx=selectedInps.indexOf(i);
   if(checked&&idx<0)selectedInps.push(i);
