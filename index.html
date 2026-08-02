@@ -269,7 +269,10 @@ h+='<button class="btn" onclick="go(\'tasks\')" style="margin-right:6px">Tasks</
 h+='<button class="btn" onclick="go(\'insp\')">Inspections</button>';
 h+='</div></div>';
 
+var wasFocused=document.activeElement&&document.activeElement.id==='dPQ';
+var curPos=wasFocused?document.activeElement.selectionStart:0;
 $('app').innerHTML=h;
+if(wasFocused)setTimeout(function(){var el=document.getElementById('dPQ');if(el){el.focus();el.setSelectionRange(curPos,curPos)}},0);
 };
   /* === GANTT === */
 R.gantt=function(){var m=mainT(),vk=Object.keys(S.vgc||{});var h='<div class="fbar"><label>View:</label><select onchange="vgSel=this.value;go(\'gantt\')" style="min-width:220px"><optgroup label="Site Schedule"></optgroup><option value="site"'+(vgSel==='site'?' selected':'')+'>Site Overview</option>';for(var i=0;i<m.length;i++)h+='<option value="detail_'+m[i].wbs+'"'+(vgSel==='detail_'+m[i].wbs?' selected':'')+'>'+m[i].wbs+'. '+H(m[i].name)+'</option>';if(S.taskProjects.length){h+='<optgroup label="Projects"></optgroup>';for(var i=0;i<S.taskProjects.length;i++){var pj=S.taskProjects[i];h+='<option value="proj_'+pj.id+'"'+(vgSel==='proj_'+pj.id?' selected':'')+'>Project: '+H(pj.name)+'</option>'}}if(vk.length){h+='<optgroup label="Vendors"></optgroup>';for(var i=0;i<vk.length;i++)h+='<option value="vg_'+vk[i]+'"'+(vgSel==='vg_'+vk[i]?' selected':'')+'>Vendor: '+H(vk[i])+'</option>'}h+='</select><button class="btn bs bp" onclick="addVG()">+ Vendor</button>';if(vgSel.indexOf('vg_')===0)h+=' <button class="btn bs bd" onclick="delVG()">Del</button>';h+='</div>';if(vgSel==='site')h+=siteGantt();else if(vgSel.indexOf('detail_')===0)h+=detailGantt(vgSel.substring(7));else if(vgSel.indexOf('proj_')===0)h+=projGantt(parseInt(vgSel.substring(5)));else if(vgSel.indexOf('vg_')===0)h+=vGantt(vgSel.substring(3));$('app').innerHTML=h};
