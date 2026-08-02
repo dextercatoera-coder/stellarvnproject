@@ -389,15 +389,6 @@ function startInspSync(){
     });
   }catch(e){console.log('Insp sync error:',e)}
 }
-
-  function clearStuckSync(){
-  if(!db){alert('Not connected');return}
-  if(!confirm('Clear ALL data from inspectionsSync in Firebase?'))return;
-  db.ref('ss/inspectionsSync').remove().then(function(){
-    notify('Cleared inspectionsSync');
-  }).catch(function(e){alert('Error: '+e)});
-}
-
 /* --- Tab render --- */
 R.insp=function(){
 ensureInps();
