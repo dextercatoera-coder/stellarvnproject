@@ -837,14 +837,7 @@ bd+='<div style="background:var(--gc);padding:10px 12px;border-radius:var(--r);b
 bd+='</div>';
 mO('Auto-Sync Setup',bd,'<button class="btn" onclick="mC()">Close</button><button class="btn bp" onclick="window.open(\'https://flow.microsoft.com\',\'_blank\');mC()">Power Automate</button><button class="btn bb" onclick="mC();massUploadInsp()">Upload Excel</button>');
 }
-  /* Auto-start inspection sync when Firebase connects */
-var _origConnect=connectFirebase;
-if(typeof connectFirebase==='function'){
-  connectFirebase=function(){
-    _origConnect.apply(this,arguments);
-    setTimeout(startInspSync,2000);
-  };
-}
+
 /* === TEAM === */
 R.team=function(){function ac(n){var c2=['#2d8a32','#2874a6','#d4930d','#b89630','#cc3333','#9b59b6'],h2=0;for(var i=0;i<n.length;i++)h2=n.charCodeAt(i)+((h2<<5)-h2);return c2[Math.abs(h2)%c2.length]}function ai(n){return n.substring(0,2).toUpperCase()}var h='<div style="margin-bottom:10px"><span class="ct">Team</span></div><div class="card"><div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:6px;margin-bottom:6px"><div class="fg" style="margin:0"><input type="text" id="uA" placeholder="Author" style="width:100%"></div><div class="fg" style="margin:0"><input type="text" id="uR" placeholder="Role" style="width:100%"></div><div class="fg" style="margin:0"><select id="uT" style="width:100%"><option>update</option><option>milestone</option><option>blocker</option></select></div></div><div class="fg" style="margin-bottom:5px"><textarea id="uC" rows="2" placeholder="Share..." style="width:100%"></textarea></div><div style="display:flex;justify-content:flex-end"><button class="btn bp" onclick="postU()">Post</button></div></div><div style="max-width:600px">';for(var i=0;i<S.upds.length;i++){var u=S.upds[i],tc=u.t==='milestone'?'var(--g)':u.t==='blocker'?'var(--rd)':'var(--bl)',tb=u.t==='milestone'?'bg2':u.t==='blocker'?'bd2':'bx2';h+='<div class="fpost" style="border-left:3px solid '+tc+'"><div class="fhead"><div class="av" style="background:'+ac(u.a)+'">'+ai(u.a)+'</div><div style="flex:1"><div style="font-weight:600;font-size:.78rem">'+H(u.a)+' <span style="font-weight:400;font-size:.66rem;color:var(--t3)">'+H(u.r)+'</span></div><div style="font-size:.6rem;color:var(--t3);font-family:JetBrains Mono">'+new Date(u.ts).toLocaleString()+'</div></div><span class="badge '+tb+'">'+u.t+'</span></div><div style="font-size:.78rem;color:var(--t2)">'+H(u.c)+'</div></div>'}h+='</div>';$('app').innerHTML=h};
 function postU(){var a=$('uA').value.trim(),c=$('uC').value.trim();if(!a||!c)return;S.upds.unshift({id:Date.now(),a:a,r:$('uR').value.trim(),t:$('uT').value,c:c,ts:new Date().toISOString()});save();notify('Posted');doRender()}
