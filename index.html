@@ -94,6 +94,7 @@ var dashFStatus='all';
 var dashFCategory='all';
 var selectedInps=[];
 var inps=[];
+var deletedInspIds=[];
 var dSortCol='name',dSortAsc=true,dProjSearch='';
 var dashSearch='',dashFStatus='all',dashFCategory='all';
 function H(s){if(s==null)return '';var d=document.createElement('span');d.textContent=String(s);return d.innerHTML}
@@ -348,30 +349,35 @@ function ensureInps(){
 /* --- Real-time listener for Power Automate sync --- */
 function startInspSync(){
   if(!db)return;
+  /* Load deleted IDs from localStorage */
+  try{var stored=localStorage.getItem('ss_del_insp');if(stored)deletedInspIds=JSON.parse(stored)}catch(e){}
   try{
     db.ref('ss/inspectionsSync').on('value',function(snap){
       var val=snap.val();
       if(!val)return;
       ensureInps();
+      /* Build lookup maps */
       var existMap={};
       for(var i=0;i<S.inspections.length;i++){
-        existMap[S.inspections[i].id]=true;
+        var ex=S.inspections[i];
+        existMap[ex.id]=true;
+        existMap[ex.date+'_'+ex.inspector+'_'+ex.area]=true;
       }
       var added=0;
       for(var key in val){
         if(!val[key]||typeof val[key]!=='object')continue;
         var item=val[key];
         if(!item.id)item.id='sync_'+key;
-        /* Skip items that already exist OR were deleted locally */
+        var matchKey=item.date+'_'+item.inspector+'_'+item.area;
+        /* Skip if exists */
         if(existMap[item.id])continue;
-        /* Extra check: skip if this item was manually removed */
-        var wasDeleted=false;
-        for(var d=0;d<S.inspections.length;d++){
-          if(S.inspections[d].date===item.date&&S.inspections[d].inspector===item.inspector&&S.inspections[d].area===item.area)wasDeleted=true;
-        }
-        if(wasDeleted)continue;
+        if(existMap[matchKey])continue;
+        /* Skip if was deleted */
+        if(deletedInspIds.indexOf(item.id)>=0)continue;
+        if(deletedInspIds.indexOf(matchKey)>=0)continue;
         S.inspections.push(item);
         existMap[item.id]=true;
+        existMap[matchKey]=true;
         added++;
       }
       if(added){
@@ -382,6 +388,14 @@ function startInspSync(){
       }
     });
   }catch(e){console.log('Insp sync error:',e)}
+}
+
+  function clearStuckSync(){
+  if(!db){alert('Not connected');return}
+  if(!confirm('Clear ALL data from inspectionsSync in Firebase?'))return;
+  db.ref('ss/inspectionsSync').remove().then(function(){
+    notify('Cleared inspectionsSync');
+  }).catch(function(e){alert('Error: '+e)});
 }
 
 /* --- Tab render --- */
@@ -708,8 +722,12 @@ function delInsp(i){
 ensureInps();
 if(!confirm('Delete inspection #'+(i+1)+'?'))return;
 var ins=S.inspections[i];
-/* Remove from Firebase sync node if it was auto-synced */
-if(ins&&ins.id&&db){try{db.ref('ss/inspectionsSync/'+ins.id).remove()}catch(e){}}
+if(ins){
+  var did=ins.id||('d_'+ins.date+'_'+ins.inspector+'_'+ins.area);
+  if(deletedInspIds.indexOf(did)<0)deletedInspIds.push(did);
+  try{localStorage.setItem('ss_del_insp',JSON.stringify(deletedInspIds))}catch(e){}
+  if(ins.id&&db){try{db.ref('ss/inspectionsSync/'+ins.id).remove()}catch(e){}}
+}
 S.inspections.splice(i,1);save();notify('Deleted');doRender();
 }
 
@@ -720,9 +738,14 @@ if(!confirm('Delete '+selectedInps.length+' inspection(s)?'))return;
 selectedInps.sort(function(a,b){return b-a});
 for(var i=0;i<selectedInps.length;i++){
   var ins=S.inspections[selectedInps[i]];
-  if(ins&&ins.id&&db){try{db.ref('ss/inspectionsSync/'+ins.id).remove()}catch(e){}}
+  if(ins){
+    var did=ins.id||('d_'+ins.date+'_'+ins.inspector+'_'+ins.area);
+    if(deletedInspIds.indexOf(did)<0)deletedInspIds.push(did);
+    if(ins.id&&db){try{db.ref('ss/inspectionsSync/'+ins.id).remove()}catch(e){}}
+  }
   S.inspections.splice(selectedInps[i],1);
 }
+try{localStorage.setItem('ss_del_insp',JSON.stringify(deletedInspIds))}catch(e){}
 selectedInps=[];save();notify('Deleted');doRender();
 }
   
