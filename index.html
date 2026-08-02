@@ -89,6 +89,9 @@ var siteCost=0,curUser=null,db=null,fbAuth=null,cOn=false;
 var tab='dash',tpSel='site',vgSel='site',authMode='login';
 var scRisk={baseline:true,actual:true,weather:false,resource:false,permitDelay:false,combined:false};
 var MF='https://forms.cloud.microsoft/r/JiiypNH8LD';
+var dashSearch='';
+var dashFStatus='all';
+var dashFCategory='all';
 var dashSearch='',dashFStatus='all',dashFCategory='all';
 function H(s){if(s==null)return '';var d=document.createElement('span');d.textContent=String(s);return d.innerHTML}
 function pct(a,b){return b>0?Math.round(a/b*100):0}
