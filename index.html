@@ -317,86 +317,213 @@ function addSP(){mO('Site Payment','<div class="fg"><label class="fl">Date</labe
 function savSP(){var a=parseFloat($('spA').value)||0;if(!a)return;S.sitePayments.push({id:Date.now(),date:$('spD').value,amount:a,desc:$('spDe').value.trim()});save();mC();notify('Added');doRender()}
 function expProj(){if(typeof XLSX==='undefined')return notify('XLSX not loaded');var p=getProj();if(!p)return;var wb=XLSX.utils.book_new(),sd=[['WBS','Name','Cat','Dur','Start','End','Prog','WT%','Pred','Assignee']];for(var i=0;i<p.tasks.length;i++){var t=p.tasks[i];sd.push([t.wbs,t.name,t.cat,t.dur,t.s,t.e,t.prog,t.wt||0,t.pred||'',t.assignee||''])}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),'Tasks');XLSX.writeFile(wb,p.name.replace(/[^a-z0-9]/gi,'_')+'.xlsx');notify('Exported')}
 /* === INSPECTION === */
-R.insp=function(){var inps=S.inspections||[];var total=inps.length,conf=0,rev=0,nonConf=0;var discCount={},contractorCount={},statusCount={},dateCount={};for(var i=0;i<inps.length;i++){var ins=inps[i];if(ins.conformance==='Conforming'||ins.conformance==='Yes')conf++;else if(ins.conformance==='For Review')rev++;else nonConf++;if(ins.discipline)discCount[ins.discipline]=(discCount[ins.discipline]||0)+1;if(ins.contractor)contractorCount[ins.contractor]=(contractorCount[ins.contractor]||0)+1;if(ins.status)statusCount[ins.status]=(statusCount[ins.status]||0)+1;if(ins.date){var dk=ins.date.substring(5);dateCount[dk]=(dateCount[dk]||0)+1}}var rate=total>0?Math.round(conf/total*100):0;
+var selectedInps=[];
+
+R.insp=function(){
+var inps=S.inspections||[];
+var total=inps.length,conf=0,rev=0,nonConf=0;
+var discCount={},contractorCount={},statusCount={},dateCount={};
+for(var i=0;i<inps.length;i++){
+  var ins=inps[i];
+  if(ins.conformance==='Conforming'||ins.conformance==='Yes')conf++;
+  else if(ins.conformance==='For Review')rev++;
+  else nonConf++;
+  if(ins.discipline)discCount[ins.discipline]=(discCount[ins.discipline]||0)+1;
+  if(ins.contractor)contractorCount[ins.contractor]=(contractorCount[ins.contractor]||0)+1;
+  if(ins.status)statusCount[ins.status]=(statusCount[ins.status]||0)+1;
+  if(ins.date){var dk=ins.date.substring(5);dateCount[dk]=(dateCount[dk]||0)+1}
+}
+var rate=total>0?Math.round(conf/total*100):0;
 
 var cld;try{cld=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){cld=null}
-var fbUrl=cld&&cld.databaseURL?cld.databaseURL:'';
 var syncBadge=cOn?'<span class="sync-ind"><span class="sp"></span>Live</span>':'<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">Offline</span>';
 
 var h='<div class="val-hero"><div><h2>Daily Construction Validation</h2><p style="font-size:.76rem;opacity:.8">Stellar Seeds Vietnam</p><div style="margin-top:6px">'+syncBadge+'</div></div><div style="text-align:center"><a href="'+MF+'" target="_blank" class="val-cta">Conduct Inspection</a></div></div>';
 
-if(!total){h+='<div class="card" style="border-left:4px solid var(--or);background:var(--orc)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:700;font-size:.82rem;color:var(--or);margin-bottom:4px">No Inspection Data Yet</div><div style="font-size:.72rem;color:var(--t2)">Option A: <b>Auto-sync</b> via Power Automate (one-time setup)</div><div style="font-size:.72rem;color:var(--t2)">Option B: <b>Manual import</b> — download Excel from Form responses, upload here</div></div><div style="display:flex;gap:6px"><button class="btn" onclick="showInspSetup()">Setup Auto-Sync</button><button class="btn bp" onclick="massUploadInsp()">Upload Excel</button></div></div></div>'}
-
-h+='<div class="stats"><div class="val-metric green"><div class="vm-l">Total</div><div class="vm-v" style="color:var(--g)">'+total+'</div></div><div class="val-metric green"><div class="vm-l">Conforming</div><div class="vm-v" style="color:var(--g)">'+conf+'</div></div><div class="val-metric blue"><div class="vm-l">For Review</div><div class="vm-v" style="color:var(--bl)">'+rev+'</div></div><div class="val-metric red"><div class="vm-l">Non-Conforming</div><div class="vm-v" style="color:var(--rd)">'+nonConf+'</div></div><div class="val-metric purple"><div class="vm-l">Rate</div><div class="vm-v" style="color:var(--pu)">'+rate+'%</div></div></div>';
-
-if(total>0){
-h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:14px">';
-h+='<div class="card"><div class="ch"><span class="ct" style="color:var(--g)">Conformance</span></div><div style="display:flex;align-items:center;gap:20px"><canvas id="confDonut" width="140" height="140" style="width:140px;height:140px;flex-shrink:0"></canvas><div style="font-size:.72rem;line-height:2"><div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--g);margin-right:6px"></span>Conforming: <b>'+conf+'</b></div><div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--bl);margin-right:6px"></span>For Review: <b>'+rev+'</b></div><div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--rd);margin-right:6px"></span>Non-Conforming: <b>'+nonConf+'</b></div></div></div></div>';
-h+='<div class="card"><div class="ch"><span class="ct" style="color:var(--pu)">By Discipline</span></div>';
-var discItems=[];for(var k in discCount)discItems.push({l:k,v:discCount[k]});discItems.sort(function(a,b){return b.v-a.v});var maxD=discItems.length?discItems[0].v:1;var dC=['#2d8a32','#2874a6','#d4930d','#9b59b6','#b89630','#cc3333'];for(var d=0;d<discItems.length;d++){var di=discItems[d],wp=Math.round(di.v/maxD*100);h+='<div class="val-chart"><div class="val-clabel">'+H(di.l)+'</div><div class="val-ctrack"><div class="val-cfill" style="width:'+wp+'%;background:'+dC[d%dC.length]+'">'+di.v+'</div></div><div class="val-cval">'+Math.round(di.v/total*100)+'%</div></div>'}h+='</div></div>';
-
-h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:14px">';
-h+='<div class="card"><div class="ch"><span class="ct">By Contractor</span></div>';
-var conItems=[];for(var k in contractorCount)conItems.push({l:k,v:contractorCount[k]});conItems.sort(function(a,b){return b.v-a.v});var maxC=conItems.length?conItems[0].v:1;var cC=['#2874a6','#d4930d','#2d8a32','#cc3333'];for(var d=0;d<conItems.length;d++){var ci=conItems[d],wp2=Math.round(ci.v/maxC*100);h+='<div class="val-chart"><div class="val-clabel">'+H(ci.l)+'</div><div class="val-ctrack"><div class="val-cfill" style="width:'+wp2+'%;background:'+cC[d%cC.length]+'">'+ci.v+'</div></div><div class="val-cval">'+Math.round(ci.v/total*100)+'%</div></div>'}h+='</div>';
-h+='<div class="card"><div class="ch"><span class="ct">By Status</span></div>';
-var stItems=[];for(var k in statusCount)stItems.push({l:k,v:statusCount[k]});stItems.sort(function(a,b){return b.v-a.v});var maxS=stItems.length?stItems[0].v:1;for(var d=0;d<stItems.length;d++){var si=stItems[d],wp3=Math.round(si.v/maxS*100);h+='<div class="val-chart"><div class="val-clabel">'+H(si.l)+'</div><div class="val-ctrack"><div class="val-cfill" style="width:'+wp3+'%;background:#b89630">'+si.v+'</div></div><div class="val-cval">'+Math.round(si.v/total*100)+'%</div></div>'}h+='</div></div>';
-
-h+='<div class="card"><div class="ch"><span class="ct">Inspections Per Day</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+Object.keys(dateCount).length+' days</span></div><canvas id="dateChart" width="900" height="200" style="width:100%;height:auto;display:block"></canvas></div>';
-
-/* Full log table matching form columns */
-h+='<div class="card"><div class="ch"><span class="ct">Inspection Log</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+total+' records</span></div>';
-h+='<div class="tw"><table><thead><tr>';
-h+='<th>#</th>';
-h+='<th>Date</th>';
-h+='<th>Area/Zone</th>';
-h+='<th>Name</th>';
-h+='<th>Email</th>';
-h+='<th>Contractor</th>';
-h+='<th>Discipline</th>';
-h+='<th>Work Element</th>';
-h+='<th>Drawing No</th>';
-h+='<th>Requesting To</th>';
-h+='<th>Actual Site Material</th>';
-h+='<th>Conformance</th>';
-h+='<th>Immediate Action</th>';
-h+='<th>Escalation Required</th>';
-h+='<th>Person Responsible</th>';
-h+='<th>Reviewed By</th>';
-h+='<th>Discussed With</th>';
-h+='<th>Remarks</th>';
-h+='<th>Status</th>';
-h+='<th style="width:70px">Actions</th>';
-h+='</tr></thead><tbody>';
-for(var i=0;i<inps.length;i++){var ins=inps[i];var confBg=(ins.conformance==='Conforming'||ins.conformance==='Yes')?'bg2':ins.conformance==='For Review'?'by2':'bd2';var stBg=ins.status==='Completed'||ins.status==='Closed'?'bg2':ins.status==='In Progress'?'bx2':'by2';h+='<tr>';
-h+='<td style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+(i+1)+'</td>';
-h+='<td style="font-family:JetBrains Mono;font-size:.64rem;white-space:nowrap">'+H(ins.date)+'</td>';
-h+='<td>'+H(ins.area)+'</td>';
-h+='<td>'+H(ins.inspector)+'</td>';
-h+='<td style="font-size:.64rem">'+H(ins.email||'-')+'</td>';
-h+='<td>'+H(ins.contractor||'-')+'</td>';
-h+='<td style="font-size:.64rem">'+H(ins.discipline||'-')+'</td>';
-h+='<td style="font-size:.64rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.workElement||'')+'">'+H(ins.workElement||'-')+'</td>';
-h+='<td style="font-family:JetBrains Mono;font-size:.6rem">'+H(ins.drawingNo||'-')+'</td>';
-h+='<td style="font-size:.64rem">'+H(ins.requestingTo||'-')+'</td>';
-h+='<td style="font-size:.64rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.actualSiteMaterial||'')+'">'+H(ins.actualSiteMaterial||'-')+'</td>';
-h+='<td><span class="badge '+confBg+'">'+H(ins.conformance||'-')+'</span></td>';
-h+='<td style="font-size:.62rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.immediateAction||'')+'">'+H(ins.immediateAction||'-')+'</td>';
-h+='<td style="font-size:.62rem">'+H(ins.escalationRequired||'-')+'</td>';
-h+='<td style="font-size:.62rem">'+H(ins.personResponsible||'-')+'</td>';
-h+='<td style="font-size:.62rem">'+H(ins.reviewedBy||'-')+'</td>';
-h+='<td style="font-size:.62rem">'+H(ins.discussedWith||'-')+'</td>';
-h+='<td style="font-size:.62rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.remarks||'')+'">'+H((ins.remarks||'').substring(0,25))+'</td>';
-h+='<td><span class="badge '+stBg+'">'+H(ins.status||'-')+'</span></td>';
-h+='<td style="white-space:nowrap"><button class="btn bs" onclick="editInsp('+i+')">Edit</button> <button class="btn bs bd" onclick="delInsp('+i+')">&times;</button></td>';
-h+='</tr>'}h+='<div class="tw"><table><thead><tr>'; h+='<th style="width:30px"><input type="checkbox" onchange="toggleAllInps(this.checked)" style="cursor:pointer"></th>'; h+='<th>#</th>'; h+='<th>Date</th>'; h+='<th>Area/Zone</th>'; h+='<th>Name</th>'; h+='<th>Email</th>'; h+='<th>Contractor</th>'; h+='<th>Discipline</th>'; h+='<th>Work Element</th>'; h+='<th>Drawing No</th>'; h+='<th>Requesting To</th>'; h+='<th>Actual Site Material</th>'; h+='<th>Conformance</th>'; h+='<th>Immediate Action</th>'; h+='<th>Escalation Required</th>'; h+='<th>Person Responsible</th>'; h+='<th>Reviewed By</th>'; h+='<th>Discussed With</th>'; h+='<th>Remarks</th>'; h+='<th>Status</th>'; h+='<th style="width:70px">Actions</th>'; h+='</tr></thead><tbody>'; for(var i=0;i<inps.length;i++){var ins=inps[i];var isChecked=selectedInps.indexOf(i)>=0; var confBg=(ins.conformance==='Conforming'||ins.conformance==='Yes')?'bg2':ins.conformance==='For Review'?'by2':'bd2'; var stBg=ins.status==='Completed'||ins.status==='Closed'?'bg2':ins.status==='In Progress'?'bx2':'by2'; h+='<tr'+(isChecked?' style="background:var(--blc)"':'')+'>'; h+='<td><input type="checkbox" '+(isChecked?'checked':'')+' onchange="toggleInp('+i+',this.checked)" style="cursor:pointer"></td>'; h+='<td style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+(i+1)+'</td>'; h+='<td style="font-family:JetBrains Mono;font-size:.64rem;white-space:nowrap">'+H(ins.date)+'</td>'; h+='<td>'+H(ins.area)+'</td>'; h+='<td>'+H(ins.inspector)+'</td>'; h+='<td style="font-size:.64rem">'+H(ins.email||'-')+'</td>'; h+='<td>'+H(ins.contractor||'-')+'</td>'; h+='<td style="font-size:.64rem">'+H(ins.discipline||'-')+'</td>'; h+='<td style="font-size:.64rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.workElement||'')+'">'+H(ins.workElement||'-')+'</td>'; h+='<td style="font-family:JetBrains Mono;font-size:.6rem">'+H(ins.drawingNo||'-')+'</td>'; h+='<td style="font-size:.64rem">'+H(ins.requestingTo||'-')+'</td>'; h+='<td style="font-size:.64rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.actualSiteMaterial||'')+'">'+H(ins.actualSiteMaterial||'-')+'</td>'; h+='<td><span class="badge '+confBg+'">'+H(ins.conformance||'-')+'</span></td>'; h+='<td style="font-size:.62rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.immediateAction||'')+'">'+H(ins.immediateAction||'-')+'</td>'; h+='<td style="font-size:.62rem">'+H(ins.escalationRequired||'-')+'</td>'; h+='<td style="font-size:.62rem">'+H(ins.personResponsible||'-')+'</td>'; h+='<td style="font-size:.62rem">'+H(ins.reviewedBy||'-')+'</td>'; h+='<td style="font-size:.62rem">'+H(ins.discussedWith||'-')+'</td>'; h+='<td style="font-size:.62rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.remarks||'')+'">'+H((ins.remarks||'').substring(0,25))+'</td>'; h+='<td><span class="badge '+stBg+'">'+H(ins.status||'-')+'</span></td>'; h+='<td style="white-space:nowrap"><button class="btn bs" onclick="editInsp('+i+')">Edit</button> <button class="btn bs bd" onclick="delInsp('+i+')">&times;</button></td>'; h+='</tr>'}h+='</tbody></table></div>'; if(selectedInps.length)h+='<div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-family:JetBrains Mono;font-size:.64rem;color:var(--bl)">'+selectedInps.length+' selected</span><button class="btn bs bd" onclick="delSelectedInps()">Delete Selected</button><button class="btn bs" onclick="selectedInps=[];doRender()">Clear Selection</button></div>'; h+='</div>';
+/* No data banner */
+if(!total){
+  h+='<div class="card" style="border-left:4px solid var(--or);background:var(--orc)">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center"><div>';
+  h+='<div style="font-weight:700;font-size:.82rem;color:var(--or);margin-bottom:4px">No Inspection Data Yet</div>';
+  h+='<div style="font-size:.72rem;color:var(--t2)">Option A: <b>Auto-sync</b> via Power Automate</div>';
+  h+='<div style="font-size:.72rem;color:var(--t2)">Option B: <b>Manual</b> — download Excel from Form responses, upload here</div>';
+  h+='</div><div style="display:flex;gap:6px"><button class="btn" onclick="showInspSetup()">Auto-Sync Guide</button><button class="btn bp" onclick="massUploadInsp()">Upload Excel</button></div></div>';
+  h+='</div>';
 }
 
-h+='<div class="fbar"><button class="btn bp" onclick="addInsp()">+ Record</button><button class="btn" onclick="massUploadInsp()" style="border-color:var(--pu);color:var(--pu)">Mass Upload Excel</button><a href="'+MF+'" target="_blank" class="btn bb" style="text-decoration:none">Open MS Form</a><button class="btn" onclick="showInspSetup()" style="border-color:var(--or);color:var(--or)">Auto-Sync Guide</button><span style="flex:1"></span><button class="btn bs" onclick="exportInspData()">Export</button></div>';
+/* Metrics */
+h+='<div class="stats">';
+h+='<div class="val-metric green"><div class="vm-l">Total</div><div class="vm-v" style="color:var(--g)">'+total+'</div></div>';
+h+='<div class="val-metric green"><div class="vm-l">Conforming</div><div class="vm-v" style="color:var(--g)">'+conf+'</div></div>';
+h+='<div class="val-metric blue"><div class="vm-l">For Review</div><div class="vm-v" style="color:var(--bl)">'+rev+'</div></div>';
+h+='<div class="val-metric red"><div class="vm-l">Non-Conforming</div><div class="vm-v" style="color:var(--rd)">'+nonConf+'</div></div>';
+h+='<div class="val-metric purple"><div class="vm-l">Rate</div><div class="vm-v" style="color:var(--pu)">'+rate+'%</div></div>';
+h+='</div>';
+
+if(total>0){
+  /* Charts row 1: donut + discipline */
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:14px">';
+  h+='<div class="card"><div class="ch"><span class="ct" style="color:var(--g)">Conformance</span></div>';
+  h+='<div style="display:flex;align-items:center;gap:20px">';
+  h+='<canvas id="confDonut" width="140" height="140" style="width:140px;height:140px;flex-shrink:0"></canvas>';
+  h+='<div style="font-size:.72rem;line-height:2">';
+  h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--g);margin-right:6px"></span>Conforming: <b>'+conf+'</b></div>';
+  h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--bl);margin-right:6px"></span>For Review: <b>'+rev+'</b></div>';
+  h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--rd);margin-right:6px"></span>Non-Conforming: <b>'+nonConf+'</b></div>';
+  h+='</div></div></div>';
+
+  h+='<div class="card"><div class="ch"><span class="ct" style="color:var(--pu)">By Discipline</span></div>';
+  var discItems=[];for(var k in discCount)discItems.push({l:k,v:discCount[k]});
+  discItems.sort(function(a,b){return b.v-a.v});
+  var maxD=discItems.length?discItems[0].v:1;
+  var dC=['#2d8a32','#2874a6','#d4930d','#9b59b6','#b89630','#cc3333'];
+  for(var d=0;d<discItems.length;d++){
+    var di=discItems[d],wp=Math.round(di.v/maxD*100);
+    h+='<div class="val-chart"><div class="val-clabel">'+H(di.l)+'</div><div class="val-ctrack"><div class="val-cfill" style="width:'+wp+'%;background:'+dC[d%dC.length]+'">'+di.v+'</div></div><div class="val-cval">'+Math.round(di.v/total*100)+'%</div></div>';
+  }
+  h+='</div></div>';
+
+  /* Charts row 2: contractor + status */
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:14px">';
+  h+='<div class="card"><div class="ch"><span class="ct">By Contractor</span></div>';
+  var conItems=[];for(var k in contractorCount)conItems.push({l:k,v:contractorCount[k]});
+  conItems.sort(function(a,b){return b.v-a.v});
+  var maxC=conItems.length?conItems[0].v:1;
+  var cC=['#2874a6','#d4930d','#2d8a32','#cc3333'];
+  for(var d=0;d<conItems.length;d++){
+    var ci=conItems[d],wp2=Math.round(ci.v/maxC*100);
+    h+='<div class="val-chart"><div class="val-clabel">'+H(ci.l)+'</div><div class="val-ctrack"><div class="val-cfill" style="width:'+wp2+'%;background:'+cC[d%cC.length]+'">'+ci.v+'</div></div><div class="val-cval">'+Math.round(ci.v/total*100)+'%</div></div>';
+  }
+  h+='</div>';
+
+  h+='<div class="card"><div class="ch"><span class="ct">By Status</span></div>';
+  var stItems=[];for(var k in statusCount)stItems.push({l:k,v:statusCount[k]});
+  stItems.sort(function(a,b){return b.v-a.v});
+  var maxS=stItems.length?stItems[0].v:1;
+  for(var d=0;d<stItems.length;d++){
+    var si=stItems[d],wp3=Math.round(si.v/maxS*100);
+    h+='<div class="val-chart"><div class="val-clabel">'+H(si.l)+'</div><div class="val-ctrack"><div class="val-cfill" style="width:'+wp3+'%;background:#b89630">'+si.v+'</div></div><div class="val-cval">'+Math.round(si.v/total*100)+'%</div></div>';
+  }
+  h+='</div></div>';
+
+  /* Daily count chart */
+  h+='<div class="card"><div class="ch"><span class="ct">Inspections Per Day</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+Object.keys(dateCount).length+' days</span></div>';
+  h+='<canvas id="dateChart" width="900" height="200" style="width:100%;height:auto;display:block"></canvas></div>';
+
+  /* Log table with checkboxes */
+  h+='<div class="card"><div class="ch"><span class="ct">Inspection Log</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+total+' records</span></div>';
+  h+='<div class="tw"><table><thead><tr>';
+  h+='<th style="width:30px"><input type="checkbox" onchange="toggleAllInps(this.checked)" style="cursor:pointer"></th>';
+  h+='<th>#</th><th>Date</th><th>Area/Zone</th><th>Name</th><th>Email</th><th>Contractor</th>';
+  h+='<th>Discipline</th><th>Work Element</th><th>Drawing No</th><th>Requesting To</th>';
+  h+='<th>Actual Site Material</th><th>Conformance</th><th>Immediate Action</th>';
+  h+='<th>Escalation</th><th>Person Responsible</th><th>Reviewed By</th>';
+  h+='<th>Discussed With</th><th>Remarks</th><th>Status</th><th style="width:70px">Actions</th>';
+  h+='</tr></thead><tbody>';
+
+  for(var i=0;i<inps.length;i++){
+    var ins=inps[i],isChecked=selectedInps.indexOf(i)>=0;
+    var confBg=(ins.conformance==='Conforming'||ins.conformance==='Yes')?'bg2':ins.conformance==='For Review'?'by2':'bd2';
+    var stBg=ins.status==='Completed'||ins.status==='Closed'?'bg2':ins.status==='In Progress'?'bx2':'by2';
+    h+='<tr'+(isChecked?' style="background:var(--blc)"':'')+'>';
+    h+='<td><input type="checkbox" '+(isChecked?'checked':'')+' onchange="toggleInp('+i+',this.checked)" style="cursor:pointer"></td>';
+    h+='<td style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+(i+1)+'</td>';
+    h+='<td style="font-family:JetBrains Mono;font-size:.64rem;white-space:nowrap">'+H(ins.date)+'</td>';
+    h+='<td>'+H(ins.area)+'</td>';
+    h+='<td>'+H(ins.inspector)+'</td>';
+    h+='<td style="font-size:.64rem">'+H(ins.email||'-')+'</td>';
+    h+='<td>'+H(ins.contractor||'-')+'</td>';
+    h+='<td style="font-size:.64rem">'+H(ins.discipline||'-')+'</td>';
+    h+='<td style="font-size:.64rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.workElement||'')+'">'+H(ins.workElement||'-')+'</td>';
+    h+='<td style="font-family:JetBrains Mono;font-size:.6rem">'+H(ins.drawingNo||'-')+'</td>';
+    h+='<td style="font-size:.64rem">'+H(ins.requestingTo||'-')+'</td>';
+    h+='<td style="font-size:.64rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.actualSiteMaterial||'')+'">'+H(ins.actualSiteMaterial||'-')+'</td>';
+    h+='<td><span class="badge '+confBg+'">'+H(ins.conformance||'-')+'</span></td>';
+    h+='<td style="font-size:.62rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.immediateAction||'')+'">'+H(ins.immediateAction||'-')+'</td>';
+    h+='<td style="font-size:.62rem">'+H(ins.escalationRequired||'-')+'</td>';
+    h+='<td style="font-size:.62rem">'+H(ins.personResponsible||'-')+'</td>';
+    h+='<td style="font-size:.62rem">'+H(ins.reviewedBy||'-')+'</td>';
+    h+='<td style="font-size:.62rem">'+H(ins.discussedWith||'-')+'</td>';
+    h+='<td style="font-size:.62rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.remarks||'')+'">'+H((ins.remarks||'').substring(0,25))+'</td>';
+    h+='<td><span class="badge '+stBg+'">'+H(ins.status||'-')+'</span></td>';
+    h+='<td style="white-space:nowrap"><button class="btn bs" onclick="editInsp('+i+')">Edit</button> <button class="btn bs bd" onclick="delInsp('+i+')">&times;</button></td>';
+    h+='</tr>';
+  }
+  h+='</tbody></table></div>';
+
+  if(selectedInps.length){
+    h+='<div style="margin-top:8px;display:flex;align-items:center;gap:8px">';
+    h+='<span style="font-family:JetBrains Mono;font-size:.64rem;color:var(--bl)">'+selectedInps.length+' selected</span>';
+    h+='<button class="btn bs bd" onclick="delSelectedInps()">Delete Selected</button>';
+    h+='<button class="btn bs" onclick="selectedInps=[];doRender()">Clear Selection</button>';
+    h+='</div>';
+  }
+  h+='</div>';
+}
+
+/* Action bar */
+h+='<div class="fbar">';
+h+='<button class="btn bp" onclick="addInsp()">+ Record</button>';
+h+='<button class="btn" onclick="massUploadInsp()" style="border-color:var(--pu);color:var(--pu)">Mass Upload Excel</button>';
+h+='<a href="'+MF+'" target="_blank" class="btn bb" style="text-decoration:none">Open MS Form</a>';
+h+='<button class="btn" onclick="showInspSetup()" style="border-color:var(--or);color:var(--or)">Auto-Sync Guide</button>';
+h+='<span style="flex:1"></span>';
+h+='<button class="btn bs" onclick="exportInspData()">Export</button>';
+h+='</div>';
 
 $('app').innerHTML=h;
-if(total>0)setTimeout(function(){drawDonut('confDonut',[{v:conf,c:'#2d8a32'},{v:rev,c:'#2874a6'},{v:nonConf,c:'#cc3333'}],total);drawDateChart(dateCount)},50);
+if(total>0)setTimeout(function(){
+  drawDonut('confDonut',[{v:conf,c:'#2d8a32'},{v:rev,c:'#2874a6'},{v:nonConf,c:'#cc3333'}],total);
+  drawDateChart(dateCount);
+},50);
 };
 
+/* --- Donut chart --- */
+function drawDonut(canvasId,segs,total){
+  var cv=$(canvasId);if(!cv||!total)return;
+  var ctx=cv.getContext('2d'),cx=70,cy=70,rad=58,ir=35;
+  ctx.clearRect(0,0,140,140);
+  var angle=-Math.PI/2;
+  for(var i=0;i<segs.length;i++){
+    if(!segs[i].v)continue;
+    var sweep=segs[i].v/total*Math.PI*2;
+    ctx.beginPath();ctx.arc(cx,cy,rad,angle,angle+sweep);
+    ctx.arc(cx,cy,ir,angle+sweep,angle,true);ctx.closePath();
+    ctx.fillStyle=segs[i].c;ctx.fill();angle+=sweep;
+  }
+  ctx.fillStyle='#1a1c18';ctx.font='bold 16px DM Sans';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(total,cx,cy-3);
+  ctx.font='9px JetBrains Mono';ctx.fillStyle='#999';ctx.fillText('total',cx,cy+11);
+}
+
+/* --- Daily bar chart --- */
+function drawDateChart(dateCount){
+  var cv=$('dateChart');if(!cv)return;
+  var W=cv.width,H2=cv.height,pL=50,pR=15,pT=15,pB=45,cW=W-pL-pR,cH=H2-pT-pB;
+  var ctx=cv.getContext('2d');ctx.clearRect(0,0,W,H2);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H2);
+  var dates=Object.keys(dateCount).sort();if(!dates.length)return;
+  var maxV=0;for(var d=0;d<dates.length;d++)if(dateCount[dates[d]]>maxV)maxV=dateCount[dates[d]];
+  for(var g=0;g<=4;g++){
+    var y=pT+cH-cH*(g/4);
+    ctx.strokeStyle='#ece9e3';ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(W-pR,y);ctx.stroke();
+    ctx.fillStyle='#999';ctx.font='9px JetBrains Mono';ctx.textAlign='right';ctx.textBaseline='middle';
+    ctx.fillText(Math.round(maxV*g/4),pL-6,y);
+  }
+  var bw=Math.max(6,Math.min(28,Math.floor(cW/dates.length)-6));
+  for(var d=0;d<dates.length;d++){
+    var v=dateCount[dates[d]],bh=Math.round(v/maxV*cH);
+    var bx=pL+d*(cW/dates.length)+(cW/dates.length-bw)/2,by=pT+cH-bh;
+    var col=v>=3?'#d4930d':v>=2?'#2874a6':'#2d8a32';
+    ctx.fillStyle=col;ctx.fillRect(bx,by,bw,bh);
+    ctx.fillStyle='#555';ctx.font='bold 10px JetBrains Mono';ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillText(v,bx+bw/2,by-3);
+    ctx.save();ctx.translate(bx+bw/2,pT+cH+8);ctx.rotate(-0.5);
+    ctx.fillStyle='#999';ctx.font='8px JetBrains Mono';ctx.textAlign='right';ctx.fillText(dates[d],0,0);
+    ctx.restore();
+  }
+}
+
+/* --- Add Inspection --- */
 function addInsp(){
 mO('New Inspection',
 '<div class="fg"><label class="fl">Start Time</label><input type="datetime-local" id="iST" value="'+td()+'T08:00" style="width:100%"></div>'+
@@ -430,8 +557,8 @@ mO('New Inspection',
 '<div class="fg"><label class="fl">Escalation Required</label><select id="iER" style="width:100%"><option>No</option><option>Yes</option></select></div>'+
 '<div class="fg"><label class="fl">Person Responsible</label><input type="text" id="iPR" style="width:100%"></div>'+
 '</div>'+
-'<div class="fg"><label class="fl">Image URL (optional)</label><input type="text" id="iImg" style="width:100%" placeholder="https://..."></div>'+
-'<div style="font-weight:700;font-size:.76rem;color:var(--t2);margin:10px 0 6px;border-top:1px solid var(--b2);padding-top:10px">Review & Follow-up</div>'+
+'<div class="fg"><label class="fl">Image URL</label><input type="text" id="iImg" style="width:100%" placeholder="https://..."></div>'+
+'<div style="font-weight:700;font-size:.76rem;color:var(--t2);margin:10px 0 6px;border-top:1px solid var(--b2);padding-top:10px">Review</div>'+
 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
 '<div class="fg"><label class="fl">Reviewed By</label><input type="text" id="iRB" style="width:100%"></div>'+
 '<div class="fg"><label class="fl">Discussed With</label><input type="text" id="iDW" style="width:100%"></div>'+
@@ -442,67 +569,31 @@ mO('New Inspection',
 }
 
 function savInsp(){
-var n=$('iN').value.trim();
-if(!n)return;
+var n=$('iN').value.trim();if(!n)return;
 S.inspections.unshift({
-  id:Date.now(),
-  formName:'Daily Construction Validation',
-  startTime:$('iST').value,
-  completionTime:$('iCT').value,
-  date:$('iD').value,
-  area:$('iA').value.trim(),
-  inspector:n,
-  email:$('iEm').value.trim(),
-  contractor:$('iCo').value.trim(),
-  discipline:$('iDis').value.trim(),
-  workElement:$('iWE').value.trim(),
-  drawingNo:$('iDrw').value.trim(),
-  requestingTo:$('iRT').value.trim(),
-  actualSiteMaterial:$('iASM').value.trim(),
-  conformance:$('iConf').value,
-  immediateAction:$('iIA').value.trim(),
-  escalationRequired:$('iER').value,
-  personResponsible:$('iPR').value.trim(),
-  image:$('iImg').value.trim(),
-  reviewedBy:$('iRB').value.trim(),
-  discussedWith:$('iDW').value.trim(),
-  remarks:$('iRm').value.trim(),
-  status:$('iSt').value,
-  activityType:$('iDis').value.trim()
+  id:Date.now(),formName:'Daily Construction Validation',
+  startTime:$('iST').value,completionTime:$('iCT').value,date:$('iD').value,
+  area:$('iA').value.trim(),inspector:n,email:$('iEm').value.trim(),
+  contractor:$('iCo').value.trim(),discipline:$('iDis').value.trim(),
+  workElement:$('iWE').value.trim(),drawingNo:$('iDrw').value.trim(),
+  requestingTo:$('iRT').value.trim(),actualSiteMaterial:$('iASM').value.trim(),
+  conformance:$('iConf').value,immediateAction:$('iIA').value.trim(),
+  escalationRequired:$('iER').value,personResponsible:$('iPR').value.trim(),
+  image:$('iImg').value.trim(),reviewedBy:$('iRB').value.trim(),
+  discussedWith:$('iDW').value.trim(),remarks:$('iRm').value.trim(),
+  status:$('iSt').value,activityType:$('iDis').value.trim()
 });
 save();mC();notify('Recorded');doRender();
 }
 
-function delInsp(i){if(!confirm('Delete inspection #'+(i+1)+'?'))return;S.inspections.splice(i,1);save();notify('Deleted');doRender()}
-  function toggleInp(i,checked){
-  var idx=selectedInps.indexOf(i);
-  if(checked&&idx<0)selectedInps.push(i);
-  else if(!checked&&idx>=0)selectedInps.splice(idx,1);
-  doRender();
-}
-
-function toggleAllInps(checked){
-  if(checked){selectedInps=[];for(var i=0;i<(S.inspections||[]).length;i++)selectedInps.push(i)}
-  else selectedInps=[];
-  doRender();
-}
-
-function delSelectedInps(){
-  if(!selectedInps.length)return;
-  if(!confirm('Delete '+selectedInps.length+' inspection(s)?'))return;
-  selectedInps.sort(function(a,b){return b-a});
-  for(var i=0;i<selectedInps.length;i++)S.inspections.splice(selectedInps[i],1);
-  selectedInps=[];
-  save();notify('Deleted');doRender();
-}
-
+/* --- Edit Inspection --- */
 function editInsp(i){
 var ins=S.inspections[i];if(!ins)return;
-mO('Edit Inspection #'+(i+1),
+mO('Edit #'+(i+1),
 '<div class="fg"><label class="fl">Start Time</label><input type="datetime-local" id="eiST" value="'+H(ins.startTime||'')+'" style="width:100%"></div>'+
 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
 '<div class="fg"><label class="fl">Completion Time</label><input type="datetime-local" id="eiCT" value="'+H(ins.completionTime||'')+'" style="width:100%"></div>'+
-'<div class="fg"><label class="fl">Date of Inspection</label><input type="date" id="eiD" value="'+H(ins.date)+'" style="width:100%"></div>'+
+'<div class="fg"><label class="fl">Date</label><input type="date" id="eiD" value="'+H(ins.date)+'" style="width:100%"></div>'+
 '</div>'+
 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
 '<div class="fg"><label class="fl">Area/Zone</label><input type="text" id="eiA" value="'+H(ins.area)+'" style="width:100%"></div>'+
@@ -510,28 +601,26 @@ mO('Edit Inspection #'+(i+1),
 '</div>'+
 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
 '<div class="fg"><label class="fl">Email</label><input type="text" id="eiEm" value="'+H(ins.email||'')+'" style="width:100%"></div>'+
-'<div class="fg"><label class="fl">Contractor/Sub</label><input type="text" id="eiCo" value="'+H(ins.contractor||'')+'" style="width:100%"></div>'+
+'<div class="fg"><label class="fl">Contractor</label><input type="text" id="eiCo" value="'+H(ins.contractor||'')+'" style="width:100%"></div>'+
 '</div>'+
 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
 '<div class="fg"><label class="fl">Discipline</label><input type="text" id="eiDis" value="'+H(ins.discipline||'')+'" style="width:100%"></div>'+
 '<div class="fg"><label class="fl">Work Element</label><input type="text" id="eiWE" value="'+H(ins.workElement||'')+'" style="width:100%"></div>'+
 '</div>'+
 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Drawing Number</label><input type="text" id="eiDrw" value="'+H(ins.drawingNo||'')+'" style="width:100%"></div>'+
+'<div class="fg"><label class="fl">Drawing</label><input type="text" id="eiDrw" value="'+H(ins.drawingNo||'')+'" style="width:100%"></div>'+
 '<div class="fg"><label class="fl">Requesting To</label><input type="text" id="eiRT" value="'+H(ins.requestingTo||'')+'" style="width:100%"></div>'+
 '</div>'+
 '<div class="fg"><label class="fl">Actual Site Material</label><input type="text" id="eiASM" value="'+H(ins.actualSiteMaterial||'')+'" style="width:100%"></div>'+
-'<div style="font-weight:700;font-size:.76rem;color:var(--t2);margin:10px 0 6px;border-top:1px solid var(--b2);padding-top:10px">Conformance Check</div>'+
 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
 '<div class="fg"><label class="fl">Conformance</label><select id="eiConf" style="width:100%"><option'+((ins.conformance==='Conforming'||ins.conformance==='Yes')?' selected':'')+'>Conforming</option><option'+(ins.conformance==='For Review'?' selected':'')+'>For Review</option><option'+(ins.conformance==='Non-Conforming'?' selected':'')+'>Non-Conforming</option></select></div>'+
 '<div class="fg"><label class="fl">Immediate Action</label><input type="text" id="eiIA" value="'+H(ins.immediateAction||'')+'" style="width:100%"></div>'+
 '</div>'+
 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Escalation Required</label><select id="eiER" style="width:100%"><option'+((ins.escalationRequired==='No'||!ins.escalationRequired)?' selected':'')+'>No</option><option'+(ins.escalationRequired==='Yes'?' selected':'')+'>Yes</option></select></div>'+
+'<div class="fg"><label class="fl">Escalation</label><select id="eiER" style="width:100%"><option'+((ins.escalationRequired==='No'||!ins.escalationRequired)?' selected':'')+'>No</option><option'+(ins.escalationRequired==='Yes'?' selected':'')+'>Yes</option></select></div>'+
 '<div class="fg"><label class="fl">Person Responsible</label><input type="text" id="eiPR" value="'+H(ins.personResponsible||'')+'" style="width:100%"></div>'+
 '</div>'+
 '<div class="fg"><label class="fl">Image URL</label><input type="text" id="eiImg" value="'+H(ins.image||'')+'" style="width:100%"></div>'+
-'<div style="font-weight:700;font-size:.76rem;color:var(--t2);margin:10px 0 6px;border-top:1px solid var(--b2);padding-top:10px">Review & Follow-up</div>'+
 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
 '<div class="fg"><label class="fl">Reviewed By</label><input type="text" id="eiRB" value="'+H(ins.reviewedBy||'')+'" style="width:100%"></div>'+
 '<div class="fg"><label class="fl">Discussed With</label><input type="text" id="eiDW" value="'+H(ins.discussedWith||'')+'" style="width:100%"></div>'+
@@ -543,30 +632,42 @@ mO('Edit Inspection #'+(i+1),
 
 function savEditInsp(i){
 var ins=S.inspections[i];if(!ins)return;
-ins.startTime=$('eiST').value;
-ins.completionTime=$('eiCT').value;
-ins.date=$('eiD').value;
-ins.area=$('eiA').value.trim();
-ins.inspector=$('eiN').value.trim();
-ins.email=$('eiEm').value.trim();
-ins.contractor=$('eiCo').value.trim();
-ins.discipline=$('eiDis').value.trim();
-ins.workElement=$('eiWE').value.trim();
-ins.drawingNo=$('eiDrw').value.trim();
-ins.requestingTo=$('eiRT').value.trim();
-ins.actualSiteMaterial=$('eiASM').value.trim();
-ins.conformance=$('eiConf').value;
-ins.immediateAction=$('eiIA').value.trim();
-ins.escalationRequired=$('eiER').value;
-ins.personResponsible=$('eiPR').value.trim();
-ins.image=$('eiImg').value.trim();
-ins.reviewedBy=$('eiRB').value.trim();
-ins.discussedWith=$('eiDW').value.trim();
-ins.remarks=$('eiRm').value.trim();
-ins.status=$('eiSt').value;
+ins.startTime=$('eiST').value;ins.completionTime=$('eiCT').value;ins.date=$('eiD').value;
+ins.area=$('eiA').value.trim();ins.inspector=$('eiN').value.trim();ins.email=$('eiEm').value.trim();
+ins.contractor=$('eiCo').value.trim();ins.discipline=$('eiDis').value.trim();
+ins.workElement=$('eiWE').value.trim();ins.drawingNo=$('eiDrw').value.trim();
+ins.requestingTo=$('eiRT').value.trim();ins.actualSiteMaterial=$('eiASM').value.trim();
+ins.conformance=$('eiConf').value;ins.immediateAction=$('eiIA').value.trim();
+ins.escalationRequired=$('eiER').value;ins.personResponsible=$('eiPR').value.trim();
+ins.image=$('eiImg').value.trim();ins.reviewedBy=$('eiRB').value.trim();
+ins.discussedWith=$('eiDW').value.trim();ins.remarks=$('eiRm').value.trim();ins.status=$('eiSt').value;
 save();mC();notify('Updated');doRender();
 }
 
+/* --- Delete single --- */
+function delInsp(i){if(!confirm('Delete inspection #'+(i+1)+'?'))return;S.inspections.splice(i,1);save();notify('Deleted');doRender()}
+
+/* --- Multi-select --- */
+function toggleInp(i,checked){
+  var idx=selectedInps.indexOf(i);
+  if(checked&&idx<0)selectedInps.push(i);
+  else if(!checked&&idx>=0)selectedInps.splice(idx,1);
+  doRender();
+}
+function toggleAllInps(checked){
+  if(checked){selectedInps=[];for(var i=0;i<(S.inspections||[]).length;i++)selectedInps.push(i)}
+  else selectedInps=[];
+  doRender();
+}
+function delSelectedInps(){
+  if(!selectedInps.length)return;
+  if(!confirm('Delete '+selectedInps.length+' inspection(s)?'))return;
+  selectedInps.sort(function(a,b){return b-a});
+  for(var i=0;i<selectedInps.length;i++)S.inspections.splice(selectedInps[i],1);
+  selectedInps=[];save();notify('Deleted');doRender();
+}
+
+/* --- Export --- */
 function exportInspData(){
 if(typeof XLSX==='undefined')return notify('XLSX loading...');
 var wb=XLSX.utils.book_new();
@@ -576,10 +677,14 @@ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'Inspections');
 XLSX.writeFile(wb,'Inspections_'+td()+'.xlsx');notify('Exported');
 }
 
+/* --- Mass Upload --- */
 function massUploadInsp(){
 mO('Mass Upload',
 '<div style="font-size:.72rem;color:var(--t2);margin-bottom:12px"><b>Upload Excel from Microsoft Form.</b><br>Steps: Form &rarr; Responses &rarr; Open in Excel &rarr; Upload here.<br>Auto-detects columns by header name.</div>'+
-'<div class="dropzone" onclick="$(\'massInspF\').click()"><div style="font-size:.82rem;font-weight:600">Click to upload Excel file</div><div style="font-size:.62rem;color:var(--t3);margin-top:4px">.xlsx or .xls</div><input type="file" id="massInspF" accept=".xlsx,.xls" style="display:none" onchange="processMassInsp(this.files[0])"></div>',
+'<div class="dropzone" onclick="$(\'massInspF\').click()">'+
+'<div style="font-size:.82rem;font-weight:600">Click to upload Excel file</div>'+
+'<div style="font-size:.62rem;color:var(--t3);margin-top:4px">.xlsx or .xls</div>'+
+'<input type="file" id="massInspF" accept=".xlsx,.xls" style="display:none" onchange="processMassInsp(this.files[0])"></div>',
 '<button class="btn" onclick="mC()">Close</button>');
 }
 
@@ -598,19 +703,19 @@ var fields=[
   ['id','id'],['start time','startTime'],['start_time','startTime'],
   ['completion time','completionTime'],['completion_time','completionTime'],
   ['date of insp','date'],['date of inspection','date'],['date','date'],['timestamp','date'],
-  ['area/zone','area'],['area','area'],['zone','area'],
+  ['area/zone','area'],['area','area'],
   ['name','name'],['email','email'],
   ['contractor/sub','contractor'],['contractor','contractor'],
-  ['discipline','discipline'],['work element','workElement'],['work_element','workElement'],
+  ['discipline','discipline'],['work element','workElement'],
   ['drawing num','drawingNo'],['drawing no','drawingNo'],['drawing','drawingNo'],
-  ['requesting to','requestingTo'],['requesting_to','requestingTo'],
+  ['requesting to','requestingTo'],
   ['actual site ma','actualSiteMaterial'],['actual site material','actualSiteMaterial'],['actual site','actualSiteMaterial'],
   ['conformance','conformance'],
-  ['immediate ac','immediateAction'],['immediate action','immediateAction'],['immediate','immediateAction'],
+  ['immediate ac','immediateAction'],['immediate action','immediateAction'],
   ['evaluation re','escalationRequired'],['escalation re','escalationRequired'],['escalation','escalationRequired'],
   ['personality','personResponsible'],['person responsible','personResponsible'],
   ['image','image'],
-  ['reviewed by','reviewedBy'],['review by','reviewedBy'],['review','reviewedBy'],
+  ['reviewed by','reviewedBy'],['review by','reviewedBy'],
   ['discussed with','discussedWith'],
   ['remarks','remarks'],['notes','remarks'],
   ['status','status']
@@ -623,7 +728,6 @@ for(var f=0;f<fields.length;f++){
   }
 }
 if(!ci.date&&ci.startTime)ci.date=ci.startTime;
-if(!ci.date&&ci.timestamp)ci.date=ci.timestamp;
 if(!ci.date)return alert('No Date column found. Headers: '+headers.join(', '));
 var added=0;
 for(var r=1;r<data.length;r++){
@@ -634,30 +738,16 @@ for(var r=1;r<data.length;r++){
   else if(dateV.indexOf('T')>0){dateV=dateV.substring(0,10)}
   function gc(field){return ci[field]!==undefined?String(row[ci[field]]||'').trim():''}
   S.inspections.push({
-    id:Date.now()+r,
-    formName:'Daily Construction Validation',
-    date:dateV,
-    startTime:gc('startTime'),
-    completionTime:gc('completionTime'),
-    area:gc('area'),
-    inspector:gc('name'),
-    email:gc('email'),
-    contractor:gc('contractor'),
-    discipline:gc('discipline'),
-    workElement:gc('workElement'),
-    drawingNo:gc('drawingNo'),
-    requestingTo:gc('requestingTo'),
-    actualSiteMaterial:gc('actualSiteMaterial'),
-    conformance:gc('conformance'),
-    immediateAction:gc('immediateAction'),
-    escalationRequired:gc('escalationRequired'),
-    personResponsible:gc('personResponsible'),
-    image:gc('image'),
-    reviewedBy:gc('reviewedBy'),
-    discussedWith:gc('discussedWith'),
-    remarks:gc('remarks'),
-    status:gc('status')||'Open',
-    activityType:gc('discipline')
+    id:Date.now()+r,formName:'Daily Construction Validation',date:dateV,
+    startTime:gc('startTime'),completionTime:gc('completionTime'),
+    area:gc('area'),inspector:gc('name'),email:gc('email'),
+    contractor:gc('contractor'),discipline:gc('discipline'),
+    workElement:gc('workElement'),drawingNo:gc('drawingNo'),
+    requestingTo:gc('requestingTo'),actualSiteMaterial:gc('actualSiteMaterial'),
+    conformance:gc('conformance'),immediateAction:gc('immediateAction'),
+    escalationRequired:gc('escalationRequired'),personResponsible:gc('personResponsible'),
+    image:gc('image'),reviewedBy:gc('reviewedBy'),discussedWith:gc('discussedWith'),
+    remarks:gc('remarks'),status:gc('status')||'Open',activityType:gc('discipline')
   });
   added++;
 }
@@ -667,6 +757,7 @@ save();mC();notify('Imported '+added+' inspections');doRender();
 rd.readAsArrayBuffer(file);
 }
 
+/* --- Auto-Sync Setup Guide --- */
 function showInspSetup(){
 var cld;try{cld=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){cld=null}
 var fbUrl=cld&&cld.databaseURL?cld.databaseURL:'';
@@ -674,13 +765,12 @@ var fbPath=fbUrl?fbUrl+'/ss/inspections.json':'Not configured — set up Cloud t
 var bd='<div style="font-size:.74rem;line-height:1.7">';
 bd+='<div style="background:var(--blc);padding:12px;border-radius:var(--r);margin-bottom:14px;border-left:3px solid var(--bl)"><div style="font-weight:700;color:var(--bl);margin-bottom:4px">How it works</div>MS Form stores data in Microsoft. This app reads from Firebase. Power Automate copies each form submission to Firebase automatically.</div>';
 bd+='<div style="font-weight:700;font-size:.84rem;margin-bottom:10px;color:var(--g)">Step-by-Step Setup</div>';
-bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 1: Copy your Firebase URL</div><div style="display:flex;align-items:center;gap:8px"><code style="flex:1;font-size:.62rem;background:var(--s1);padding:6px 10px;border-radius:4px;border:1px solid var(--b1);word-break:break-all;color:var(--bl)">'+H(fbPath)+'</code>'+(fbUrl?'<button class="btn bs bp" onclick="navigator.clipboard.writeText(\''+H(fbPath)+'\');notify(\'Copied!\')">Copy</button>':'<span style="font-size:.62rem;color:var(--rd);white-space:nowrap">Set Cloud first</span>')+'</div></div>';
-bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 2: Open Power Automate</div><div>Go to <a href="https://flow.microsoft.com" target="_blank" style="color:var(--bl);font-weight:700">flow.microsoft.com</a></div></div>';
-bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 3: Create flow</div><div>Trigger: <code style="font-size:.64rem;background:var(--s1);padding:1px 5px;border-radius:3px">When a new response is submitted</code> → your form</div><div>Action 1: <code style="font-size:.64rem;background:var(--s1);padding:1px 5px;border-radius:3px">Get response details</code></div><div>Action 2: <code style="font-size:.64rem;background:var(--s1);padding:1px 5px;border-radius:3px">HTTP</code> POST to Firebase URL above</div></div>';
-bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 4: Map fields</div><div>Body = JSON with all form fields mapped to dynamic content from "Get response details"</div></div>';
-bd+='<div style="background:var(--gc);padding:10px 12px;border-radius:var(--r);border-left:3px solid var(--g);margin-top:10px"><div style="font-weight:700;color:var(--g);margin-bottom:4px">Quick alternative</div><div>Form → Responses → Open in Excel → Upload here via "Mass Upload Excel"</div></div>';
+bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 1: Copy your Firebase URL</div><div style="display:flex;align-items:center;gap:8px"><code style="flex:1;font-size:.62rem;background:var(--s1);padding:6px 10px;border-radius:4px;border:1px solid var(--b1);word-break:break-all;color:var(--bl)">'+H(fbPath)+'</code>'+(fbUrl?'<button class="btn bs bp" onclick="navigator.clipboard.writeText(\''+H(fbPath)+'\');notify(\'Copied!\')">Copy</button>':'<span style="font-size:.62rem;color:var(--rd)">Set Cloud first</span>')+'</div></div>';
+bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 2: Open Power Automate</div><a href="https://flow.microsoft.com" target="_blank" style="color:var(--bl);font-weight:700">flow.microsoft.com</a></div>';
+bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 3: Create flow</div><div>Trigger: <code style="font-size:.64rem;background:var(--s1);padding:1px 5px;border-radius:3px">When a new response is submitted</code></div><div>Action 1: <code style="font-size:.64rem;background:var(--s1);padding:1px 5px;border-radius:3px">Get response details</code></div><div>Action 2: <code style="font-size:.64rem;background:var(--s1);padding:1px 5px;border-radius:3px">HTTP</code> POST to Firebase URL</div></div>';
+bd+='<div style="background:var(--gc);padding:10px 12px;border-radius:var(--r);border-left:3px solid var(--g);margin-top:10px"><div style="font-weight:700;color:var(--g);margin-bottom:4px">Quick alternative</div>Form &rarr; Responses &rarr; Open in Excel &rarr; Upload via "Mass Upload Excel"</div>';
 bd+='</div>';
-mO('Setup Auto-Sync',bd,'<button class="btn" onclick="mC()">Close</button><button class="btn bp" onclick="window.open(\'https://flow.microsoft.com\',\'_blank\');mC()">Open Power Automate</button><button class="btn bb" onclick="mC();massUploadInsp()">Upload Excel Instead</button>');
+mO('Auto-Sync Setup',bd,'<button class="btn" onclick="mC()">Close</button><button class="btn bp" onclick="window.open(\'https://flow.microsoft.com\',\'_blank\');mC()">Power Automate</button><button class="btn bb" onclick="mC();massUploadInsp()">Upload Excel</button>');
 }
 /* === TEAM === */
 R.team=function(){function ac(n){var c2=['#2d8a32','#2874a6','#d4930d','#b89630','#cc3333','#9b59b6'],h2=0;for(var i=0;i<n.length;i++)h2=n.charCodeAt(i)+((h2<<5)-h2);return c2[Math.abs(h2)%c2.length]}function ai(n){return n.substring(0,2).toUpperCase()}var h='<div style="margin-bottom:10px"><span class="ct">Team</span></div><div class="card"><div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:6px;margin-bottom:6px"><div class="fg" style="margin:0"><input type="text" id="uA" placeholder="Author" style="width:100%"></div><div class="fg" style="margin:0"><input type="text" id="uR" placeholder="Role" style="width:100%"></div><div class="fg" style="margin:0"><select id="uT" style="width:100%"><option>update</option><option>milestone</option><option>blocker</option></select></div></div><div class="fg" style="margin-bottom:5px"><textarea id="uC" rows="2" placeholder="Share..." style="width:100%"></textarea></div><div style="display:flex;justify-content:flex-end"><button class="btn bp" onclick="postU()">Post</button></div></div><div style="max-width:600px">';for(var i=0;i<S.upds.length;i++){var u=S.upds[i],tc=u.t==='milestone'?'var(--g)':u.t==='blocker'?'var(--rd)':'var(--bl)',tb=u.t==='milestone'?'bg2':u.t==='blocker'?'bd2':'bx2';h+='<div class="fpost" style="border-left:3px solid '+tc+'"><div class="fhead"><div class="av" style="background:'+ac(u.a)+'">'+ai(u.a)+'</div><div style="flex:1"><div style="font-weight:600;font-size:.78rem">'+H(u.a)+' <span style="font-weight:400;font-size:.66rem;color:var(--t3)">'+H(u.r)+'</span></div><div style="font-size:.6rem;color:var(--t3);font-family:JetBrains Mono">'+new Date(u.ts).toLocaleString()+'</div></div><span class="badge '+tb+'">'+u.t+'</span></div><div style="font-size:.78rem;color:var(--t2)">'+H(u.c)+'</div></div>'}h+='</div>';$('app').innerHTML=h};
