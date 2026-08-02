@@ -490,7 +490,10 @@ h+='<span style="flex:1"></span>';
 h+='<button class="btn bs" onclick="exportInspData()">Export</button>';
 h+='</div>';
 
+var wasFocused=document.activeElement&&document.activeElement.id==='dPQ';
+var curPos=wasFocused?document.activeElement.selectionStart:0;
 $('app').innerHTML=h;
+if(wasFocused)setTimeout(function(){var dq=$('dPQ');if(dq){dq.focus();dq.setSelectionRange(curPos,curPos)}},0);
 if(total>0)setTimeout(function(){
   drawDonut('confDonut',[{v:conf,c:'#2d8a32'},{v:rev,c:'#2874a6'},{v:nonConf,c:'#cc3333'}],total);
   drawDateChart(dateCount);
