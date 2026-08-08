@@ -554,7 +554,7 @@ h+='</div>';
 $('app').innerHTML=h;
 if(total>0)setTimeout(function(){
   drawDonut('confDonut',[{v:conf,c:'#2d8a32'},{v:rev,c:'#2874a6'},{v:nonConf,c:'#cc3333'}],total);
-    drawDateChart(dateCount);
+  drawDateChart(dateCount);
   drawStatusChart();
   drawInspChart();
 },50);
