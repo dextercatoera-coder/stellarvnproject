@@ -474,7 +474,15 @@ if(total>0){
     h+='<div class="val-chart"><div class="val-clabel">'+H(si.l)+'</div><div class="val-ctrack"><div class="val-cfill" style="width:'+wp3+'%;background:#b89630">'+si.v+'</div></div><div class="val-cval">'+Math.round(si.v/total*100)+'%</div></div>';
   }
   h+='</div></div>';
-
+  
+  h+='<div class="card"><div class="ch"><span class="ct">Status Performance</span></div><div style="display:flex;align-items:center;gap:20px;padding:10px"><canvas id="statusDonut" width="160" height="160" style="width:160px;height:160px;flex-shrink:0"></canvas><div style="font-size:.72rem;line-height:2.2">';
+  var _scc2={'Open':'#d4930d','In Progress':'#2874a6','Completed':'#2d8a32','Closed':'#7a7570'};
+  var _skeys=Object.keys(statusCount);
+  for(var _si=0;_si<_skeys.length;_si++){
+    var _sk=_skeys[_si];var _sc2=_scc2[_sk]||'#9b59b6';
+    h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+_sc2+';margin-right:6px"></span>'+H(_sk)+': <b>'+statusCount[_sk]+'</b> ('+Math.round(statusCount[_sk]/total*100)+'%)</div>';
+  }
+  h+='</div></div></div>';
   h+='<div class="card"><div class="ch"><span class="ct">Inspections Per Day</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+Object.keys(dateCount).length+' days</span></div>';
   h+='<canvas id="dateChart" width="900" height="200" style="width:100%;height:auto;display:block"></canvas></div>';
 
@@ -543,7 +551,8 @@ h+='</div>';
 $('app').innerHTML=h;
 if(total>0)setTimeout(function(){
   drawDonut('confDonut',[{v:conf,c:'#2d8a32'},{v:rev,c:'#2874a6'},{v:nonConf,c:'#cc3333'}],total);
-  drawDateChart(dateCount);
+   drawDateChart(dateCount);
+  drawStatusChart();
 },50);
 };
 
@@ -946,6 +955,33 @@ setTimeout(function(){
   if(ma)ma.style.display='block';
 },1500);
 setTimeout(function(){try{if(db)startInspSync()}catch(e){}},3000);
+  function drawStatusChart(){
+  var inps2=Array.isArray(S.inspections)?S.inspections:[];
+  if(!inps2.length)return;
+  var sc={};var tot=0;
+  for(var i=0;i<inps2.length;i++){
+    var s=inps2[i].status||'Open';
+    sc[s]=(sc[s]||0)+1;tot++;
+  }
+  var cv=document.getElementById('statusDonut');
+  if(!cv||!tot)return;
+  var ctx=cv.getContext('2d'),cx=80,cy=80,rad=65,ir=40;
+  ctx.clearRect(0,0,160,160);
+  var angle=-Math.PI/2;
+  var cols={'Open':'#d4930d','In Progress':'#2874a6','Completed':'#2d8a32','Closed':'#7a7570'};
+  var keys=['Open','In Progress','Completed','Closed'];
+  for(var k=0;k<keys.length;k++){
+    var v=sc[keys[k]]||0;
+    if(!v)continue;
+    var sweep=v/tot*Math.PI*2;
+    ctx.beginPath();ctx.arc(cx,cy,rad,angle,angle+sweep);
+    ctx.arc(cx,cy,ir,angle+sweep,angle,true);ctx.closePath();
+    ctx.fillStyle=cols[keys[k]];ctx.fill();angle+=sweep;
+  }
+  ctx.fillStyle='#1a1c18';ctx.font='bold 18px DM Sans';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(tot,cx,cy-3);
+  ctx.font='10px JetBrains Mono';ctx.fillStyle='#999';ctx.fillText('total',cx,cy+12);
+}
 </script>
 </body>
 </html>
