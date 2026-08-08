@@ -99,6 +99,8 @@ var inspSortCol='date',inspSortAsc=false,inspSearch='',inspFilterStatus='all',in
 try{var _d=localStorage.getItem('ss_del_insp');if(_d)deletedInspIds=JSON.parse(_d)}catch(e){}
 var dSortCol='name',dSortAsc=true,dProjSearch='';
 var dashSearch='',dashFStatus='all',dashFCategory='all';
+var aiMessages=[];
+var aiInput='';
 function H(s){if(s==null)return '';var d=document.createElement('span');d.textContent=String(s);return d.innerHTML}
 function pct(a,b){return b>0?Math.round(a/b*100):0}
 function td(){var d=new Date();return d.getFullYear()+'-'+LZ(d.getMonth()+1)+'-'+LZ(d.getDate())}
@@ -1426,6 +1428,431 @@ setTimeout(function(){
   if(ma)ma.style.display='block';
 },1500);
 setTimeout(function(){try{if(db)startInspSync()}catch(e){}},3000);
+  /* AI Tab floating button */
+setTimeout(function(){
+  var btn=document.createElement('button');
+  btn.innerHTML='AI Assistant';
+  btn.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9999;padding:12px 20px;background:linear-gradient(135deg,#9b59b6,#2874a6);color:#fff;border:none;border-radius:25px;font-size:.82rem;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+  btn.onclick=function(){go('ai')};
+  document.body.appendChild(btn);
+},1000);
+  /* === AI ASSISTANT === */
+var aiMessages=[];
+var aiInput='';
+
+R.ai=function(){
+if(!aiMessages.length){
+  aiMessages.push({role:'ai',text:'Hello! I\'m your Project AI Assistant. I can help you with:\n\n• Task status and progress\n• Budget and cost analysis\n• Inspection summaries\n• Safety metrics\n• Schedule and deadlines\n• Team information\n• Risk alerts\n\nAsk me anything about your project!'})};
+
+var h='<div style="display:flex;flex-direction:column;height:calc(100vh - 160px)">';
+
+/* Header */
+h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">';
+h+='<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--pu),var(--bl));display:flex;align-items:center;justify-content:center;font-size:1.2rem">AI</div>';
+h+='<div><div style="font-weight:700;font-size:1rem">Project Assistant</div><div style="font-size:.64rem;color:var(--t3)">Powered by project data analysis</div></div>';
+h+='<span style="flex:1"></span>';
+h+='<button class="btn bs" onclick="aiMessages=[];doRender()">Clear Chat</button>';
+h+='</div>';
+
+/* Quick actions */
+h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">';
+var quickBtns=['Project Summary','Budget Status','Overdue Tasks','Safety Report','Inspection Summary','Risk Alerts','What\'s Behind Schedule?','Cost Overview'];
+for(var qi=0;qi<quickBtns.length;qi++){
+  h+='<button class="btn" style="font-size:.62rem;padding:4px 10px" onclick="aiAsk(\''+quickBtns[qi].replace(/'/g,"\\'")+'\')">'+quickBtns[qi]+'</button>';
+}
+h+='</div>';
+
+/* Messages */
+h+='<div id="aiChat" style="flex:1;overflow-y:auto;padding:10px;background:var(--s1);border-radius:var(--r);border:1px solid var(--b2);margin-bottom:10px">';
+for(var mi=0;mi<aiMessages.length;mi++){
+  var msg=aiMessages[mi];
+  var isUser=msg.role==='user';
+  h+='<div style="display:flex;justify-content:'+(isUser?'flex-end':'flex-start')+';margin-bottom:10px">';
+  if(!isUser)h+='<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--pu),var(--bl));display:flex;align-items:center;justify-content:center;font-size:.56rem;color:#fff;margin-right:8px;flex-shrink:0">AI</div>';
+  h+='<div style="max-width:80%;padding:10px 14px;border-radius:12px;font-size:.76rem;line-height:1.6;white-space:pre-wrap;'+(isUser?'background:var(--bl);color:#fff;border-bottom-right-radius:4px':'background:var(--s2);color:var(--t1);border-bottom-left-radius:4px')+'">';
+  h+=H(msg.text);
+  h+='</div>';
+  if(isUser)h+='<div style="width:28px;height:28px;border-radius:50%;background:var(--am);display:flex;align-items:center;justify-content:center;font-size:.56rem;color:#fff;margin-left:8px;flex-shrink:0">U</div>';
+  h+='</div>';
+}
+h+='</div>';
+
+/* Input */
+h+='<div style="display:flex;gap:8px">';
+h+='<input type="text" id="aiIn" placeholder="Ask about your project..." value="" style="flex:1;padding:10px 14px;font-size:.78rem;border-radius:20px" onkeydown="if(event.key===\'Enter\')aiSend()">';
+h+='<button class="btn bp" style="border-radius:20px;padding:10px 20px" onclick="aiSend()">Send</button>';
+h+='</div>';
+
+h+='</div>';
+$('app').innerHTML=h;
+setTimeout(function(){var el=document.getElementById('aiChat');if(el)el.scrollTop=el.scrollHeight},50);
+};
+
+function aiSend(){
+var input=document.getElementById('aiIn');
+if(!input)return;
+var q=input.value.trim();
+if(!q)return;
+aiMessages.push({role:'user',text:q});
+input.value='';
+aiInput=q;
+doRender();
+setTimeout(function(){aiProcess(q)},300);
+}
+
+function aiAsk(q){
+aiMessages.push({role:'user',text:q});
+doRender();
+setTimeout(function(){aiProcess(q)},300);
+}
+
+function aiProcess(q){
+var ql=q.toLowerCase();
+var resp='';
+
+/* Ensure arrays */
+if(!Array.isArray(S.tasks))S.tasks=[];
+if(!Array.isArray(S.taskProjects))S.taskProjects=[];
+if(!Array.isArray(S.inspections))S.inspections=[];
+if(!Array.isArray(S.teamMembers))S.teamMembers=[];
+if(!Array.isArray(S.userLog))S.userLog=[];
+
+/* Gather data */
+var tasks=S.tasks;
+var projs=S.taskProjects;
+var inps=S.inspections;
+var team=S.teamMembers;
+var safe=S.safety||{};
+
+var totalTasks=tasks.length;
+var doneTasks=0,activeTasks=0,pendingTasks=0,overdueTasks=0;
+var today=new Date().toISOString().substring(0,10);
+for(var i=0;i<totalTasks;i++){
+  var t=tasks[i];
+  if(t.st==='done')doneTasks++;
+  else if(t.st==='active'){activeTasks++;if(t.e&&t.e<today)overdueTasks++}
+  else{pendingTasks++;if(t.e&&t.e<today)overdueTasks++}
+}
+
+var siteP=ovProg(tasks);
+var siteC=siteCost;
+var sitePd=sPaid();
+var projC=0,projPd=0;
+for(var i=0;i<projs.length;i++){projC+=(projs[i].cost||0);projPd+=pPaid(projs[i])}
+var totalC=siteC+projC;
+var totalPd=sitePd+projPd;
+var balance=totalC-totalPd;
+var paidPct=totalC>0?Math.round(totalPd/totalC*100):0;
+
+var totalInps=inps.length;
+var confCount=0,revCount=0,nonConfCount=0;
+var openInps=0,progInps=0,compInps=0;
+for(var i=0;i<totalInps;i++){
+  var ins=inps[i];
+  var c=ins.conformance||'';
+  if(c==='Conforming'||c==='Yes')confCount++;
+  else if(c==='For Review')revCount++;
+  else nonConfCount++;
+  if(ins.status==='Open')openInps++;
+  else if(ins.status==='In Progress')progInps++;
+  else if(ins.status==='Completed'||ins.status==='Closed')compInps++;
+}
+
+var dLTI=dd(safe.startDate||'2026-04-13',today);
+
+/* Project summaries */
+var projSumm=[];
+for(var i=0;i<projs.length;i++){
+  var pj=projs[i];
+  var pt=pj.tasks||[];
+  var pp=ovProg(pt);
+  var pl=pPaid(pj);
+  var pc=pj.cost||0;
+  projSumm.push({name:pj.name,prog:pp,cost:pc,paid:pl,bal:pc-pl,tasks:pt.length});
+}
+
+/* Discipline breakdown */
+var discCount={};
+for(var i=0;i<totalInps;i++){var d=inps[i].discipline;if(d)discCount[d]=(discCount[d]||0)+1}
+
+/* Contractor breakdown */
+var contCount={};
+for(var i=0;i<totalInps;i++){var c2=inps[i].contractor;if(c2)contCount[c2]=(contCount[c2]||0)+1}
+
+/* --- RESPONSE LOGIC --- */
+
+/* Project Summary */
+if(ql.includes('project summary')||ql.includes('overview')||ql.includes('summary')){
+  resp='PROJECT SUMMARY\n\n';
+  resp+='Site Progress: '+fmtP(siteP)+'\n';
+  resp+='Total Tasks: '+totalTasks+' ('+doneTasks+' done, '+activeTasks+' active, '+pendingTasks+' pending)\n';
+  if(overdueTasks>0)resp+='Overdue Tasks: '+overdueTasks+' ⚠️\n';
+  resp+='\nSub-Projects: '+projs.length+'\n';
+  for(var i=0;i<projSumm.length;i++){
+    var ps=projSumm[i];
+    resp+='\n  '+ps.name+': '+fmtP(ps.prog)+' complete, '+ps.tasks+' tasks';
+  }
+  resp+='\n\nBudget: '+fmtD(totalC)+' | Paid: '+fmtD(totalPd)+' ('+paidPct+'%) | Balance: '+fmtD(balance);
+  resp+='\nInspections: '+totalInps+' total | Safety: '+dLTI+' days w/o LTI';
+}
+
+/* Budget/Cost */
+else if(ql.includes('budget')||ql.includes('cost')||ql.includes('money')||ql.includes('paid')||ql.includes('payment')){
+  resp='BUDGET STATUS\n\n';
+  resp+='Total Contract: '+fmtD(totalC)+'\n';
+  resp+='Total Paid: '+fmtD(totalPd)+' ('+paidPct+'%)\n';
+  resp+='Balance: '+fmtD(balance)+'\n\n';
+  resp+='Breakdown:\n';
+  resp+='  Site Master: Contract '+fmtD(siteC)+', Paid '+fmtD(sitePd)+', Bal '+fmtD(siteC-sitePd)+'\n';
+  for(var i=0;i<projSumm.length;i++){
+    var ps=projSumm[i];
+    resp+='  '+ps.name+': Contract '+fmtD(ps.cost)+', Paid '+fmtD(ps.paid)+', Bal '+fmtD(ps.bal)+'\n';
+  }
+  if(balance>totalC*0.5)resp+='\n⚠️ Alert: More than 50% of budget still unpaid.';
+}
+
+/* Overdue */
+else if(ql.includes('overdue')||ql.includes('behind')||ql.includes('late')||ql.includes('delay')){
+  var overdueList=[];
+  for(var i=0;i<tasks.length;i++){
+    var t=tasks[i];
+    if(t.st!=='done'&&t.e&&t.e<today)overdueList.push(t);
+  }
+  resp='SCHEDULE STATUS\n\n';
+  resp+='Overdue Tasks: '+overdueList.length+'\n';
+  if(overdueList.length){
+    resp+='\nOverdue items:\n';
+    for(var i=0;i<Math.min(overdueList.length,15);i++){
+      var od=overdueList[i];
+      var daysOver=Math.round((new Date(today)-new Date(od.e))/(1000*60*60*24));
+      resp+='  • '+od.wbs+' '+od.name+' (due '+od.e+', '+daysOver+' days ago)\n';
+    }
+    if(overdueList.length>15)resp+='  ... and '+(overdueList.length-15)+' more\n';
+  }else{
+    resp+='All tasks are on schedule!';
+  }
+  for(var i=0;i<projSumm.length;i++){
+    var ps=projSumm[i];
+    if(ps.prog<30)resp+='\n⚠️ '+ps.name+' is only '+fmtP(ps.prog)+' complete.';
+  }
+}
+
+/* Safety */
+else if(ql.includes('safe')||ql.includes('lti')||ql.includes('incident')||ql.includes('hse')){
+  resp='SAFETY REPORT\n\n';
+  resp+='Safe Hours: '+(safe.safeHours||0).toLocaleString()+'\n';
+  resp+='Days Without LTI: '+dLTI+'\n';
+  resp+='Near Misses: '+(safe.nearMisses||0)+'\n';
+  resp+='Incidents: '+(safe.incidents||0)+'\n';
+  resp+='Safety Starts: '+td()+'\n\n';
+  if((safe.nearMisses||0)>10)resp+='⚠️ High near-miss count. Review safety protocols.\n';
+  if(dLTI>100)resp+='✅ Excellent safety record.\n';
+  resp+='Inspections conducted: '+totalInps+'\n';
+  resp+='Conformance rate: '+(totalInps>0?Math.round(confCount/totalInps*100):0)+'%';
+}
+
+/* Inspection Summary */
+else if(ql.includes('inspection')||ql.includes('conformance')||ql.includes('quality')||ql.includes('validation')){
+  resp='INSPECTION SUMMARY\n\n';
+  resp+='Total Inspections: '+totalInps+'\n';
+  resp+='Conforming: '+confCount+' ('+(totalInps>0?Math.round(confCount/totalInps*100):0)+'%)\n';
+  resp+='For Review: '+revCount+'\n';
+  resp+='Non-Conforming: '+nonConfCount+'\n\n';
+  resp+='Status:\n';
+  resp+='  Open: '+openInps+'\n';
+  resp+='  In Progress: '+progInps+'\n';
+  resp+='  Completed/Closed: '+compInps+'\n\n';
+  if(Object.keys(discCount).length){
+    resp+='By Discipline:\n';
+    for(var dk in discCount)resp+='  '+dk+': '+discCount[dk]+'\n';
+  }
+  if(Object.keys(contCount).length){
+    resp+='\nBy Contractor:\n';
+    for(var ck in contCount)resp+='  '+ck+': '+contCount[ck]+'\n';
+  }
+  if(nonConfCount>0)resp+='\n⚠️ '+nonConfCount+' non-conforming items require corrective action.';
+}
+
+/* Risk Alerts */
+else if(ql.includes('risk')||ql.includes('alert')||ql.includes('issue')||ql.includes('problem')){
+  resp='RISK ALERTS\n\n';
+  var alerts=[];
+  if(overdueTasks>0)alerts.push('🔴 '+overdueTasks+' overdue task(s) — schedule risk');
+  if(nonConfCount>0)alerts.push('🔴 '+nonConfCount+' non-conforming inspection(s) — quality risk');
+  if(balance>totalC*0.7)alerts.push('🟡 '+paidPct+'% paid — cash flow may be tight');
+  if((safe.nearMisses||0)>5)alerts.push('🟡 '+(safe.nearMisses||0)+' near misses — safety risk');
+  for(var i=0;i<projSumm.length;i++){
+    if(projSumm[i].prog<20)alerts.push('🟡 '+projSumm[i].name+' only '+fmtP(projSumm[i].prog)+' — may need attention');
+  }
+  if(openInps>10)alerts.push('🟡 '+openInps+' open inspections — review backlog');
+  if(!alerts.length){
+    resp+='✅ No major alerts detected. Project is on track.';
+  }else{
+    resp+=alerts.length+' alert(s) found:\n\n';
+    for(var i=0;i<alerts.length;i++)resp+=alerts[i]+'\n';
+  }
+}
+
+/* Cost Overview */
+else if(ql.includes('cost overview')||ql.includes('expense')||ql.includes('financial')){
+  resp='COST OVERVIEW\n\n';
+  resp+='Total Budget: '+fmtD(totalC)+'\n';
+  resp+='Paid to Date: '+fmtD(totalPd)+' ('+paidPct+'%)\n';
+  resp+='Outstanding: '+fmtD(balance)+'\n\n';
+  var pctC=totalC>0?pct(totalPd,totalC):0;
+  resp+='Progress Bar: ';
+  var bars=Math.round(pctC/5);
+  for(var b=0;b<20;b++)resp+=b<bars?'█':'░';
+  resp+=' '+pctC+'%\n\n';
+  if(projSumm.length){
+    resp+='Per Project:\n';
+    for(var i=0;i<projSumm.length;i++){
+      var ps=projSumm[i];
+      var ppct=ps.cost>0?Math.round(ps.paid/ps.cost*100):0;
+      resp+='  '+ps.name+': '+fmtD(ps.paid)+'/'+fmtD(ps.cost)+' ('+ppct+'%)\n';
+    }
+  }
+}
+
+/* Task */
+else if(ql.includes('task')||ql.includes('progress')){
+  resp='TASK STATUS\n\n';
+  resp+='Total: '+totalTasks+'\n';
+  resp+='Done: '+doneTasks+' ('+Math.round(doneTasks/Math.max(totalTasks,1)*100)+'%)\n';
+  resp+='Active: '+activeTasks+'\n';
+  resp+='Pending: '+pendingTasks+'\n';
+  if(overdueTasks)resp+='Overdue: '+overdueTasks+' ⚠️\n';
+  resp+='\nSite Progress: '+fmtP(siteP)+'\n';
+  if(projs.length){
+    resp+='\nSub-Projects:\n';
+    for(var i=0;i<projSumm.length;i++){
+      resp+='  '+projSumm[i].name+': '+fmtP(projSumm[i].prog)+' ('+projSumm[i].tasks+' tasks)\n';
+    }
+  }
+}
+
+/* Team */
+else if(ql.includes('team')||ql.includes('member')||ql.includes('staff')||ql.includes('people')){
+  resp='TEAM\n\n';
+  resp+='Total Members: '+team.length+'\n\n';
+  var teamDepts={};
+  for(var i=0;i<team.length;i++){
+    var d=team[i].department||'Unassigned';
+    teamDepts[d]=(teamDepts[d]||0)+1;
+  }
+  for(var dk in teamDepts)resp+=dk+': '+teamDepts[dk]+' member(s)\n';
+  resp+='\nMembers:\n';
+  for(var i=0;i<team.length;i++){
+    resp+='  '+team[i].name+(team[i].role?' — '+team[i].role:'')+'\n';
+  }
+}
+
+/* Gantt / Schedule */
+else if(ql.includes('gantt')||ql.includes('schedule')||ql.includes('timeline')||ql.includes('deadline')){
+  resp='SCHEDULE OVERVIEW\n\n';
+  var earliest='',latest='';
+  for(var i=0;i<tasks.length;i++){
+    if(tasks[i].s&&(!earliest||tasks[i].s<earliest))earliest=tasks[i].s;
+    if(tasks[i].e&&(!latest||tasks[i].e>latest))latest=tasks[i].e;
+  }
+  resp+='Project Start: '+(earliest||'Not set')+'\n';
+  resp+='Project End: '+(latest||'Not set')+'\n';
+  resp+='Today: '+today+'\n\n';
+  if(earliest&&latest){
+    var totalDays=dd(earliest,latest);
+    var elapsed=dd(earliest,today);
+    var timePct=totalDays>0?Math.min(100,Math.round(elapsed/totalDays*100)):0;
+    resp+='Time Elapsed: '+elapsed+' of '+totalDays+' days ('+timePct+'%)\n';
+    resp+='Work Progress: '+fmtP(siteP)+'\n';
+    if(siteP<timePct-10)resp+='⚠️ Work progress ('+fmtP(siteP)+') is behind time progress ('+timePct+'%)\n';
+    else if(siteP>timePct+10)resp+='✅ Work is ahead of schedule!\n';
+    else resp+='✅ Work and time are aligned.\n';
+  }
+  if(overdueTasks>0)resp+='\n'+overdueTasks+' task(s) past deadline.';
+}
+
+/* Help */
+else if(ql.includes('help')||ql.includes('what can')||ql.includes('how to')){
+  resp='I can help you with:\n\n';
+  resp+='• "Project Summary" — overview of everything\n';
+  resp+='• "Budget Status" — cost and payment details\n';
+  resp+='• "Overdue Tasks" — what\'s behind schedule\n';
+  resp+='• "Safety Report" — LTI days, near misses\n';
+  resp+='• "Inspection Summary" — quality check results\n';
+  resp+='• "Risk Alerts" — things that need attention\n';
+  resp+='• "Cost Overview" — financial dashboard\n';
+  resp+='• "Task Status" — progress breakdown\n';
+  resp+='• "Team" — team members and departments\n';
+  resp+='• "Schedule" — timeline vs progress\n\n';
+  resp+='Or ask any question about your project in natural language!';
+}
+
+/* Conversational */
+else if(ql.includes('hello')||ql.includes('hi')||ql.includes('hey')){
+  resp='Hello! How can I help you today? Try asking about your project summary, budget, tasks, or inspections.';
+}
+else if(ql.includes('thank')){
+  resp='You\'re welcome! Let me know if you need anything else.';
+}
+
+/* Fallback — try to match keywords */
+else{
+  var matched=false;
+
+  if(ql.includes('how many')&&ql.includes('task')){
+    resp='Total tasks: '+totalTasks+'\nDone: '+doneTasks+'\nActive: '+activeTasks+'\nPending: '+pendingTasks;
+    matched=true;
+  }
+  if(ql.includes('how many')&&ql.includes('inspection')){
+    resp='Total inspections: '+totalInps+'\nConforming: '+confCount+'\nFor Review: '+revCount+'\nNon-Conforming: '+nonConfCount;
+    matched=true;
+  }
+  if(ql.includes('how many')&&ql.includes('project')){
+    resp='Sub-projects: '+projs.length+'\nSite (Master) + '+projs.length+' projects = '+(projs.length+1)+' total';
+    matched=true;
+  }
+  if(ql.includes('total')&&ql.includes('cost')){
+    resp='Total Contract: '+fmtD(totalC)+'\nTotal Paid: '+fmtD(totalPd)+'\nBalance: '+fmtD(balance);
+    matched=true;
+  }
+  if(ql.includes('progress')){
+    resp='Overall Site Progress: '+fmtP(siteP)+'\n\n';
+    for(var i=0;i<projSumm.length;i++){
+      resp+=projSumm[i].name+': '+fmtP(projSumm[i].prog)+'\n';
+    }
+    matched=true;
+  }
+
+  /* Try matching project names */
+  for(var i=0;i<projSumm.length;i++){
+    if(ql.includes(projSumm[i].name.toLowerCase())){
+      var ps=projSumm[i];
+      resp=ps.name.toUpperCase()+'\n\n';
+      resp+='Progress: '+fmtP(ps.prog)+'\n';
+      resp+='Tasks: '+ps.tasks+'\n';
+      resp+='Contract: '+fmtD(ps.cost)+'\n';
+      resp+='Paid: '+fmtD(ps.paid)+' ('+(ps.cost>0?Math.round(ps.paid/ps.cost*100):0)+'%)\n';
+      resp+='Balance: '+fmtD(ps.bal);
+      matched=true;
+      break;
+    }
+  }
+
+  if(!matched){
+    resp='I\'m not sure how to answer that. Try one of these:\n\n';
+    resp+='• Project Summary\n• Budget Status\n• Overdue Tasks\n';
+    resp+='• Safety Report\n• Inspection Summary\n• Risk Alerts\n';
+    resp+='• Schedule\n• Team\n\n';
+    resp+='Or ask a specific question like:\n';
+    resp+='"How many tasks are overdue?"\n';
+    resp+='"What is the total cost?"\n';
+    resp+='"Show me inspection results"';
+  }
+}
+
+aiMessages.push({role:'ai',text:resp});
+doRender();
+}
 </script>
 </body>
 </html>
