@@ -474,7 +474,53 @@ if(total>0){
     h+='<div class="val-chart"><div class="val-clabel">'+H(si.l)+'</div><div class="val-ctrack"><div class="val-cfill" style="width:'+wp3+'%;background:#b89630">'+si.v+'</div></div><div class="val-cval">'+Math.round(si.v/total*100)+'%</div></div>';
   }
   h+='</div></div>';
+  h+='<div class="card"><div class="ch"><span class="ct">By Email</span></div>';
+  var _emailCount={};
+  for(var _ei=0;_ei<total;_ei++){
+    var _em=inps[_ei].email||'Unknown';
+    _emailCount[_em]=(_emailCount[_em]||0)+1;
+  }
+  var _emSorted=[];
+  for(var _ek in _emailCount)_emSorted.push({n:_ek,c:_emailCount[_ek]});
+  _emSorted.sort(function(a,b){return b.c-a.c});
+  var _emMax=_emSorted.length?_emSorted[0].c:1;
+  var _emCols=['#2874a6','#d4930d','#2d8a32','#9b59b6','#b89630','#cc3333'];
+  for(var _ei2=0;_ei2<_emSorted.length;_ei2++){
+    var _em2=_emSorted[_ei2];
+    var _emw=Math.round(_em2.c/_emMax*100);
+    var _emc=_emCols[_ei2%_emCols.length];
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:4px 0">';
+    h+='<div style="width:180px;font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+H(_em2.n)+'">'+H(_em2.n)+'</div>';
+    h+='<div style="flex:1;height:18px;background:var(--s2);border-radius:3px;overflow:hidden">';
+    h+='<div style="height:100%;width:'+_emw+'%;background:'+_emc+';border-radius:3px;display:flex;align-items:center;padding-left:6px">';
+    h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:#fff;font-weight:700">'+_em2.c+'</span>';
+    h+='</div></div></div>';
+  }
+  h+='</div>';
 
+  h+='<div class="card"><div class="ch"><span class="ct">By Area Inspected</span></div>';
+  var _areaCount={};
+  for(var _ai=0;_ai<total;_ai++){
+    var _ar=inps[_ai].area||'Unknown';
+    _areaCount[_ar]=(_areaCount[_ar]||0)+1;
+  }
+  var _arSorted=[];
+  for(var _ak in _areaCount)_arSorted.push({n:_ak,c:_areaCount[_ak]});
+  _arSorted.sort(function(a,b){return b.c-a.c});
+  var _arMax=_arSorted.length?_arSorted[0].c:1;
+  var _arCols=['#2d8a32','#2874a6','#d4930d','#9b59b6','#b89630','#cc3333'];
+  for(var _ai2=0;_ai2<_arSorted.length;_ai2++){
+    var _ar2=_arSorted[_ai2];
+    var _arw=Math.round(_ar2.c/_arMax*100);
+    var _arc=_arCols[_ai2%_arCols.length];
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:4px 0">';
+    h+='<div style="width:180px;font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+H(_ar2.n)+'">'+H(_ar2.n)+'</div>';
+    h+='<div style="flex:1;height:18px;background:var(--s2);border-radius:3px;overflow:hidden">';
+    h+='<div style="height:100%;width:'+_arw+'%;background:'+_arc+';border-radius:3px;display:flex;align-items:center;padding-left:6px">';
+    h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:#fff;font-weight:700">'+_ar2.c+'</span>';
+    h+='</div></div></div>';
+  }
+  h+='</div>';
   h+='<div class="card"><div class="ch"><span class="ct">Inspections Per Day</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+Object.keys(dateCount).length+' days</span></div>';
   h+='<canvas id="dateChart" width="900" height="200" style="width:100%;height:auto;display:block"></canvas></div>';
 
