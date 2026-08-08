@@ -1075,8 +1075,330 @@ mO('Auto-Sync Setup',bd,'<button class="btn" onclick="mC()">Close</button><butto
 }
 
 /* === TEAM === */
-R.team=function(){function ac(n){var c2=['#2d8a32','#2874a6','#d4930d','#b89630','#cc3333','#9b59b6'],h2=0;for(var i=0;i<n.length;i++)h2=n.charCodeAt(i)+((h2<<5)-h2);return c2[Math.abs(h2)%c2.length]}function ai(n){return n.substring(0,2).toUpperCase()}var h='<div style="margin-bottom:10px"><span class="ct">Team</span></div><div class="card"><div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:6px;margin-bottom:6px"><div class="fg" style="margin:0"><input type="text" id="uA" placeholder="Author" style="width:100%"></div><div class="fg" style="margin:0"><input type="text" id="uR" placeholder="Role" style="width:100%"></div><div class="fg" style="margin:0"><select id="uT" style="width:100%"><option>update</option><option>milestone</option><option>blocker</option></select></div></div><div class="fg" style="margin-bottom:5px"><textarea id="uC" rows="2" placeholder="Share..." style="width:100%"></textarea></div><div style="display:flex;justify-content:flex-end"><button class="btn bp" onclick="postU()">Post</button></div></div><div style="max-width:600px">';for(var i=0;i<S.upds.length;i++){var u=S.upds[i],tc=u.t==='milestone'?'var(--g)':u.t==='blocker'?'var(--rd)':'var(--bl)',tb=u.t==='milestone'?'bg2':u.t==='blocker'?'bd2':'bx2';h+='<div class="fpost" style="border-left:3px solid '+tc+'"><div class="fhead"><div class="av" style="background:'+ac(u.a)+'">'+ai(u.a)+'</div><div style="flex:1"><div style="font-weight:600;font-size:.78rem">'+H(u.a)+' <span style="font-weight:400;font-size:.66rem;color:var(--t3)">'+H(u.r)+'</span></div><div style="font-size:.6rem;color:var(--t3);font-family:JetBrains Mono">'+new Date(u.ts).toLocaleString()+'</div></div><span class="badge '+tb+'">'+u.t+'</span></div><div style="font-size:.78rem;color:var(--t2)">'+H(u.c)+'</div></div>'}h+='</div>';$('app').innerHTML=h};
-function postU(){var a=$('uA').value.trim(),c=$('uC').value.trim();if(!a||!c)return;S.upds.unshift({id:Date.now(),a:a,r:$('uR').value.trim(),t:$('uT').value,c:c,ts:new Date().toISOString()});save();notify('Posted');doRender()}
+var teamEditMode=false;
+var teamViewMode='chart';/* 'chart' or 'list' */
+var teamSearch='';
+
+R.team=function(){
+if(!Array.isArray(S.teamMembers))S.teamMembers=[];
+var members=S.teamMembers;
+var total=members.length;
+var deptCount={};
+for(var i=0;i<total;i++){
+  var d=members[i].department||'Unassigned';
+  deptCount[d]=(deptCount[d]||0)+1;
+}
+
+var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+h+='<div><h2 style="margin-bottom:2px">Organization Chart</h2><p style="font-size:.72rem;color:var(--t3)">'+total+' members</p></div>';
+h+='<div style="display:flex;gap:8px">';
+h+='<button class="btn bp" onclick="addTeamMember()">+ Add Member</button>';
+h+='<button class="btn'+(teamViewMode==='chart'?' bb':'')+'" onclick="teamViewMode=\'chart\';doRender()">Chart</button>';
+h+='<button class="btn'+(teamViewMode==='list'?' bb':'')+'" onclick="teamViewMode=\'list\';doRender()">List</button>';
+h+='</div></div>';
+
+/* Department summary */
+if(total>0){
+  h+='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">';
+  var dCols=['#2874a6','#d4930d','#2d8a32','#9b59b6','#b89630','#cc3333'];
+  var di=0;
+  for(var dk in deptCount){
+    h+='<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--s2);border-radius:var(--r);font-size:.72rem">';
+    h+='<span style="width:8px;height:8px;border-radius:50%;background:'+dCols[di%dCols.length]+'"></span>';
+    H(dk)+': <b>'+deptCount[dk]+'</b>';
+    h+='</div>';di++;
+  }
+  h+='</div>';
+}
+
+if(!total){
+  h+='<div class="card" style="text-align:center;padding:40px">';
+  h+='<div style="font-size:1.2rem;font-weight:700;margin-bottom:8px">No Team Members Yet</div>';
+  h+='<div style="font-size:.76rem;color:var(--t3);margin-bottom:16px">Add members to build your organizational chart</div>';
+  h+='<button class="btn bp" onclick="addTeamMember()">+ Add First Member</button>';
+  h+='</div>';
+}else if(teamViewMode==='chart'){
+  /* ORG CHART VIEW */
+  var roots=[];
+  var childMap={};
+  for(var i=0;i<members.length;i++){
+    var m=members[i];
+    if(!m.reportsTo||m.reportsTo===''){
+      roots.push(m);
+    }else{
+      if(!childMap[m.reportsTo])childMap[m.reportsTo]=[];
+      childMap[m.reportsTo].push(m);
+    }
+  }
+  /* If no roots found, put everyone as root */
+  if(!roots.length)roots=members.slice();
+
+  function renderNode(m,level){
+    var photo=m.photo?'<img src="'+H(m.photo)+'" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:3px solid var(--pu)" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">':'';
+    var fallback='<div style="width:60px;height:60px;border-radius:50%;background:var(--pu);display:'+(m.photo?'none':'flex')+';align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:#fff">'+(m.name?m.name.charAt(0).toUpperCase():'?')+'</div>';
+    var dept=m.department||'';
+    var role=m.role||'';
+    var dCol=dCols[(function(){var idx=0;var dk2=Object.keys(deptCount);for(var d3=0;d3<dk2.length;d3++){if(dk2[d3]===dept){idx=d3;break}}return idx})() % dCols.length];
+
+    var n='<div style="display:flex;flex-direction:column;align-items:center;min-width:160px;max-width:200px">';
+    n+='<div style="position:relative;cursor:pointer" onclick="viewTeamMember('+m.id+')">';
+    n+=photo+fallback;
+    if(teamEditMode)n+='<div style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:var(--rd);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.56rem;color:#fff;cursor:pointer" onclick="event.stopPropagation();delTeamMember('+m.id+')">&times;</div>';
+    n+='</div>';
+    n+='<div style="margin-top:6px;text-align:center">';
+    n+='<div style="font-weight:700;font-size:.76rem;line-height:1.2">'+H(m.name)+'</div>';
+    if(role)n+='<div style="font-size:.62rem;color:var(--t3);line-height:1.2">'+H(role)+'</div>';
+    if(dept)n+='<div style="font-size:.56rem;padding:2px 6px;border-radius:3px;background:'+dCol+'22;color:'+dCol+';margin-top:3px;display:inline-block">'+H(dept)+'</div>';
+    if(m.email)n+='<div style="font-size:.54rem;color:var(--bl);margin-top:2px">'+H(m.email)+'</div>';
+    n+='</div></div>';
+
+    var children=childMap[m.id]||[];
+    if(children.length){
+      n+='<div style="display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-top:16px;position:relative">';
+      n+='<div style="position:absolute;top:-16px;left:50%;width:1px;height:16px;background:var(--b2)"></div>';
+      for(var c=0;c<children.length;c++){
+        n+='<div style="display:flex;flex-direction:column;align-items:center;position:relative">';
+        n+='<div style="position:absolute;top:-16px;left:50%;width:1px;height:16px;background:var(--b2)"></div>';
+        n+=renderNode(children[c],level+1);
+        n+='</div>';
+      }
+      n+='</div>';
+    }
+    return n;
+  }
+
+  h+='<div class="card" style="overflow-x:auto;padding:24px">';
+  h+='<div style="display:flex;gap:12px;align-items:flex-start;justify-content:center;flex-wrap:wrap">';
+  for(var r=0;r<roots.length;r++){
+    var children=childMap[roots[r].id]||[];
+    h+='<div style="display:flex;flex-direction:column;align-items:center;position:relative">';
+    if(roots.length>1&&r>0)h+='<div style="position:absolute;left:-12px;top:30px;width:12px;height:1px;background:var(--b2)"></div>';
+    h+=renderNode(roots[r],0);
+    h+='</div>';
+  }
+  h+='</div></div>';
+
+}else{
+  /* LIST VIEW */
+  h+='<div style="margin-bottom:10px"><input type="text" id="teamQ" placeholder="Search members..." value="'+H(teamSearch)+'" style="width:240px;padding:5px 10px;font-size:.72rem" oninput="teamSearch=this.value;doRender()"></div>';
+  var filtered=[];
+  for(var i=0;i<members.length;i++){
+    var m=members[i];
+    if(teamSearch){
+      var q=teamSearch.toLowerCase();
+      if((m.name||'').toLowerCase().indexOf(q)<0&&(m.role||'').toLowerCase().indexOf(q)<0&&(m.department||'').toLowerCase().indexOf(q)<0&&(m.email||'').toLowerCase().indexOf(q)<0)continue;
+    }
+    filtered.push(m);
+  }
+  h+='<div class="tw"><table><thead><tr><th></th><th>Name</th><th>Role</th><th>Department</th><th>Email</th><th>Phone</th><th>Reports To</th><th>Actions</th></tr></thead><tbody>';
+  for(var i=0;i<filtered.length;i++){
+    var m=filtered[i];
+    var photo=m.photo?'<img src="'+H(m.photo)+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover" onerror="this.outerHTML=\'<div style=width:32px;height:32px;border-radius:50%;background:var(--pu);display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#fff>'+m.name.charAt(0).toUpperCase()+'</div>\'">':'<div style="width:32px;height:32px;border-radius:50%;background:var(--pu);display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#fff">'+(m.name?m.name.charAt(0).toUpperCase():'?')+'</div>';
+    var parentName='-';
+    for(var j=0;j<members.length;j++){if(String(members[j].id)===String(m.reportsTo)){parentName=members[j].name;break}}
+    h+='<tr><td>'+photo+'</td><td style="font-weight:600">'+H(m.name)+'</td><td>'+H(m.role||'-')+'</td><td>'+H(m.department||'-')+'</td><td style="font-size:.64rem">'+H(m.email||'-')+'</td><td style="font-size:.64rem">'+H(m.phone||'-')+'</td><td style="font-size:.64rem">'+H(parentName)+'</td><td style="white-space:nowrap"><button class="btn bs" onclick="editTeamMember('+m.id+')">Edit</button> <button class="btn bs bd" onclick="delTeamMember('+m.id+')">&times;</button></td></tr>';
+  }
+  h+='</tbody></table></div>';
+  if(!filtered.length)h+='<div style="text-align:center;padding:20px;color:var(--t3)">No members match search</div>';
+}
+
+/* Edit mode toggle */
+h+='<div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">';
+h+='<button class="btn'+(teamEditMode?' bs bd':'')+'" onclick="teamEditMode=!teamEditMode;doRender()">'+(teamEditMode?'Done Editing':'Edit Mode')+'</button>';
+h+='</div>';
+
+$('app').innerHTML=h;
+var wasTeamFocused=document.activeElement&&document.activeElement.id==='teamQ';
+var teamCurPos=wasTeamFocused?document.activeElement.selectionStart:0;
+if(wasTeamFocused)setTimeout(function(){var el=document.getElementById('teamQ');if(el){el.focus();el.setSelectionRange(teamCurPos,teamCurPos)}},0);
+};
+
+/* --- Add Member --- */
+function addTeamMember(){
+if(!Array.isArray(S.teamMembers))S.teamMembers=[];
+var parentOpts='<option value="">None (Top Level)</option>';
+for(var i=0;i<S.teamMembers.length;i++){
+  parentOpts+='<option value="'+S.teamMembers[i].id+'">'+H(S.teamMembers[i].name)+'</option>';
+}
+var depts={};
+for(var i=0;i<S.teamMembers.length;i++){var d=S.teamMembers[i].department;if(d)depts[d]=1}
+var deptList='<option value="">Select...</option>';
+for(var dk in depts)deptList+='<option value="'+H(dk)+'">'+H(dk)+'</option>';
+deptList+='<option value="__new">+ New Department</option>';
+
+mO('Add Team Member',
+'<div style="display:flex;gap:16px;align-items:flex-start">'+
+'<div style="width:100px;flex-shrink:0;text-align:center">'+
+'<div id="photoPreview" style="width:90px;height:90px;border-radius:50%;background:var(--s2);border:2px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--t3);margin-bottom:6px;overflow:hidden;cursor:pointer" onclick="$(\'tmPhoto\').click()">+</div>'+
+'<input type="file" id="tmPhotoFile" accept="image/*" style="display:none" onchange="previewTeamPhoto(this)">'
++'<input type="text" id="tmPhoto" placeholder="Or paste image URL" style="width:90px;font-size:.5rem;padding:2px" oninput="updatePhotoPreview(this.value)">'+
+'</div>'+
+'<div style="flex:1">'+
+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+'<div class="fg"><label class="fl">Full Name *</label><input type="text" id="tmName" style="width:100%"></div>'+
+'<div class="fg"><label class="fl">Role/Position</label><input type="text" id="tmRole" style="width:100%"></div>'+
+'</div>'+
+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+'<div class="fg"><label class="fl">Department</label><select id="tmDept" style="width:100%" onchange="if(this.value===\'__new\'){var n=prompt(\'New department:\');if(n){var o=document.createElement(\'option\');o.value=n;o.text=n;o.selected=true;this.add(o,1)}}">'+deptList+'</select></div>'+
+'<div class="fg"><label class="fl">Reports To</label><select id="tmParent" style="width:100%">'+parentOpts+'</select></div>'+
+'</div>'+
+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+'<div class="fg"><label class="fl">Email</label><input type="email" id="tmEmail" style="width:100%"></div>'+
+'<div class="fg"><label class="fl">Phone</label><input type="text" id="tmPhone" style="width:100%"></div>'+
+'</div>'+
+'<div class="fg"><label class="fl">Bio / Notes</label><textarea id="tmBio" rows="2" style="width:100%"></textarea></div>'+
+'</div></div>',
+'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savTeamMember()">Save</button>');
+}
+
+function previewTeamPhoto(input){
+if(!input.files||!input.files[0])return;
+var reader=new FileReader();
+reader.onload=function(e){
+  $('tmPhoto').value=e.target.result;
+  var p=$('photoPreview');
+  p.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover">';
+};
+reader.readAsDataURL(input.files[0]);
+}
+
+function updatePhotoPreview(url){
+var p=document.getElementById('photoPreview');
+if(!p)return;
+if(url)p.innerHTML='<img src="'+url+'" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\'+\'">';
+}
+
+function savTeamMember(){
+var name=$('tmName').value.trim();
+if(!name)return;
+S.teamMembers.push({
+  id:Date.now(),
+  name:name,
+  role:$('tmRole').value.trim(),
+  department:$('tmDept').value==='__new'?'':$('tmDept').value,
+  reportsTo:$('tmParent').value||'',
+  email:$('tmEmail').value.trim(),
+  phone:$('tmPhone').value.trim(),
+  photo:$('tmPhoto').value.trim(),
+  bio:$('tmBio').value.trim()
+});
+save();mC();notify('Member added');doRender();
+}
+
+/* --- View Member --- */
+function viewTeamMember(id){
+var m=null;
+for(var i=0;i<S.teamMembers.length;i++){if(S.teamMembers[i].id===id){m=S.teamMembers[i];break}}
+if(!m)return;
+var parentName='Top Level';
+for(var i=0;i<S.teamMembers.length;i++){if(String(S.teamMembers[i].id)===String(m.reportsTo)){parentName=S.teamMembers[i].name;break}}
+var reports=[];
+for(var i=0;i<S.teamMembers.length;i++){if(String(S.teamMembers[i].reportsTo)===String(m.id))reports.push(S.teamMembers[i])}
+
+var bd='<div style="display:flex;gap:20px;align-items:flex-start">';
+bd+='<div style="flex-shrink:0">';
+if(m.photo)bd+='<img src="'+H(m.photo)+'" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--pu)">';
+else bd+='<div style="width:100px;height:100px;border-radius:50%;background:var(--pu);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff">'+m.name.charAt(0).toUpperCase()+'</div>';
+bd+='</div>';
+bd+='<div style="flex:1">';
+bd+='<div style="font-size:1.2rem;font-weight:700">'+H(m.name)+'</div>';
+if(m.role)bd+='<div style="font-size:.82rem;color:var(--t3)">'+H(m.role)+'</div>';
+if(m.department)bd+='<div style="font-size:.72rem;padding:3px 8px;border-radius:3px;background:var(--puc);color:var(--pu);display:inline-block;margin-top:4px">'+H(m.department)+'</div>';
+if(m.email)bd+='<div style="margin-top:8px;font-size:.76rem"><b>Email:</b> <a href="mailto:'+H(m.email)+'" style="color:var(--bl)">'+H(m.email)+'</a></div>';
+if(m.phone)bd+='<div style="font-size:.76rem"><b>Phone:</b> '+H(m.phone)+'</div>';
+bd+='<div style="font-size:.76rem"><b>Reports to:</b> '+H(parentName)+'</div>';
+if(m.bio)bd+='<div style="margin-top:8px;font-size:.76rem;color:var(--t2)">'+H(m.bio)+'</div>';
+if(reports.length){
+  bd+='<div style="margin-top:10px;font-size:.72rem"><b>Direct Reports ('+reports.length+'):</b></div>';
+  bd+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">';
+  for(var i=0;i<reports.length;i++){
+    var r=reports[i];
+    bd+='<div style="display:flex;align-items:center;gap:4px;padding:3px 8px;background:var(--s2);border-radius:var(--r);font-size:.68rem">';
+    if(r.photo)bd+='<img src="'+H(r.photo)+'" style="width:20px;height:20px;border-radius:50%;object-fit:cover">';
+    else bd+='<div style="width:20px;height:20px;border-radius:50%;background:var(--pu);display:flex;align-items:center;justify-content:center;font-size:.44rem;color:#fff">'+r.name.charAt(0).toUpperCase()+'</div>';
+    bd+=H(r.name);
+    bd+='</div>';
+  }
+  bd+='</div>';
+}
+bd+='</div></div>';
+
+mO('Team Member',bd,'<button class="btn" onclick="mC()">Close</button><button class="btn bb" onclick="mC();editTeamMember('+m.id+')">Edit</button>');
+}
+
+/* --- Edit Member --- */
+function editTeamMember(id){
+var mi=-1;
+for(var i=0;i<S.teamMembers.length;i++){if(S.teamMembers[i].id===id){mi=i;break}}
+if(mi<0)return;
+var m=S.teamMembers[mi];
+var parentOpts='<option value="">None (Top Level)</option>';
+for(var i=0;i<S.teamMembers.length;i++){
+  if(S.teamMembers[i].id===id)continue;
+  parentOpts+='<option value="'+S.teamMembers[i].id+'"'+(String(m.reportsTo)===String(S.teamMembers[i].id)?' selected':'')+'">'+H(S.teamMembers[i].name)+'</option>';
+}
+var depts={};
+for(var i=0;i<S.teamMembers.length;i++){var d=S.teamMembers[i].department;if(d)depts[d]=1}
+var deptList='<option value="">Select...</option>';
+for(var dk in depts)deptList+='<option value="'+H(dk)+'"'+(m.department===dk?' selected':'')+'>'+H(dk)+'</option>';
+deptList+='<option value="__new">+ New Department</option>';
+
+mO('Edit '+H(m.name),
+'<div style="display:flex;gap:16px;align-items:flex-start">'+
+'<div style="width:100px;flex-shrink:0;text-align:center">'+
+'<div id="photoPreview" style="width:90px;height:90px;border-radius:50%;overflow:hidden;margin-bottom:6px;cursor:pointer;border:2px solid var(--pu)" onclick="$(\'tmPhoto\').click()">'+(m.photo?'<img src="'+H(m.photo)+'" style="width:100%;height:100%;object-fit:cover">':'<div style="width:100%;height:100%;background:var(--pu);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff">'+m.name.charAt(0).toUpperCase()+'</div>')+'</div>'+
+'<input type="file" id="tmPhotoFile" accept="image/*" style="display:none" onchange="previewTeamPhoto(this)">'
++'<input type="text" id="tmPhoto" value="'+H(m.photo||'')+'" placeholder="Image URL" style="width:90px;font-size:.5rem;padding:2px" oninput="updatePhotoPreview(this.value)">'+
+'</div>'+
+'<div style="flex:1">'+
+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+'<div class="fg"><label class="fl">Full Name *</label><input type="text" id="tmName" value="'+H(m.name)+'" style="width:100%"></div>'+
+'<div class="fg"><label class="fl">Role</label><input type="text" id="tmRole" value="'+H(m.role||'')+'" style="width:100%"></div>'+
+'</div>'+
+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+'<div class="fg"><label class="fl">Department</label><select id="tmDept" style="width:100%" onchange="if(this.value===\'__new\'){var n=prompt(\'New department:\');if(n){var o=document.createElement(\'option\');o.value=n;o.text=n;o.selected=true;this.add(o,1)}}">'+deptList+'</select></div>'+
+'<div class="fg"><label class="fl">Reports To</label><select id="tmParent" style="width:100%">'+parentOpts+'</select></div>'+
+'</div>'+
+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+'<div class="fg"><label class="fl">Email</label><input type="email" id="tmEmail" value="'+H(m.email||'')+'" style="width:100%"></div>'+
+'<div class="fg"><label class="fl">Phone</label><input type="text" id="tmPhone" value="'+H(m.phone||'')+'" style="width:100%"></div>'+
+'</div>'+
+'<div class="fg"><label class="fl">Bio / Notes</label><textarea id="tmBio" rows="2" style="width:100%">'+H(m.bio||'')+'</textarea></div>'+
+'</div></div>',
+'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savEditTeamMember('+mi+')">Save</button>');
+}
+
+function savEditTeamMember(mi){
+var m=S.teamMembers[mi];if(!m)return;
+var name=$('tmName').value.trim();
+if(!name)return;
+m.name=name;
+m.role=$('tmRole').value.trim();
+m.department=$('tmDept').value==='__new'?'':$('tmDept').value;
+m.reportsTo=$('tmParent').value||'';
+m.email=$('tmEmail').value.trim();
+m.phone=$('tmPhone').value.trim();
+m.photo=$('tmPhoto').value.trim();
+m.bio=$('tmBio').value.trim();
+save();mC();notify('Updated');doRender();
+}
+
+/* --- Delete Member --- */
+function delTeamMember(id){
+if(!confirm('Delete this team member?'))return;
+/* Reassign their reports to the deleted member's manager */
+var m=null;
+for(var i=0;i<S.teamMembers.length;i++){if(S.teamMembers[i].id===id){m=S.teamMembers[i];break}}
+if(m){
+  for(var i=0;i<S.teamMembers.length;i++){
+    if(String(S.teamMembers[i].reportsTo)===String(id)){
+      S.teamMembers[i].reportsTo=m.reportsTo||'';
+    }
+  }
+}
+S.teamMembers=S.teamMembers.filter(function(x){return x.id!==id});
+save();notify('Deleted');doRender();
+}
 /* === PHOTOS === */
 R.photos=function(){var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="ct">Photos</span><span style="font-family:JetBrains Mono;font-size:.6rem;color:var(--t3)">'+S.photos.length+'</span></div><div class="card"><div class="dropzone" onclick="$(\'phF\').click()"><div>Click to upload</div><input type="file" id="phF" accept="image/*" style="display:none" onchange="if(this.files[0])phProc(this.files[0])"></div></div><div class="card"><div class="ch"><span class="ct">Gallery</span></div>';if(!S.photos.length)h+='<div style="text-align:center;padding:24px;color:var(--t3)">No photos</div>';else{h+='<div class="gallery">';for(var i=0;i<S.photos.length;i++){var p=S.photos[i];h+='<div class="pcard"><div style="position:relative"><img src="'+p.data+'"><button style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.5);border:0;color:#fff;width:20px;height:20px;border-radius:50%;font-size:.65rem;cursor:pointer" onclick="phDel('+p.id+')">&times;</button></div><div class="pinfo"><div style="font-weight:600;font-size:.76rem">'+H(p.title)+'</div><div style="font-family:JetBrains Mono;font-size:.58rem;color:var(--t3)">'+p.date+'</div></div></div>'}h+='</div>'}h+='</div>';$('app').innerHTML=h};
 function phProc(f){if(!f.type.startsWith('image/'))return;var rd=new FileReader();rd.onload=function(e){var img=new Image();img.onload=function(){var c=document.createElement('canvas'),w=img.width,h2=img.height,mx=800;if(w>mx){h2=Math.round(h2*mx/w);w=mx}c.width=w;c.height=h2;c.getContext('2d').drawImage(img,0,0,w,h2);try{window._phData=c.toDataURL('image/jpeg',.6);mO('Save Photo','<div class="fg"><label class="fl">Title</label><input type="text" id="phTi" style="width:100%"></div><div class="fg"><label class="fl">Date</label><input type="date" id="phD" value="'+td()+'" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="phSave()">Save</button>')}catch(er){alert('Image too large')}};img.src=e.target.result};rd.readAsDataURL(f)}
