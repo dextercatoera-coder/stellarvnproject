@@ -483,47 +483,7 @@ if(total>0){
     h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+_sc2+';margin-right:6px"></span>'+H(_sk)+': <b>'+statusCount[_sk]+'</b> ('+Math.round(statusCount[_sk]/total*100)+'%)</div>';
   }
   h+='</div></div></div>';
-    h+='<div class="card"><div class="ch"><span class="ct">Status Performance</span></div>';
-  h+='<canvas id="statusDonut" width="160" height="160" style="width:160px;height:160px;display:block;margin:0 auto 10px"></canvas>';
-  h+='<div style="font-size:.72rem;line-height:2;padding:0 10px 10px">';
-  var _scc2={'Open':'#d4930d','In Progress':'#2874a6','Completed':'#2d8a32','Closed':'#7a7570'};
-  var _skeys=Object.keys(statusCount);
-  for(var _si=0;_si<_skeys.length;_si++){
-    var _sk=_skeys[_si];
-    var _sc2=_scc2[_sk]||'#9b59b6';
-    h+='<div style="display:flex;align-items:center;gap:6px">';
-    h+='<span style="width:10px;height:10px;border-radius:2px;background:'+_sc2+';flex-shrink:0"></span>';
-    h+='<span>'+H(_sk)+'</span><span style="flex:1"></span>';
-    h+='<b>'+statusCount[_sk]+'</b>';
-    h+='<span style="font-family:JetBrains Mono;font-size:.6rem;color:var(--t3)">('+Math.round(statusCount[_sk]/total*100)+'%)</span>';
-    h+='</div>';
-  }
-  h+='</div></div>';
-
-  h+='<div class="card"><div class="ch"><span class="ct">Inspections by Inspector</span></div>';
-  var _nameCount={};
-  for(var _ni=0;_ni<total;_ni++){
-    var _n=inps[_ni].inspector||'Unknown';
-    _nameCount[_n]=(_nameCount[_n]||0)+1;
-  }
-  var _nameSorted=[];
-  for(var _nk in _nameCount)_nameSorted.push({n:_nk,c:_nameCount[_nk]});
-  _nameSorted.sort(function(a,b){return b.c-a.c});
-  var _nMax=_nameSorted.length?_nameSorted[0].c:1;
-  var _nCols=['#2874a6','#d4930d','#2d8a32','#9b59b6','#b89630','#cc3333'];
-  for(var _ni2=0;_ni2<_nameSorted.length;_ni2++){
-    var _nm=_nameSorted[_ni2];
-    var _nw=Math.round(_nm.c/_nMax*100);
-    var _nc=_nCols[_ni2%_nCols.length];
-    h+='<div style="display:flex;align-items:center;gap:8px;padding:4px 0">';
-    h+='<div style="width:130px;font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+H(_nm.n)+'</div>';
-    h+='<div style="flex:1;height:18px;background:var(--s2);border-radius:3px;overflow:hidden">';
-    h+='<div style="height:100%;width:'+_nw+'%;background:'+_nc+';border-radius:3px;display:flex;align-items:center;padding-left:6px">';
-    h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:#fff;font-weight:700">'+_nm.c+'</span>';
-    h+='</div></div></div>';
-  }
-  h+='</div>';
-h+='<div class="card"><div class="ch"><span class="ct">Inspections Per Day</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+Object.keys(dateCount).length+' days</span></div>';
+  h+='<div class="card"><div class="ch"><span class="ct">Inspections Per Day</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+Object.keys(dateCount).length+' days</span></div>';
   h+='<canvas id="dateChart" width="900" height="200" style="width:100%;height:auto;display:block"></canvas></div>';
 
   h+='<div class="card"><div class="ch"><span class="ct">Inspection Log</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+total+' records</span></div>';
@@ -592,7 +552,8 @@ $('app').innerHTML=h;
 if(total>0)setTimeout(function(){
   drawDonut('confDonut',[{v:conf,c:'#2d8a32'},{v:rev,c:'#2874a6'},{v:nonConf,c:'#cc3333'}],total);
   drawDateChart(dateCount);
-  drawDonut('statusDonut',[{v:statusCount['Open']||0,c:'#d4930d'},{v:statusCount['In Progress']||0,c:'#2874a6'},{v:statusCount['Completed']||0,c:'#2d8a32'},{v:statusCount['Closed']||0,c:'#7a7570'}],total);
+  drawStatusChart();
+  drawInspChart();
 },50);
 };
 
@@ -995,6 +956,78 @@ setTimeout(function(){
   if(ma)ma.style.display='block';
 },1500);
 setTimeout(function(){try{if(db)startInspSync()}catch(e){}},3000);
+  function drawStatusChart(){
+  var inps2=Array.isArray(S.inspections)?S.inspections:[];
+  if(!inps2.length)return;
+  var sc={};var tot=0;
+  for(var i=0;i<inps2.length;i++){
+    var s=inps2[i].status||'Open';
+    sc[s]=(sc[s]||0)+1;tot++;
+  }
+  var cv=document.getElementById('statusDonut');
+  if(!cv||!tot)return;
+  var ctx=cv.getContext('2d'),cx=80,cy=80,rad=65,ir=40;
+  ctx.clearRect(0,0,160,160);
+  var angle=-Math.PI/2;
+  var cols={'Open':'#d4930d','In Progress':'#2874a6','Completed':'#2d8a32','Closed':'#7a7570'};
+  var keys=['Open','In Progress','Completed','Closed'];
+  for(var k=0;k<keys.length;k++){
+    var v=sc[keys[k]]||0;
+    if(!v)continue;
+    var sweep=v/tot*Math.PI*2;
+    ctx.beginPath();ctx.arc(cx,cy,rad,angle,angle+sweep);
+    ctx.arc(cx,cy,ir,angle+sweep,angle,true);ctx.closePath();
+    ctx.fillStyle=cols[keys[k]];ctx.fill();angle+=sweep;
+  }
+  ctx.fillStyle='#1a1c18';ctx.font='bold 18px DM Sans';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(tot,cx,cy-3);
+  ctx.font='10px JetBrains Mono';ctx.fillStyle='#999';ctx.fillText('total',cx,cy+12);
+}
+  function drawInspChart(){
+  var inps3=Array.isArray(S.inspections)?S.inspections:[];
+  if(!inps3.length)return;
+  var nc={};
+  for(var i=0;i<inps3.length;i++){
+    var n=inps3[i].inspector||'Unknown';
+    nc[n]=(nc[n]||0)+1;
+  }
+  var sorted=[];for(var k in nc)sorted.push({name:k,count:nc[k]});
+  sorted.sort(function(a,b){return b.count-a.count});
+  var maxV=sorted[0].count;
+  var cv=document.getElementById('inspNameChart');
+  if(!cv)return;
+  var W=cv.width,H3=cv.height,pL=20,pR=10,pT=15,pB=10,cW=W-pL-pR,cH=H3-pT-pB;
+  var ctx=cv.getContext('2d');ctx.clearRect(0,0,W,H3);
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H3);
+  var barH=Math.min(24,Math.floor((cH-10)/sorted.length)-4);
+  var colors=['#2874a6','#d4930d','#2d8a32','#9b59b6','#b89630','#cc3333','#2d8a32','#2874a6'];
+  for(var i=0;i<sorted.length;i++){
+    var item=sorted[i];
+    var bw=Math.round(item.count/maxV*(cW-120));
+    var by=pT+i*(barH+4);
+    var col=colors[i%colors.length];
+    ctx.fillStyle=col;
+    ctx.fillRect(pL+120,by,bw,barH);
+    ctx.fillStyle='#555';ctx.font='11px DM Sans';ctx.textAlign='right';ctx.textBaseline='middle';
+    ctx.fillText(item.name.length>18?item.name.substring(0,18)+'...':item.name,pL+115,by+barH/2);
+    ctx.fillStyle='#1a1c18';ctx.font='bold 10px JetBrains Mono';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText(item.count,pL+120+bw+5,by+barH/2);
+  }
+  cv.style.height=(pT+sorted.length*(barH+4)+pB)+'px';
+  cv.height=pT+sorted.length*(barH+4)+pB;
+  /* redraw */
+  ctx.clearRect(0,0,W,cv.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,cv.height);
+  for(var i=0;i<sorted.length;i++){
+    var item=sorted[i];
+    var bw=Math.round(item.count/maxV*(cW-120));
+    var by=pT+i*(barH+4);
+    var col=colors[i%colors.length];
+    ctx.fillStyle=col;ctx.fillRect(pL+120,by,bw,barH);
+    ctx.fillStyle='#555';ctx.font='11px DM Sans';ctx.textAlign='right';ctx.textBaseline='middle';
+    ctx.fillText(item.name.length>18?item.name.substring(0,18)+'...':item.name,pL+115,by+barH/2);
+    ctx.fillStyle='#1a1c18';ctx.font='bold 10px JetBrains Mono';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText(item.count,pL+120+bw+5,by+barH/2);
+  }
 }
 </script>
 </body>
