@@ -479,7 +479,7 @@ if(total>0){
     h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+clr+';margin-right:6px"></span>'+H(stList[d].l)+': <b>'+stList[d].v+'</b> ('+Math.round(stList[d].v/total*100)+'%)</div>';
   }
   h+='</div></div></div>';
-  h+='</div></div>';
+  h+='</div>';
 
   h+='<div class="card"><div class="ch"><span class="ct">Inspections Per Day</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+Object.keys(dateCount).length+' days</span></div>';
   h+='<canvas id="dateChart" width="900" height="200" style="width:100%;height:auto;display:block"></canvas></div>';
