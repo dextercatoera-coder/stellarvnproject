@@ -465,14 +465,20 @@ if(total>0){
   }
   h+='</div>';
 
-  h+='<div class="card"><div class="ch"><span class="ct">By Status</span></div>';
-  var stItems=[];for(var k in statusCount)stItems.push({l:k,v:statusCount[k]});
-  stItems.sort(function(a,b){return b.v-a.v});
-  var maxS=stItems.length?stItems[0].v:1;
-  for(var d=0;d<stItems.length;d++){
-    var si=stItems[d],wp3=Math.round(si.v/maxS*100);
-    h+='<div class="val-chart"><div class="val-clabel">'+H(si.l)+'</div><div class="val-ctrack"><div class="val-cfill" style="width:'+wp3+'%;background:#b89630">'+si.v+'</div></div><div class="val-cval">'+Math.round(si.v/total*100)+'%</div></div>';
+   /* Status Performance donut */
+  h+='<div class="card"><div class="ch"><span class="ct">Status Performance</span></div>';
+  h+='<div style="display:flex;align-items:center;gap:20px">';
+  h+='<canvas id="statusDonut" width="140" height="140" style="width:140px;height:140px;flex-shrink:0"></canvas>';
+  h+='<div style="font-size:.72rem;line-height:2">';
+  var stColors={'Open':'#d4930d','In Progress':'#2874a6','Completed':'#2d8a32','Closed':'#7a7570'};
+  var stList=[];
+  for(var k in statusCount)stList.push({l:k,v:statusCount[k]});
+  stList.sort(function(a,b){return b.v-a.v});
+  for(var d=0;d<stList.length;d++){
+    var clr=stColors[stList[d].l]||'#9b59b6';
+    h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+clr+';margin-right:6px"></span>'+H(stList[d].l)+': <b>'+stList[d].v+'</b> ('+Math.round(stList[d].v/total*100)+'%)</div>';
   }
+  h+='</div></div></div>';
   h+='</div></div>';
 
   h+='<div class="card"><div class="ch"><span class="ct">Inspections Per Day</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+Object.keys(dateCount).length+' days</span></div>';
@@ -544,8 +550,11 @@ $('app').innerHTML=h;
 if(total>0)setTimeout(function(){
   drawDonut('confDonut',[{v:conf,c:'#2d8a32'},{v:rev,c:'#2874a6'},{v:nonConf,c:'#cc3333'}],total);
   drawDateChart(dateCount);
+  /* Status donut */
+  var stSegs=[];var stClr={'Open':'#d4930d','In Progress':'#2874a6','Completed':'#2d8a32','Closed':'#7a7570'};
+  for(var k in statusCount)stSegs.push({v:statusCount[k],c:stClr[k]||'#9b59b6'});
+  drawDonut('statusDonut',stSegs,total);
 },50);
-};
 
 function drawDonut(canvasId,segs,total){
   var cv=$(canvasId);if(!cv||!total)return;
