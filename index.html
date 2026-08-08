@@ -1229,7 +1229,7 @@ deptList+='<option value="__new">+ New Department</option>';
 mO('Add Team Member',
 '<div style="display:flex;gap:16px;align-items:flex-start">'+
 '<div style="width:100px;flex-shrink:0;text-align:center">'+
-'<div id="photoPreview" style="width:90px;height:90px;border-radius:50%;background:var(--s2);border:2px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--t3);margin-bottom:6px;overflow:hidden;cursor:pointer" onclick="$(\'tmPhoto\').click()">+</div>'+
+'<div id="photoPreview" style="width:90px;height:90px;border-radius:50%;background:var(--s2);border:2px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--t3);margin-bottom:6px;overflow:hidden;cursor:pointer" onclick="document.getElementById(\'tmPhotoFile\').click()">+</div>'+
 '<input type="file" id="tmPhotoFile" accept="image/*" style="display:none" onchange="previewTeamPhoto(this)">'
 +'<input type="text" id="tmPhoto" placeholder="Or paste image URL" style="width:90px;font-size:.5rem;padding:2px" oninput="updatePhotoPreview(this.value)">'+
 '</div>'+
@@ -1346,7 +1346,7 @@ deptList+='<option value="__new">+ New Department</option>';
 mO('Edit '+H(m.name),
 '<div style="display:flex;gap:16px;align-items:flex-start">'+
 '<div style="width:100px;flex-shrink:0;text-align:center">'+
-'<div id="photoPreview" style="width:90px;height:90px;border-radius:50%;overflow:hidden;margin-bottom:6px;cursor:pointer;border:2px solid var(--pu)" onclick="$(\'tmPhoto\').click()">'+(m.photo?'<img src="'+H(m.photo)+'" style="width:100%;height:100%;object-fit:cover">':'<div style="width:100%;height:100%;background:var(--pu);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff">'+m.name.charAt(0).toUpperCase()+'</div>')+'</div>'+
+'<div id="photoPreview" style="width:90px;height:90px;border-radius:50%;overflow:hidden;margin-bottom:6px;cursor:pointer;border:2px solid var(--pu)" onclick="document.getElementById(\'tmPhotoFile\').click()">'+(m.photo?'<img src="'+H(m.photo)+'" style="width:100%;height:100%;object-fit:cover">':'<div style="width:100%;height:100%;background:var(--pu);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff">'+m.name.charAt(0).toUpperCase()+'</div>')+'</div>'+
 '<input type="file" id="tmPhotoFile" accept="image/*" style="display:none" onchange="previewTeamPhoto(this)">'
 +'<input type="text" id="tmPhoto" value="'+H(m.photo||'')+'" placeholder="Image URL" style="width:90px;font-size:.5rem;padding:2px" oninput="updatePhotoPreview(this.value)">'+
 '</div>'+
