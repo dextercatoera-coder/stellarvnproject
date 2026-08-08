@@ -95,6 +95,7 @@ var dashFCategory='all';
 var selectedInps=[];
 var inps=[];
 var deletedInspIds=[];
+var inspSortCol='date',inspSortAsc=false,inspSearch='',inspFilterStatus='all',inspFilterConf='all';
 try{var _d=localStorage.getItem('ss_del_insp');if(_d)deletedInspIds=JSON.parse(_d)}catch(e){}
 var dSortCol='name',dSortAsc=true,dProjSearch='';
 var dashSearch='',dashFStatus='all',dashFCategory='all';
@@ -526,29 +527,98 @@ if(total>0){
   h+='</div>';
   h+='<div class="card"><div class="ch"><span class="ct">Inspections Per Day</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+Object.keys(dateCount).length+' days</span></div>';
   h+='<canvas id="dateChart" width="900" height="200" style="width:100%;height:auto;display:block"></canvas></div>';
+  /* Filter and search controls */
+  h+='<div class="card">';
+  h+='<div class="ch"><span class="ct">Inspection Log</span><span id="inspCount" style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+total+' records</span></div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">';
+  h+='<input type="text" id="inspQ" placeholder="Search inspections..." value="'+H(inspSearch)+'" style="width:240px;padding:5px 10px;font-size:.72rem" oninput="inspSearch=this.value;doRender()">';
+  h+='<select id="inspFS" style="padding:5px;font-size:.72rem" onchange="inspFilterStatus=this.value;doRender()">';
+  h+='<option value="all"'+(inspFilterStatus==='all'?' selected':'')+'>All Status</option>';
+  h+='<option value="Open"'+(inspFilterStatus==='Open'?' selected':'')+'>Open</option>';
+  h+='<option value="In Progress"'+(inspFilterStatus==='In Progress'?' selected':'')+'>In Progress</option>';
+  h+='<option value="Completed"'+(inspFilterStatus==='Completed'?' selected':'')+'>Completed</option>';
+  h+='<option value="Closed"'+(inspFilterStatus==='Closed'?' selected':'')+'>Closed</option>';
+  h+='</select>';
+  h+='<select id="inspFC" style="padding:5px;font-size:.72rem" onchange="inspFilterConf=this.value;doRender()">';
+  h+='<option value="all"'+(inspFilterConf==='all'?' selected':'')+'>All Conformance</option>';
+  h+='<option value="Conforming"'+(inspFilterConf==='Conforming'?' selected':'')+'>Conforming</option>';
+  h+='<option value="For Review"'+(inspFilterConf==='For Review'?' selected':'')+'>For Review</option>';
+  h+='<option value="Non-Conforming"'+(inspFilterConf==='Non-Conforming'?' selected':'')+'>Non-Conforming</option>';
+  h+='</select>';
+  h+='<span style="flex:1"></span>';
+  h+='<button class="btn bs" onclick="inspSearch=\'\';inspFilterStatus=\'all\';inspFilterConf=\'all\';doRender()">Clear Filters</button>';
+  h+='</div>';
 
-  h+='<div class="card"><div class="ch"><span class="ct">Inspection Log</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+total+' records</span></div>';
-  h+='<div class="tw"><table><thead><tr>';
-  h+='<th style="width:30px"><input type="checkbox" onchange="toggleAllInps(this.checked)" style="cursor:pointer"></th>';
-  h+='<th>#</th><th>Date</th><th>Area/Zone</th><th>Name</th><th>Email</th><th>Contractor</th>';
-  h+='<th>Discipline</th><th>Work Element</th><th>Drawing No</th><th>Requesting To</th>';
-  h+='<th>Actual Site Material</th><th>Conformance</th><th>Immediate Action</th>';
-  h+='<th>Escalation</th><th>Person Responsible</th><th>Reviewed By</th>';
-  h+='<th>Discussed With</th><th>Remarks</th><th>Status</th><th style="width:70px">Actions</th>';
-  h+='</tr></thead><tbody>';
-
+  /* Build filtered list */
+  var filteredInps=[];
   for(var i=0;i<total;i++){
     var ins=inps[i];if(!ins)continue;
+    if(inspFilterStatus!=='all'&&ins.status!==inspFilterStatus)continue;
+    if(inspFilterConf!=='all'&&ins.conformance!==inspFilterConf)continue;
+    if(inspSearch){
+      var q=inspSearch.toLowerCase();
+      var found=false;
+      var fields=[ins.date,ins.area,ins.inspector,ins.email,ins.contractor,ins.discipline,ins.workElement,ins.drawingNo,ins.requestingTo,ins.actualSiteMaterial,ins.conformance,ins.immediateAction,ins.escalationRequired,ins.personResponsible,ins.reviewedBy,ins.discussedWith,ins.remarks,ins.status];
+      for(var fi=0;fi<fields.length;fi++){if((fields[fi]||'').toLowerCase().indexOf(q)>=0){found=true;break}}
+      if(!found)continue;
+    }
+    filteredInps.push({ins:ins,idx:i});
+  }
+
+  /* Sort */
+  filteredInps.sort(function(a,b){
+    var va,vb;
+    if(inspSortCol==='date'){va=a.ins.date||'';vb=b.ins.date||''}
+    else if(inspSortCol==='area'){va=(a.ins.area||'').toLowerCase();vb=(b.ins.area||'').toLowerCase()}
+    else if(inspSortCol==='name'){va=(a.ins.inspector||'').toLowerCase();vb=(b.ins.inspector||'').toLowerCase()}
+    else if(inspSortCol==='email'){va=(a.ins.email||'').toLowerCase();vb=(b.ins.email||'').toLowerCase()}
+    else if(inspSortCol==='contractor'){va=(a.ins.contractor||'').toLowerCase();vb=(b.ins.contractor||'').toLowerCase()}
+    else if(inspSortCol==='discipline'){va=(a.ins.discipline||'').toLowerCase();vb=(b.ins.discipline||'').toLowerCase()}
+    else if(inspSortCol==='conformance'){va=(a.ins.conformance||'').toLowerCase();vb=(b.ins.conformance||'').toLowerCase()}
+    else if(inspSortCol==='status'){va=(a.ins.status||'').toLowerCase();vb=(b.ins.status||'').toLowerCase()}
+    else if(inspSortCol==='remarks'){va=(a.ins.remarks||'').toLowerCase();vb=(b.ins.remarks||'').toLowerCase()}
+    else{va=a.idx;vb=b.idx}
+    if(typeof va==='number')return inspSortAsc?va-vb:vb-va;
+    return inspSortAsc?(va>vb?1:va<vb?-1:0):(va<vb?1:va>vb?-1:0);
+  });
+
+  function iSortArrow(col){return inspSortCol===col?(inspSortAsc?'&#9650;':'&#9660;'):''}
+  function iHdrClick(col){return 'onclick="inspSortCol=\''+col+'\';inspSortAsc=inspSortCol===\''+col+'\'?!inspSortAsc:true;doRender()" style="cursor:pointer;user-select:none"'}
+
+  h+='<div class="tw"><table><thead><tr>';
+  h+='<th style="width:30px"><input type="checkbox" onchange="toggleAllInps(this.checked)" style="cursor:pointer"></th>';
+  h+='<th '+iHdrClick('date')+'>Date '+iSortArrow('date')+'</th>';
+  h+='<th '+iHdrClick('area')+'>Area/Zone '+iSortArrow('area')+'</th>';
+  h+='<th '+iHdrClick('name')+'>Name '+iSortArrow('name')+'</th>';
+  h+='<th '+iHdrClick('email')+'>Email '+iSortArrow('email')+'</th>';
+  h+='<th '+iHdrClick('contractor')+'>Contractor '+iSortArrow('contractor')+'</th>';
+  h+='<th '+iHdrClick('discipline')+'>Discipline '+iSortArrow('discipline')+'</th>';
+  h+='<th>Work Element</th>';
+  h+='<th>Drawing No</th>';
+  h+='<th>Requesting To</th>';
+  h+='<th>Actual Site Material</th>';
+  h+='<th '+iHdrClick('conformance')+'>Conformance '+iSortArrow('conformance')+'</th>';
+  h+='<th>Immediate Action</th>';
+  h+='<th>Escalation</th>';
+  h+='<th>Person Responsible</th>';
+  h+='<th>Reviewed By</th>';
+  h+='<th>Discussed With</th>';
+  h+='<th '+iHdrClick('remarks')+'>Remarks '+iSortArrow('remarks')+'</th>';
+  h+='<th '+iHdrClick('status')+'>Status '+iSortArrow('status')+'</th>';
+  h+='<th style="width:70px">Actions</th>';
+  h+='</tr></thead><tbody>';
+
+  for(var fi2=0;fi2<filteredInps.length;fi2++){
+    var ins=filteredInps[fi2].ins;
+    var i=filteredInps[fi2].idx;
     var isChecked=selectedInps.indexOf(i)>=0;
     var cb=(ins.conformance==='Conforming'||ins.conformance==='Yes')?'bg2':ins.conformance==='For Review'?'by2':'bd2';
     var sb=ins.status==='Completed'||ins.status==='Closed'?'bg2':ins.status==='In Progress'?'bx2':'by2';
-    var src=ins.autoSync?'<span style="font-size:.48rem;color:var(--pu)" title="Auto-synced">●</span> ':'';
     h+='<tr'+(isChecked?' style="background:var(--blc)"':'')+'>';
     h+='<td><input type="checkbox" '+(isChecked?'checked':'')+' onchange="toggleInp('+i+',this.checked)" style="cursor:pointer"></td>';
-    h+='<td style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+(i+1)+'</td>';
     h+='<td style="font-family:JetBrains Mono;font-size:.64rem;white-space:nowrap">'+H(ins.date)+'</td>';
     h+='<td>'+H(ins.area)+'</td>';
-    h+='<td>'+src+H(ins.inspector)+'</td>';
+    h+='<td>'+H(ins.inspector)+'</td>';
     h+='<td style="font-size:.64rem">'+H(ins.email||'-')+'</td>';
     h+='<td>'+H(ins.contractor||'-')+'</td>';
     h+='<td style="font-size:.64rem">'+H(ins.discipline||'-')+'</td>';
@@ -568,17 +638,19 @@ if(total>0){
     h+='</tr>';
   }
   h+='</tbody></table></div>';
-
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">';
+  h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">Click column headers to sort</span>';
+  h+='<div style="display:flex;gap:8px;align-items:center">';
   if(selectedInps.length){
-    h+='<div style="margin-top:8px;display:flex;align-items:center;gap:8px">';
     h+='<span style="font-family:JetBrains Mono;font-size:.64rem;color:var(--bl)">'+selectedInps.length+' selected</span>';
     h+='<button class="btn bs bd" onclick="delSelectedInps()">Delete Selected</button>';
     h+='<button class="btn bs" onclick="selectedInps=[];doRender()">Clear Selection</button>';
-    h+='</div>';
   }
+  h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+filteredInps.length+' of '+total+' shown</span>';
+  h+='</div>';
+  h+='</div>';
   h+='</div>';
 }
-
 h+='<div class="fbar">';
 h+='<button class="btn bp" onclick="addInsp()">+ Record</button>';
 h+='<button class="btn" onclick="massUploadInsp()" style="border-color:var(--pu);color:var(--pu)">Mass Upload Excel</button>';
@@ -589,7 +661,10 @@ h+='<span style="flex:1"></span>';
 h+='<button class="btn bs" onclick="exportInspData()">Export</button>';
 h+='</div>';
 
+var wasInspFocused=document.activeElement&&document.activeElement.id==='inspQ';
+var inspCurPos=wasInspFocused?document.activeElement.selectionStart:0;
 $('app').innerHTML=h;
+if(wasInspFocused)setTimeout(function(){var el=document.getElementById('inspQ');if(el){el.focus();el.setSelectionRange(inspCurPos,inspCurPos)}},0);
 if(total>0)setTimeout(function(){
   drawDonut('confDonut',[{v:conf,c:'#2d8a32'},{v:rev,c:'#2874a6'},{v:nonConf,c:'#cc3333'}],total);
   drawDateChart(dateCount);
