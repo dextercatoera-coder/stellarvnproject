@@ -500,12 +500,15 @@ if(total>0){
 
   h+='<div class="card"><div class="ch"><span class="ct">By Area Inspected</span></div>';
   var _areaCount={};
+  var _areaOriginal={};
   for(var _ai=0;_ai<total;_ai++){
-    var _ar=inps[_ai].area||'Unknown';
+    var _arRaw=inps[_ai].area||'Unknown';
+    var _ar=_arRaw.toLowerCase().trim();
+    if(!_areaOriginal[_ar])_areaOriginal[_ar]=_arRaw;
     _areaCount[_ar]=(_areaCount[_ar]||0)+1;
   }
   var _arSorted=[];
-  for(var _ak in _areaCount)_arSorted.push({n:_ak,c:_areaCount[_ak]});
+  for(var _ak in _areaCount)_arSorted.push({n:_areaOriginal[_ak],c:_areaCount[_ak]});
   _arSorted.sort(function(a,b){return b.c-a.c});
   var _arMax=_arSorted.length?_arSorted[0].c:1;
   var _arCols=['#2d8a32','#2874a6','#d4930d','#9b59b6','#b89630','#cc3333'];
