@@ -465,15 +465,18 @@ if(total>0){
   }
   h+='</div>';
 
-  h+='<div class="card"><div class="ch"><span class="ct">By Status</span></div>';
-  var stItems=[];for(var k in statusCount)stItems.push({l:k,v:statusCount[k]});
-  stItems.sort(function(a,b){return b.v-a.v});
-  var maxS=stItems.length?stItems[0].v:1;
-  for(var d=0;d<stItems.length;d++){
-    var si=stItems[d],wp3=Math.round(si.v/maxS*100);
-    h+='<div class="val-chart"><div class="val-clabel">'+H(si.l)+'</div><div class="val-ctrack"><div class="val-cfill" style="width:'+wp3+'%;background:#b89630">'+si.v+'</div></div><div class="val-cval">'+Math.round(si.v/total*100)+'%</div></div>';
+  h+='<div class="card"><div class="ch"><span class="ct">Status Performance</span></div>';
+  h+='<canvas id="statusDonut" width="160" height="160" style="width:160px;height:160px;display:block;margin:0 auto 10px"></canvas>';
+  var _sc={'Open':'#d4930d','In Progress':'#2874a6','Completed':'#2d8a32','Closed':'#7a7570'};
+  for(var k in statusCount){
+    var _c=_sc[k]||'#9b59b6';
+    h+='<div style="display:flex;align-items:center;gap:6px;font-size:.72rem;padding:2px 0">';
+    h+='<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+_c+'"></span>';
+    h+='<span>'+H(k)+'</span><span style="flex:1"></span><b>'+statusCount[k]+'</b>';
+    h+='<span style="font-family:JetBrains Mono;font-size:.6rem;color:var(--t3)">('+Math.round(statusCount[k]/total*100)+'%)</span>';
+    h+='</div>';
   }
-  h+='</div></div>';
+  h+='</div>';
 
   h+='<div class="card"><div class="ch"><span class="ct">Inspections Per Day</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+Object.keys(dateCount).length+' days</span></div>';
   h+='<canvas id="dateChart" width="900" height="200" style="width:100%;height:auto;display:block"></canvas></div>';
@@ -544,6 +547,7 @@ $('app').innerHTML=h;
 if(total>0)setTimeout(function(){
   drawDonut('confDonut',[{v:conf,c:'#2d8a32'},{v:rev,c:'#2874a6'},{v:nonConf,c:'#cc3333'}],total);
   drawDateChart(dateCount);
+    var _ss=[];var _scc={'Open':'#d4930d','In Progress':'#2874a6','Completed':'#2d8a32','Closed':'#7a7570';for(var _k in statusCount)_ss.push({v:statusCount[_k],c:_scc[_k]||'#9b59b6'});if(_ss.length)drawDonut('statusDonut',_ss,total);
 },50);
 };
 
