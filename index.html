@@ -557,6 +557,7 @@ var cb=document.getElementById('scc_'+c);
 if(!cb)return;
 
 if(cb.checked){
+  /* Add this category's items */
   var div=document.createElement('div');
   div.id='safecat_'+c;
   div.style.cssText='margin-bottom:12px;padding:12px;background:var(--s2);border-radius:var(--r);border:1px solid var(--bl)';
@@ -565,43 +566,27 @@ if(cb.checked){
     var ks='scs_'+c+'_'+i;
     var kt='sct_'+c+'_'+i;
     var kn='scn_'+c+'_'+i;
-    html+='<div id="scrow_'+c+'_'+i+'" style="padding:6px 0;border-bottom:1px solid rgba(42,45,38,.3)">';
+    html+='<div style="padding:6px 0;border-bottom:1px solid rgba(42,45,38,.3)">';
     html+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">';
     html+='<div style="flex:1;font-size:.72rem">'+H(safeChecklist[c].items[i])+'</div>';
-    html+='<select id="'+ks+'" style="padding:2px;font-size:.6rem;width:110px" onchange="safeToggleItem('+c+','+i+')">';
-    html+='<option value="">-- Select --</option>';
+    html+='<select id="'+ks+'" style="padding:2px;font-size:.6rem;width:110px" onchange="safeTypeHint(this,\''+kt+'\')">';
     html+='<option value="Satisfactory">Satisfactory</option>';
     html+='<option value="Needs Improvement">Needs Improvement</option>';
     html+='<option value="Unsatisfactory">Unsatisfactory</option>';
     html+='<option value="N/A">N/A</option></select>';
-    html+='<select id="'+kt+'" style="padding:2px;font-size:.6rem;width:110px;display:none">';
+    html+='<select id="'+kt+'" style="padding:2px;font-size:.6rem;width:110px">';
     var tns=['Observation','Unsafe Act','Unsafe Condition','Near Miss','First Aid','Recordable','LTI'];
     for(var ti=0;ti<tns.length;ti++)html+='<option>'+tns[ti]+'</option>';
     html+='</select></div>';
-    html+='<input type="text" id="'+kn+'" placeholder="Add note..." style="display:none;width:100%;padding:3px 6px;font-size:.64rem;border:1px solid var(--bd);background:var(--s1);border-radius:3px">';
+    html+='<input type="text" id="'+kn+'" placeholder="Add note..." style="width:100%;padding:3px 6px;font-size:.64rem;border:1px solid var(--bd);background:var(--s1);border-radius:3px">';
     html+='</div>';
   }
   div.innerHTML=html;
   area.appendChild(div);
 }else{
+  /* Remove this category */
   var el=document.getElementById('safecat_'+c);
   if(el)el.remove();
-}
-function safeToggleItem(c,i){
-var se=document.getElementById('scs_'+c+'_'+i);
-var te=document.getElementById('sct_'+c+'_'+i);
-var ne=document.getElementById('scn_'+c+'_'+i);
-if(!se)return;
-var v=se.value;
-if(v===''){
-  if(te)te.style.display='none';
-  if(ne)ne.style.display='none';
-}else{
-  if(te){te.style.display='inline-block'}
-  if(ne){ne.style.display='block'}
-  if(v==='Satisfactory'||v==='N/A'){if(te)te.value='Observation'}
-  else if(v==='Needs Improvement'){if(te)te.value='Unsafe Condition'}
-  else if(v==='Unsatisfactory'){if(te)te.value='Unsafe Act'}
 }
 }
 
@@ -634,18 +619,14 @@ for(var c=0;c<safeChecklist.length;c++){
     var te=document.getElementById('sct_'+c+'_'+i);
     var ne=document.getElementById('scn_'+c+'_'+i);
     if(!se)continue;
-    var st=se.value;
-    if(st==='')continue;
-    var tp=te?te.value:'Observation';
-    var nt=ne?ne.value.trim():'';
+    var st=se.value,tp=te?te.value:'Observation',nt=ne?ne.value.trim():'';
     items.push({category:safeChecklist[c].cat,item:safeChecklist[c].items[i],status:st,type:tp,note:nt});
     if(st==='Satisfactory')sat++;
     else if(st==='Needs Improvement')ni++;
     else if(st==='Unsatisfactory')uns++;
   }
 }
-if(!anyChecked){alert('Select at least one category.');return}
-if(items.length===0){alert('Set a status for at least one item.');return}
+if(!anyChecked){alert('Please select at least one category.');return}
 var tot=sat+ni+uns;
 var ov='Satisfactory';
 if(tot>0){
@@ -654,16 +635,12 @@ if(tot>0){
   else if(sp>=50)ov='Needs Improvement';
   else ov='Unsatisfactory';
 }
-var catsUsed=[];
-for(var ci=0;ci<safeChecklist.length;ci++){
-  var cb2=document.getElementById('scc_'+ci);
-  if(cb2&&cb2.checked)catsUsed.push(safeChecklist[ci].cat);
-}
 S.safetyInspections.unshift({
   id:Date.now(),date:$('siD').value,area:$('siA').value.trim(),
   inspector:$('siI').value.trim(),contractor:$('siCo').value.trim(),
   remarks:$('siR').value.trim(),items:items,overall:ov,
-  satCount:sat,niCount:ni,unsatCount:uns,categories:catsUsed
+  satCount:sat,niCount:ni,unsatCount:uns,
+  categories:items.map(function(x){return x.category}).filter(function(v,i,a){return a.indexOf(v)===i})
 });
 save();mC();notify('Submitted');doRender();
 }
@@ -671,21 +648,28 @@ function safeViewInsp(idx){
 var si=S.safetyInspections[idx];if(!si)return;
 var typeCols2={'Observation':'#6a6560','Unsafe Act':'#2d8a32','Unsafe Condition':'#9b59b6','Near Miss':'#2874a6','First Aid':'#e8c547','Recordable':'#d4930d','LTI':'#cc3333'};
 var bd='<div style="max-height:70vh;overflow-y:auto">';
-bd+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">';
-bd+='<div style="padding:8px;background:var(--gc);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--g);font-family:JetBrains Mono">SAT</div><div style="font-size:1.2rem;font-weight:700;color:var(--g)">'+(si.satCount||0)+'</div></div>';
-bd+='<div style="padding:8px;background:var(--orc);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--or);font-family:JetBrains Mono">NI</div><div style="font-size:1.2rem;font-weight:700;color:var(--or)">'+(si.niCount||0)+'</div></div>';
-bd+='<div style="padding:8px;background:rgba(204,51,51,.12);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--rd);font-family:JetBrains Mono">UNSAT</div><div style="font-size:1.2rem;font-weight:700;color:var(--rd)">'+(si.unsatCount||0)+'</div></div>';
+bd+='<div style="display:flex;align-items:flex-start;gap:6px;padding:3px 0;font-size:.7rem">';
+bd+='<span style="width:6px;height:6px;border-radius:50%;background:'+sc3+';flex-shrink:0;margin-top:5px"></span>';
+bd+='<div style="flex:1">';
+bd+='<div style="display:flex;align-items:center;gap:6px">';
+bd+='<span style="flex:1">'+H(it.item)+'</span>';
+if(it.status!=='Satisfactory'&&it.status!=='N/A'){
+  bd+='<span style="font-family:JetBrains Mono;font-size:.5rem;padding:1px 5px;border-radius:3px;background:'+tpC+'22;color:'+tpC+'">'+H(it.type)+'</span>';
+}
+bd+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:'+sc3+';min-width:80px;text-align:right">'+H(it.status)+'</span>';
 bd+='</div>';
-bd+='<div style="font-size:.76rem;margin-bottom:8px"><b>Date:</b> '+H(si.date)+' | <b>Area:</b> '+H(si.area)+' | <b>Inspector:</b> '+H(si.inspector)+' | <b>Overall:</b> <span style="color:'+(si.overall==='Satisfactory'?'var(--g)':si.overall==='Needs Improvement'?'var(--or)':'var(--rd)')+';font-weight:700">'+H(si.overall)+'</span></div>';
-if(si.contractor)bd+='<div style="font-size:.76rem;margin-bottom:4px"><b>Contractor:</b> '+H(si.contractor)+'</div>';
-if(si.categories&&si.categories.length)bd+='<div style="font-size:.72rem;margin-bottom:8px;color:var(--t3)"><b>Categories:</b> '+H(si.categories.join(', '))+'</div>';
+if(it.note)bd+='<div style="font-size:.62rem;color:var(--t3);font-style:italic;margin-top:2px;padding-left:4px">Note: '+H(it.note)+'</div>';
+bd+='</div></div>';
 if(si.remarks)bd+='<div style="font-size:.76rem;margin-bottom:8px"><b>Remarks:</b> '+H(si.remarks)+'</div>';
 
+/* Type badges */
 var itc={};
 var itms=si.items||[];
 for(var i=0;i<itms.length;i++){
-  var t2=itms[i].type||'Observation';
-  itc[t2]=(itc[t2]||0)+1;
+  if(itms[i].status!=='Satisfactory'&&itms[i].status!=='N/A'){
+    var t2=itms[i].type||'Observation';
+    itc[t2]=(itc[t2]||0)+1;
+  }
 }
 bd+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
 var tns2=['LTI','Recordable','First Aid','Near Miss','Unsafe Condition','Unsafe Act','Observation'];
@@ -710,18 +694,14 @@ for(var cat in grp){
     var it=grp[cat][i];
     var sc3=it.status==='Satisfactory'?'var(--g)':it.status==='Needs Improvement'?'var(--or)':it.status==='Unsatisfactory'?'var(--rd)':'var(--t3)';
     var tpC=typeCols2[it.type]||'#6a6560';
-    bd+='<div style="display:flex;align-items:flex-start;gap:6px;padding:3px 0;font-size:.7rem">';
-    bd+='<span style="width:6px;height:6px;border-radius:50%;background:'+sc3+';flex-shrink:0;margin-top:5px"></span>';
-    bd+='<div style="flex:1">';
-    bd+='<div style="display:flex;align-items:center;gap:6px">';
+    bd+='<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:.7rem">';
+    bd+='<span style="width:6px;height:6px;border-radius:50%;background:'+sc3+';flex-shrink:0"></span>';
     bd+='<span style="flex:1">'+H(it.item)+'</span>';
     if(it.status!=='Satisfactory'&&it.status!=='N/A'){
       bd+='<span style="font-family:JetBrains Mono;font-size:.5rem;padding:1px 5px;border-radius:3px;background:'+tpC+'22;color:'+tpC+'">'+H(it.type)+'</span>';
     }
     bd+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:'+sc3+';min-width:80px;text-align:right">'+H(it.status)+'</span>';
     bd+='</div>';
-    if(it.note)bd+='<div style="font-size:.62rem;color:var(--t3);font-style:italic;margin-top:2px;padding-left:4px">Note: '+H(it.note)+'</div>';
-    bd+='</div></div>';
   }
   bd+='</div>';
 }
