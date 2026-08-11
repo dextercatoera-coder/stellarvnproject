@@ -2240,7 +2240,201 @@ for(var cat in grp){
   bd+='</div>';
 }
 bd+='</div>';
-mO('Inspection #'+(idx+1),bd,'<button class="btn" onclick="mC()">Close</button>');
+mO('Inspection #'+(idx+1),bd,'<button class="btn" onclick="mC()">Close</button> <button class="btn bp" onclick="safeEditInsp('+idx+')">Edit</button>');
+}
+
+function safeEditInsp(idx){
+var si=S.safetyInspections[idx];
+if(!si)return;
+var itms=si.items||[];
+var bd='<div style="max-height:70vh;overflow-y:auto;padding-right:8px">';
+bd+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+bd+='<div class="fg"><label class="fl">Date</label><input type="date" id="eiD" value="'+H(si.date)+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Area/Zone</label><input type="text" id="eiA" value="'+H(si.area)+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Inspector</label><input type="text" id="eiI" value="'+H(si.inspector)+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Contractor</label><input type="text" id="eiCo" value="'+H(si.contractor||'')+'" style="width:100%"></div>';
+bd+='</div>';
+bd+='<div class="fg"><label class="fl">Remarks</label><textarea id="eiR" rows="2" style="width:100%">'+H(si.remarks||'')+'</textarea></div>';
+bd+='<div style="font-weight:700;font-size:.82rem;margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--bd)">Edit Items</div>';
+bd+='<div style="font-size:.62rem;color:var(--t3);margin-bottom:10px">Modify status, type, or notes for each item below.</div>';
+
+for(var i=0;i<itms.length;i++){
+  var it=itms[i];
+  var stBg=it.status==='Satisfactory'?'var(--g)':it.status==='Needs Improvement'?'var(--or)':it.status==='Unsatisfactory'?'var(--rd)':'var(--t3)';
+  bd+='<div style="padding:8px 10px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:6px">';
+  bd+='<div style="font-size:.62rem;color:var(--bl);margin-bottom:4px;font-family:JetBrains Mono">'+H(it.category)+'</div>';
+  bd+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">';
+  bd+='<div style="flex:1;font-size:.72rem">'+H(it.item)+'</div>';
+  bd+='<select id="eis_'+i+'" style="padding:2px;font-size:.6rem;width:110px" onchange="safeEditTogItm('+i+')">';
+  var sts=['Satisfactory','Needs Improvement','Unsatisfactory','N/A'];
+  for(var si2=0;si2<sts.length;si2++){
+    bd+='<option value="'+sts[si2]+'"'+(it.status===sts[si2]?' selected':'')+'>'+sts[si2]+'</option>';
+  }
+  bd+='</select>';
+  bd+='<select id="eit_'+i+'" style="padding:2px;font-size:.6rem;width:110px'+(it.status==='Satisfactory'||it.status==='N/A'?'':'')+'">';
+  for(var ti=0;ti<safeTypeList.length;ti++){
+    bd+='<option'+(it.type===safeTypeList[ti]?' selected':'')+'>'+safeTypeList[ti]+'</option>';
+  }
+  bd+='</select></div>';
+  bd+='<input type="text" id="ein_'+i+'" placeholder="Add note..." value="'+H(it.note||'')+'" style="width:100%;padding:3px 6px;font-size:.64rem;border:1px solid var(--bd);background:var(--s1);border-radius:3px">';
+  bd+='</div>';
+}
+
+bd+='<div style="font-weight:700;font-size:.82rem;margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--bd)">Add New Items</div>';
+bd+='<div style="font-size:.62rem;color:var(--t3);margin-bottom:8px">Select additional categories to add more items.</div>';
+bd+='<div id="eiNewArea"></div>';
+var existingCats=si.categories||[];
+bd+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin-bottom:10px">';
+for(var c=0;c<safeChecklist.length;c++){
+  var alreadyHas=existingCats.indexOf(safeChecklist[c].cat)>=0;
+  bd+='<label style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--s2);border:1px solid '+(alreadyHas?'var(--bl)':'var(--bd)')+';border-radius:var(--r);cursor:pointer;font-size:.72rem">';
+  bd+='<input type="checkbox" id="eic_'+c+'" onchange="safeEditTogNewCat('+c+')" style="cursor:pointer">';
+  bd+='<span'+(alreadyHas?' style="color:var(--bl)"':'')+'>'+H(safeChecklist[c].cat)+(alreadyHas?' (existing)':'')+'</span>';
+  bd+='</label>';
+}
+bd+='</div>';
+
+bd+='</div>';
+mO('Edit Inspection #'+(idx+1),bd,'<button class="btn" onclick="safeViewInsp('+idx+')">Cancel</button> <button class="btn bp" onclick="safeSaveEdit('+idx+')">Save Changes</button>');
+}
+
+function safeEditTogItm(i){
+var se=document.getElementById('eis_'+i);
+if(!se)return;
+var te=document.getElementById('eit_'+i);
+var v=se.value;
+if(v==='Satisfactory'||v==='N/A'){if(te)te.value='Observation'}
+else if(v==='Needs Improvement'){if(te)te.value='Unsafe Condition'}
+else if(v==='Unsatisfactory'){if(te)te.value='Unsafe Act'}
+}
+
+function safeEditTogNewCat(c){
+var area=document.getElementById('eiNewArea');
+if(!area)return;
+var cb=document.getElementById('eic_'+c);
+if(!cb)return;
+if(cb.checked){
+  var div=document.createElement('div');
+  div.id='einc_'+c;
+  div.style.cssText='margin-bottom:12px;padding:12px;background:var(--s2);border-radius:var(--r);border:1px solid var(--bl)';
+  var html='<div style="font-weight:700;font-size:.76rem;color:var(--bl);margin-bottom:6px">'+H(safeChecklist[c].cat)+' (New)</div>';
+  for(var i=0;i<safeChecklist[c].items.length;i++){
+    var isOther=safeChecklist[c].items[i]==='Others';
+    html+='<div style="padding:6px 0;border-bottom:1px solid rgba(42,45,38,.3)">';
+    html+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">';
+    if(isOther){
+      html+='<input type="text" id="eino_'+c+'_'+i+'" placeholder="Specify other finding..." style="flex:1;padding:4px 8px;font-size:.72rem;border:1px solid var(--bd);background:var(--s1);border-radius:3px">';
+    }else{
+      html+='<div style="flex:1;font-size:.72rem">'+H(safeChecklist[c].items[i])+'</div>';
+    }
+    html+='<select id="eins_'+c+'_'+i+'" style="padding:2px;font-size:.6rem;width:110px" onchange="safeEditTogNewItem('+c+','+i+')">';
+    html+='<option value="">-- Select --</option>';
+    html+='<option value="Satisfactory">Satisfactory</option>';
+    html+='<option value="Needs Improvement">Needs Improvement</option>';
+    html+='<option value="Unsatisfactory">Unsatisfactory</option>';
+    html+='<option value="N/A">N/A</option></select>';
+    html+='<select id="eint_'+c+'_'+i+'" style="padding:2px;font-size:.6rem;width:110px;display:none">';
+    for(var ti=0;ti<safeTypeList.length;ti++){html+='<option>'+safeTypeList[ti]+'</option>'}
+    html+='</select></div>';
+    html+='<input type="text" id="einn_'+c+'_'+i+'" placeholder="Add note..." style="display:none;width:100%;padding:3px 6px;font-size:.64rem;border:1px solid var(--bd);background:var(--s1);border-radius:3px">';
+    html+='</div>';
+  }
+  div.innerHTML=html;
+  area.appendChild(div);
+}else{
+  var el=document.getElementById('einc_'+c);
+  if(el)el.remove();
+}
+}
+
+function safeEditTogNewItem(c,i){
+var se=document.getElementById('eins_'+c+'_'+i);
+if(!se)return;
+var te=document.getElementById('eint_'+c+'_'+i);
+var ne=document.getElementById('einn_'+c+'_'+i);
+var v=se.value;
+if(v===''){
+  if(te)te.style.display='none';
+  if(ne)ne.style.display='none';
+}else{
+  if(te)te.style.display='inline-block';
+  if(ne)ne.style.display='block';
+  if(v==='Satisfactory'||v==='N/A'){if(te)te.value='Observation'}
+  else if(v==='Needs Improvement'){if(te)te.value='Unsafe Condition'}
+  else if(v==='Unsatisfactory'){if(te)te.value='Unsafe Act'}
+}
+}
+
+function safeSaveEdit(idx){
+var si=S.safetyInspections[idx];
+if(!si)return;
+var oldItems=si.items||[];
+var items=[],sat=0,ni=0,uns=0;
+
+/* Update existing items */
+for(var i=0;i<oldItems.length;i++){
+  var se=document.getElementById('eis_'+i);
+  var te=document.getElementById('eit_'+i);
+  var ne=document.getElementById('ein_'+i);
+  if(!se)continue;
+  var st=se.value;
+  var tp=te?te.value:oldItems[i].type;
+  var nt=ne?ne.value.trim():(oldItems[i].note||'');
+  items.push({category:oldItems[i].category,item:oldItems[i].item,status:st,type:tp,note:nt});
+  if(st==='Satisfactory')sat++;
+  else if(st==='Needs Improvement')ni++;
+  else if(st==='Unsatisfactory')uns++;
+}
+
+/* Add new items */
+for(var c=0;c<safeChecklist.length;c++){
+  var cb=document.getElementById('eic_'+c);
+  if(!cb||!cb.checked)continue;
+  for(var i=0;i<safeChecklist[c].items.length;i++){
+    var se=document.getElementById('eins_'+c+'_'+i);
+    if(!se)continue;
+    var st=se.value;
+    if(st==='')continue;
+    var te=document.getElementById('eint_'+c+'_'+i);
+    var ne=document.getElementById('einn_'+c+'_'+i);
+    var itemName=safeChecklist[c].items[i];
+    if(itemName==='Others'){
+      var oe=document.getElementById('eino_'+c+'_'+i);
+      var otherText=oe?oe.value.trim():'';
+      if(!otherText){alert('Please specify the other finding in '+safeChecklist[c].cat);return}
+      itemName='Other: '+otherText;
+    }
+    items.push({category:safeChecklist[c].cat,item:itemName,status:st,type:te?te.value:'Observation',note:ne?ne.value.trim():''});
+    if(st==='Satisfactory')sat++;
+    else if(st==='Needs Improvement')ni++;
+    else if(st==='Unsatisfactory')uns++;
+  }
+}
+
+var tot=sat+ni+uns;
+var pct=tot>0?Math.round(sat/tot*100):0;
+var ov=pct>=80?'Satisfactory':pct>=50?'Needs Improvement':'Unsatisfactory';
+
+var catsUsed=[];
+for(var ci=0;ci<safeChecklist.length;ci++){
+  var has=false;
+  for(var ii=0;ii<items.length;ii++){if(items[ii].category===safeChecklist[ci].cat){has=true;break}}
+  if(has)catsUsed.push(safeChecklist[ci].cat);
+}
+
+si.date=$('eiD').value;
+si.area=$('eiA').value.trim();
+si.inspector=$('eiI').value.trim();
+si.contractor=$('eiCo').value.trim();
+si.remarks=$('eiR').value.trim();
+si.items=items;
+si.overall=ov;
+si.satCount=sat;
+si.niCount=ni;
+si.unsatCount=uns;
+si.categories=catsUsed;
+
+save();mC();notify('Updated');doRender();
 }
 
 function safeDelInsp(idx){
