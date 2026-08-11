@@ -1878,6 +1878,7 @@ aiMessages.push({role:'ai',text:resp});
 doRender();
 }
  /* === SAFETY === */
+/*
 var safeChecklist=[
 {cat:'PPE',items:['Hard hats not worn','Safety boots missing','Hi-vis vest missing','Safety glasses missing','Wrong gloves','No hearing protection','Fall harness missing','Damaged PPE in use']},
 {cat:'Scaffolding & Heights',items:['Unstable scaffold base','Missing guardrails','Scaffold not inspected','Ladder not secured','Wrong ladder angle','No fall arrest at edges','Hole covers missing','Unsafe access to heights']},
@@ -2194,7 +2195,7 @@ mO('Inspection #'+(idx+1),bd,'<button class="btn" onclick="mC()">Close</button>'
 function safeDelInsp(idx){
 if(!confirm('Delete?'))return;
 S.safetyInspections.splice(idx,1);save();notify('Deleted');doRender();
-}
+}*/
 </script>
 </body>
 </html>
