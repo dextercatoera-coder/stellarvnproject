@@ -1879,16 +1879,16 @@ doRender();
 }
 /* === SAFETY === */
 var safeChecklist=[
-{cat:'PPE',items:['Hard hats not worn','Safety boots missing','Hi-vis vest missing','Safety glasses missing','Wrong gloves','No hearing protection','Fall harness missing','Damaged PPE']},
-{cat:'Scaffolding & Heights',items:['Unstable scaffold base','Missing guardrails','Scaffold not inspected','Ladder not secured','Wrong ladder angle','No fall arrest','Hole covers missing','Unsafe access']},
-{cat:'Excavation',items:['Trench not shored','Spoils too close','No egress','Soil not classified','Utilities not located','Water in excavation','Equipment too close','No barricade']},
-{cat:'Electrical',items:['No GFCI','Damaged cords','Exposed wiring','No lockout/tagout','Overloaded circuits','Panels blocked','Wet near power','Unauthorized work']},
-{cat:'Lifting & Rigging',items:['Crane not inspected','Operator not certified','Damaged rigging','No signal person','Load not secured','Over capacity','Workers under load','Outriggers not set']},
-{cat:'Heavy Equipment',items:['No pre-use check','Operator not certified','Seatbelt off','Alarm broken','No spotter','Speeding','No exclusion zone','Keys left in']},
-{cat:'Fire & Hot Work',items:['No hot work permit','Extinguisher missing','Flammables nearby','No fire watch','Unauthorized smoking','Cylinders wrong','No screens','Combustibles not cleared']},
-{cat:'Housekeeping',items:['Cluttered area','Materials not stacked','Waste not removed','Nails exposed','Slippery surfaces','Debris falling','Blocked walkways','Improper storage']},
-{cat:'Chemical & Environment',items:['No SDS','Not labeled','No spill kit','Poor ventilation','Wrong PPE','Excessive dust','Excessive noise','Improper disposal']},
-{cat:'General Safety',items:['First aid missing','Contacts not posted','Signage missing','No toolbox talk','Not inducted','Missing barricades','Unauthorized persons','No supervisor']}
+{cat:'PPE',items:['Hard hats not worn','Safety boots missing','Hi-vis vest missing','Safety glasses missing','Wrong gloves','No hearing protection','Fall harness missing','Damaged PPE','Others']},
+{cat:'Scaffolding & Heights',items:['Unstable scaffold base','Missing guardrails','Scaffold not inspected','Ladder not secured','Wrong ladder angle','No fall arrest','Hole covers missing','Unsafe access','Others']},
+{cat:'Excavation',items:['Trench not shored','Spoils too close','No egress','Soil not classified','Utilities not located','Water in excavation','Equipment too close','No barricade','Others']},
+{cat:'Electrical',items:['No GFCI','Damaged cords','Exposed wiring','No lockout/tagout','Overloaded circuits','Panels blocked','Wet near power','Unauthorized work','Others']},
+{cat:'Lifting & Rigging',items:['Crane not inspected','Operator not certified','Damaged rigging','No signal person','Load not secured','Over capacity','Workers under load','Outriggers not set','Others']},
+{cat:'Heavy Equipment',items:['No pre-use check','Operator not certified','Seatbelt off','Alarm broken','No spotter','Speeding','No exclusion zone','Keys left in','Others']},
+{cat:'Fire & Hot Work',items:['No hot work permit','Extinguisher missing','Flammables nearby','No fire watch','Unauthorized smoking','Cylinders wrong','No screens','Combustibles not cleared','Others']},
+{cat:'Housekeeping',items:['Cluttered area','Materials not stacked','Waste not removed','Nails exposed','Slippery surfaces','Debris falling','Blocked walkways','Improper storage','Others']},
+{cat:'Chemical & Environment',items:['No SDS','Not labeled','No spill kit','Poor ventilation','Wrong PPE','Excessive dust','Excessive noise','Improper disposal','Others']},
+{cat:'General Safety',items:['First aid missing','Contacts not posted','Signage missing','No toolbox talk','Not inducted','Missing barricades','Unauthorized persons','No supervisor','Others']}
 ];
 var safeTypeList=['Observation','Unsafe Act','Unsafe Condition','Near Miss','First Aid','Recordable','LTI'];
 var safeTypeCol={'Observation':'#6a6560','Unsafe Act':'#2d8a32','Unsafe Condition':'#9b59b6','Near Miss':'#2874a6','First Aid':'#e8c547','Recordable':'#d4930d','LTI':'#cc3333'};
@@ -2056,7 +2056,6 @@ bd+='<div id="safeCLA"></div>';
 bd+='</div>';
 mO('Safety Inspection',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="safeSaveInsp()">Submit</button>');
 }
-
 function safeTogCat(c){
 var area=document.getElementById('safeCLA');
 if(!area)return;
@@ -2068,9 +2067,14 @@ if(cb.checked){
   div.style.cssText='margin-bottom:12px;padding:12px;background:var(--s2);border-radius:var(--r);border:1px solid var(--bl)';
   var html='<div style="font-weight:700;font-size:.76rem;color:var(--bl);margin-bottom:6px">'+H(safeChecklist[c].cat)+'</div>';
   for(var i=0;i<safeChecklist[c].items.length;i++){
+    var isOther=safeChecklist[c].items[i]==='Others';
     html+='<div style="padding:6px 0;border-bottom:1px solid rgba(42,45,38,.3)">';
     html+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">';
-    html+='<div style="flex:1;font-size:.72rem">'+H(safeChecklist[c].items[i])+'</div>';
+    if(isOther){
+      html+='<input type="text" id="sco_'+c+'_'+i+'" placeholder="Specify other finding..." style="flex:1;padding:4px 8px;font-size:.72rem;border:1px solid var(--bd);background:var(--s1);border-radius:3px">';
+    }else{
+      html+='<div style="flex:1;font-size:.72rem">'+H(safeChecklist[c].items[i])+'</div>';
+    }
     html+='<select id="scs_'+c+'_'+i+'" style="padding:2px;font-size:.6rem;width:110px" onchange="safeTogItm('+c+','+i+')">';
     html+='<option value="">-- Select --</option>';
     html+='<option value="Satisfactory">Satisfactory</option>';
@@ -2090,7 +2094,6 @@ if(cb.checked){
   if(el)el.remove();
 }
 }
-
 function safeTogItm(c,i){
 var se=document.getElementById('scs_'+c+'_'+i);
 if(!se)return;
@@ -2123,7 +2126,14 @@ for(var c=0;c<safeChecklist.length;c++){
     if(st==='')continue;
     var te=document.getElementById('sct_'+c+'_'+i);
     var ne=document.getElementById('scn_'+c+'_'+i);
-    items.push({category:safeChecklist[c].cat,item:safeChecklist[c].items[i],status:st,type:te?te.value:'Observation',note:ne?ne.value.trim():''});
+    var itemName=safeChecklist[c].items[i];
+    if(itemName==='Others'){
+      var oe=document.getElementById('sco_'+c+'_'+i);
+      var otherText=oe?oe.value.trim():'';
+      if(!otherText){alert('Please specify the other finding in '+safeChecklist[c].cat);return}
+      itemName='Other: '+otherText;
+    }
+    items.push({category:safeChecklist[c].cat,item:itemName,status:st,type:te?te.value:'Observation',note:ne?ne.value.trim():''});
     if(st==='Satisfactory')sat++;
     else if(st==='Needs Improvement')ni++;
     else if(st==='Unsatisfactory')uns++;
