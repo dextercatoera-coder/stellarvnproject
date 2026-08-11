@@ -1877,13 +1877,28 @@ else{
 aiMessages.push({role:'ai',text:resp});
 doRender();
 }
+/* === SAFETY === */
+var safeChecklist=[
+{cat:'PPE',items:['Hard hats not worn','Safety boots missing','Hi-vis vest missing','Safety glasses missing','Wrong gloves','No hearing protection','Fall harness missing','Damaged PPE']},
+{cat:'Scaffolding & Heights',items:['Unstable scaffold base','Missing guardrails','Scaffold not inspected','Ladder not secured','Wrong ladder angle','No fall arrest','Hole covers missing','Unsafe access']},
+{cat:'Excavation',items:['Trench not shored','Spoils too close','No egress','Soil not classified','Utilities not located','Water in excavation','Equipment too close','No barricade']},
+{cat:'Electrical',items:['No GFCI','Damaged cords','Exposed wiring','No lockout/tagout','Overloaded circuits','Panels blocked','Wet near power','Unauthorized work']},
+{cat:'Lifting & Rigging',items:['Crane not inspected','Operator not certified','Damaged rigging','No signal person','Load not secured','Over capacity','Workers under load','Outriggers not set']},
+{cat:'Heavy Equipment',items:['No pre-use check','Operator not certified','Seatbelt off','Alarm broken','No spotter','Speeding','No exclusion zone','Keys left in']},
+{cat:'Fire & Hot Work',items:['No hot work permit','Extinguisher missing','Flammables nearby','No fire watch','Unauthorized smoking','Cylinders wrong','No screens','Combustibles not cleared']},
+{cat:'Housekeeping',items:['Cluttered area','Materials not stacked','Waste not removed','Nails exposed','Slippery surfaces','Debris falling','Blocked walkways','Improper storage']},
+{cat:'Chemical & Environment',items:['No SDS','Not labeled','No spill kit','Poor ventilation','Wrong PPE','Excessive dust','Excessive noise','Improper disposal']},
+{cat:'General Safety',items:['First aid missing','Contacts not posted','Signage missing','No toolbox talk','Not inducted','Missing barricades','Unauthorized persons','No supervisor']}
+];
+var safeTypeList=['Observation','Unsafe Act','Unsafe Condition','Near Miss','First Aid','Recordable','LTI'];
+var safeTypeCol={'Observation':'#6a6560','Unsafe Act':'#2d8a32','Unsafe Condition':'#9b59b6','Near Miss':'#2874a6','First Aid':'#e8c547','Recordable':'#d4930d','LTI':'#cc3333'};
+
 R.safety=function(){
 if(!S.safety)S.safety={};
 if(!Array.isArray(S.safetyInspections))S.safetyInspections=[];
 var s=S.safety;
 var inps=S.safetyInspections;
 var dLTI=dd(s.startDate||'2026-04-13',td());
-
 var tc={};
 for(var t=0;t<safeTypeList.length;t++){tc[safeTypeList[t]]=0}
 for(var i=0;i<inps.length;i++){
@@ -1900,12 +1915,10 @@ for(var i=0;i<inps.length;i++){
   else if(inps[i].overall==='Needs Improvement')niC++;
   else unsC++;
 }
-
 var h='';
 h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
 h+='<div><h2>Safety Management</h2><p style="font-size:.72rem;color:var(--t3)">HSE Monitoring and Inspections</p></div>';
 h+='<button class="btn bp" onclick="safeAddInsp()">+ Safety Inspection</button></div>';
-
 h+='<div class="stats">';
 h+='<div class="si" style="border-left:4px solid var(--g)"><div class="sl">Safe Hours</div><div class="sv" style="color:var(--g)">'+(s.safeHours||0).toLocaleString()+'</div></div>';
 h+='<div class="si" style="border-left:4px solid var(--bl)"><div class="sl">Days w/o LTI</div><div class="sv" style="color:var(--bl)">'+dLTI+'</div></div>';
@@ -1914,7 +1927,6 @@ h+='<div class="si" style="border-left:4px solid var(--rd)"><div class="sl">Unsa
 h+='<div class="si" style="border-left:4px solid var(--pu)"><div class="sl">Unsafe Cond.</div><div class="sv" style="color:var(--pu)">'+tc['Unsafe Condition']+'</div></div>';
 h+='<div class="si" style="border-left:4px solid var(--am)"><div class="sl">Inspections</div><div class="sv" style="color:var(--am)">'+inps.length+'</div></div>';
 h+='</div>';
-
 h+='<div class="card" style="border-left:4px solid var(--bl)"><div class="ch"><span class="ct" style="color:var(--bl)">Safety Metrics</span></div>';
 h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px">';
 h+='<div><label style="font-size:.6rem;color:var(--t3)">Start Date</label><input type="date" value="'+H(s.startDate||td())+'" style="width:100%" onchange="S.safety.startDate=this.value;save()"></div>';
@@ -1922,9 +1934,7 @@ h+='<div><label style="font-size:.6rem;color:var(--t3)">Safe Hours</label><input
 h+='<div><label style="font-size:.6rem;color:var(--t3)">Near Misses</label><input type="number" value="'+(s.nearMisses||0)+'" style="width:100%" onchange="S.safety.nearMisses=parseInt(this.value)||0;save()"></div>';
 h+='<div><label style="font-size:.6rem;color:var(--t3)">Incidents</label><input type="number" value="'+(s.incidents||0)+'" style="width:100%" onchange="S.safety.incidents=parseInt(this.value)||0;save()"></div>';
 h+='</div></div>';
-
 h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">';
-
 h+='<div class="card"><div class="ch"><span class="ct" style="color:var(--bl)">Safety Triangle</span></div>';
 h+='<div style="padding:10px 0">';
 var triLevels=[{l:'LTI',v:tc['LTI'],c:'#cc3333'},{l:'Recordable',v:tc['Recordable'],c:'#d4930d'},{l:'First Aid',v:tc['First Aid'],c:'#e8c547'},{l:'Near Miss',v:tc['Near Miss'],c:'#2874a6'},{l:'Unsafe Condition',v:tc['Unsafe Condition'],c:'#9b59b6'},{l:'Unsafe Act',v:tc['Unsafe Act'],c:'#2d8a32'},{l:'Observation',v:tc['Observation'],c:'#6a6560'}];
@@ -1936,7 +1946,6 @@ for(var ti=0;ti<triLevels.length;ti++){
 }
 h+='<div style="text-align:center;font-size:.56rem;color:var(--t3);font-family:JetBrains Mono;margin-top:6px">Narrow top = severe, Wide base = frequent</div>';
 h+='</div></div>';
-
 h+='<div class="card"><div class="ch"><span class="ct" style="color:var(--g)">Safety Rating</span></div>';
 var donutTotal=Math.max(satC+niC+unsC,1);
 var satDeg=Math.round(satC/donutTotal*360);
@@ -1953,9 +1962,7 @@ h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:
 h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--rd);margin-right:6px"></span>Unsatisfactory: <b>'+unsC+'</b></div>';
 h+='</div></div></div>';
 h+='</div>';
-
 h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">';
-
 h+='<div class="card"><div class="ch"><span class="ct">Findings by Type</span></div>';
 var maxT=0;
 for(var tk in tc){if(tc[tk]>maxT){maxT=tc[tk]}}
@@ -1972,7 +1979,6 @@ for(var ti2=0;ti2<safeTypeList.length;ti2++){
   h+='</div></div></div>';
 }
 h+='</div>';
-
 var catR={};
 for(var i=0;i<inps.length;i++){
   var its2=inps[i].items||[];
@@ -2001,7 +2007,6 @@ for(var ci=0;ci<cArr.length;ci++){
   h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+cd.s+'/'+cd.t+'</span></div>';
 }
 h+='</div></div>';
-
 if(inps.length>0){
   h+='<div class="card"><div class="ch"><span class="ct">Inspection Log</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+inps.length+'</span></div>';
   h+='<div class="tw"><table><thead><tr><th>Date</th><th>Area</th><th>Inspector</th><th>Contractor</th><th>Categories</th><th style="text-align:center">SAT</th><th style="text-align:center">NI</th><th style="text-align:center">UNSAT</th><th>Overall</th><th style="width:80px">Actions</th></tr></thead><tbody>';
@@ -2024,9 +2029,189 @@ if(inps.length>0){
   }
   h+='</tbody></table></div></div>';
 }
-
 $('app').innerHTML=h;
 };
+
+function safeAddInsp(){
+var bd='<div style="max-height:70vh;overflow-y:auto;padding-right:8px">';
+bd+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+bd+='<div class="fg"><label class="fl">Date</label><input type="date" id="siD" value="'+td()+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Area/Zone</label><input type="text" id="siA" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Inspector</label><input type="text" id="siI" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Contractor</label><input type="text" id="siCo" style="width:100%"></div>';
+bd+='</div>';
+bd+='<div class="fg"><label class="fl">Remarks</label><textarea id="siR" rows="2" style="width:100%"></textarea></div>';
+bd+='<div style="font-weight:700;font-size:.82rem;margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--bd)">Select Categories to Inspect</div>';
+bd+='<div style="font-size:.62rem;color:var(--t3);margin-bottom:8px">Check only the categories you inspected. Items will appear below.</div>';
+bd+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin-bottom:14px">';
+for(var c=0;c<safeChecklist.length;c++){
+  bd+='<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);cursor:pointer;font-size:.76rem">';
+  bd+='<input type="checkbox" id="scc_'+c+'" onchange="safeTogCat('+c+')" style="cursor:pointer">';
+  bd+='<span>'+H(safeChecklist[c].cat)+'</span>';
+  bd+='<span style="font-family:JetBrains Mono;font-size:.52rem;color:var(--t3);margin-left:auto">'+safeChecklist[c].items.length+' items</span>';
+  bd+='</label>';
+}
+bd+='</div>';
+bd+='<div id="safeCLA"></div>';
+bd+='</div>';
+mO('Safety Inspection',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="safeSaveInsp()">Submit</button>');
+}
+
+function safeTogCat(c){
+var area=document.getElementById('safeCLA');
+if(!area)return;
+var cb=document.getElementById('scc_'+c);
+if(!cb)return;
+if(cb.checked){
+  var div=document.createElement('div');
+  div.id='scat_'+c;
+  div.style.cssText='margin-bottom:12px;padding:12px;background:var(--s2);border-radius:var(--r);border:1px solid var(--bl)';
+  var html='<div style="font-weight:700;font-size:.76rem;color:var(--bl);margin-bottom:6px">'+H(safeChecklist[c].cat)+'</div>';
+  for(var i=0;i<safeChecklist[c].items.length;i++){
+    html+='<div style="padding:6px 0;border-bottom:1px solid rgba(42,45,38,.3)">';
+    html+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">';
+    html+='<div style="flex:1;font-size:.72rem">'+H(safeChecklist[c].items[i])+'</div>';
+    html+='<select id="scs_'+c+'_'+i+'" style="padding:2px;font-size:.6rem;width:110px" onchange="safeTogItm('+c+','+i+')">';
+    html+='<option value="">-- Select --</option>';
+    html+='<option value="Satisfactory">Satisfactory</option>';
+    html+='<option value="Needs Improvement">Needs Improvement</option>';
+    html+='<option value="Unsatisfactory">Unsatisfactory</option>';
+    html+='<option value="N/A">N/A</option></select>';
+    html+='<select id="sct_'+c+'_'+i+'" style="padding:2px;font-size:.6rem;width:110px;display:none">';
+    for(var ti=0;ti<safeTypeList.length;ti++){html+='<option>'+safeTypeList[ti]+'</option>'}
+    html+='</select></div>';
+    html+='<input type="text" id="scn_'+c+'_'+i+'" placeholder="Add note..." style="display:none;width:100%;padding:3px 6px;font-size:.64rem;border:1px solid var(--bd);background:var(--s1);border-radius:3px">';
+    html+='</div>';
+  }
+  div.innerHTML=html;
+  area.appendChild(div);
+}else{
+  var el=document.getElementById('scat_'+c);
+  if(el)el.remove();
+}
+}
+
+function safeTogItm(c,i){
+var se=document.getElementById('scs_'+c+'_'+i);
+if(!se)return;
+var te=document.getElementById('sct_'+c+'_'+i);
+var ne=document.getElementById('scn_'+c+'_'+i);
+var v=se.value;
+if(v===''){
+  if(te)te.style.display='none';
+  if(ne)ne.style.display='none';
+}else{
+  if(te)te.style.display='inline-block';
+  if(ne)ne.style.display='block';
+  if(v==='Satisfactory'||v==='N/A'){if(te)te.value='Observation'}
+  else if(v==='Needs Improvement'){if(te)te.value='Unsafe Condition'}
+  else if(v==='Unsatisfactory'){if(te)te.value='Unsafe Act'}
+}
+}
+
+function safeSaveInsp(){
+if(!Array.isArray(S.safetyInspections))S.safetyInspections=[];
+var items=[],sat=0,ni=0,uns=0,any=false;
+for(var c=0;c<safeChecklist.length;c++){
+  var cb=document.getElementById('scc_'+c);
+  if(!cb||!cb.checked)continue;
+  any=true;
+  for(var i=0;i<safeChecklist[c].items.length;i++){
+    var se=document.getElementById('scs_'+c+'_'+i);
+    if(!se)continue;
+    var st=se.value;
+    if(st==='')continue;
+    var te=document.getElementById('sct_'+c+'_'+i);
+    var ne=document.getElementById('scn_'+c+'_'+i);
+    items.push({category:safeChecklist[c].cat,item:safeChecklist[c].items[i],status:st,type:te?te.value:'Observation',note:ne?ne.value.trim():''});
+    if(st==='Satisfactory')sat++;
+    else if(st==='Needs Improvement')ni++;
+    else if(st==='Unsatisfactory')uns++;
+  }
+}
+if(!any){alert('Select at least one category.');return}
+if(items.length===0){alert('Set status for at least one item.');return}
+var tot=sat+ni+uns;
+var ov='Satisfactory';
+if(tot>0){
+  var sp=sat/tot*100;
+  ov=sp>=80?'Satisfactory':sp>=50?'Needs Improvement':'Unsatisfactory';
+}
+var catsUsed=[];
+for(var ci=0;ci<safeChecklist.length;ci++){
+  var cb2=document.getElementById('scc_'+ci);
+  if(cb2&&cb2.checked)catsUsed.push(safeChecklist[ci].cat);
+}
+S.safetyInspections.unshift({id:Date.now(),date:$('siD').value,area:$('siA').value.trim(),inspector:$('siI').value.trim(),contractor:$('siCo').value.trim(),remarks:$('siR').value.trim(),items:items,overall:ov,satCount:sat,niCount:ni,unsatCount:uns,categories:catsUsed});
+save();mC();notify('Submitted');doRender();
+}
+
+function safeViewInsp(idx){
+var si=S.safetyInspections[idx];
+if(!si)return;
+var bd='<div style="max-height:70vh;overflow-y:auto">';
+bd+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">';
+bd+='<div style="padding:8px;background:var(--gc);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--g);font-family:JetBrains Mono">SAT</div><div style="font-size:1.2rem;font-weight:700;color:var(--g)">'+(si.satCount||0)+'</div></div>';
+bd+='<div style="padding:8px;background:var(--orc);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--or);font-family:JetBrains Mono">NI</div><div style="font-size:1.2rem;font-weight:700;color:var(--or)">'+(si.niCount||0)+'</div></div>';
+bd+='<div style="padding:8px;background:rgba(204,51,51,.12);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--rd);font-family:JetBrains Mono">UNSAT</div><div style="font-size:1.2rem;font-weight:700;color:var(--rd)">'+(si.unsatCount||0)+'</div></div>';
+bd+='</div>';
+bd+='<div style="font-size:.76rem;margin-bottom:8px"><b>Date:</b> '+H(si.date)+' | <b>Area:</b> '+H(si.area)+' | <b>Inspector:</b> '+H(si.inspector)+'</div>';
+bd+='<div style="font-size:.76rem;margin-bottom:8px"><b>Overall:</b> <span style="color:'+(si.overall==='Satisfactory'?'var(--g)':si.overall==='Needs Improvement'?'var(--or)':'var(--rd)')+';font-weight:700">'+H(si.overall)+'</span></div>';
+if(si.contractor)bd+='<div style="font-size:.76rem;margin-bottom:4px"><b>Contractor:</b> '+H(si.contractor)+'</div>';
+if(si.categories&&si.categories.length)bd+='<div style="font-size:.72rem;margin-bottom:8px;color:var(--t3)"><b>Categories:</b> '+H(si.categories.join(', '))+'</div>';
+if(si.remarks)bd+='<div style="font-size:.76rem;margin-bottom:8px"><b>Remarks:</b> '+H(si.remarks)+'</div>';
+var itc={};
+var itms=si.items||[];
+for(var i=0;i<itms.length;i++){
+  var t2=itms[i].type||'Observation';
+  itc[t2]=(itc[t2]||0)+1;
+}
+bd+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
+var tns2=['LTI','Recordable','First Aid','Near Miss','Unsafe Condition','Unsafe Act','Observation'];
+for(var ti2=0;ti2<tns2.length;ti2++){
+  var tn2=tns2[ti2];
+  var tv2=itc[tn2]||0;
+  if(tv2>0){
+    var tc2=safeTypeCol[tn2]||'#6a6560';
+    bd+='<span style="font-size:.62rem;padding:3px 8px;border-radius:3px;background:'+tc2+'22;color:'+tc2+';font-family:JetBrains Mono">'+H(tn2)+': '+tv2+'</span>';
+  }
+}
+bd+='</div>';
+var grp={};
+for(var i=0;i<itms.length;i++){
+  var cat=itms[i].category||'Other';
+  if(!grp[cat])grp[cat]=[];
+  grp[cat].push(itms[i]);
+}
+for(var cat in grp){
+  bd+='<div style="margin-bottom:8px"><div style="font-weight:700;font-size:.72rem;color:var(--bl);margin-bottom:3px">'+H(cat)+'</div>';
+  for(var i=0;i<grp[cat].length;i++){
+    var it=grp[cat][i];
+    var sc3=it.status==='Satisfactory'?'var(--g)':it.status==='Needs Improvement'?'var(--or)':it.status==='Unsatisfactory'?'var(--rd)':'var(--t3)';
+    var tpC=safeTypeCol[it.type]||'#6a6560';
+    bd+='<div style="display:flex;align-items:flex-start;gap:6px;padding:3px 0;font-size:.7rem">';
+    bd+='<span style="width:6px;height:6px;border-radius:50%;background:'+sc3+';flex-shrink:0;margin-top:5px"></span>';
+    bd+='<div style="flex:1"><div style="display:flex;align-items:center;gap:6px">';
+    bd+='<span style="flex:1">'+H(it.item)+'</span>';
+    if(it.status!=='Satisfactory'&&it.status!=='N/A'){
+      bd+='<span style="font-family:JetBrains Mono;font-size:.5rem;padding:1px 5px;border-radius:3px;background:'+tpC+'22;color:'+tpC+'">'+H(it.type)+'</span>';
+    }
+    bd+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:'+sc3+';min-width:80px;text-align:right">'+H(it.status)+'</span>';
+    bd+='</div>';
+    if(it.note)bd+='<div style="font-size:.62rem;color:var(--t3);font-style:italic;margin-top:2px;padding-left:4px">Note: '+H(it.note)+'</div>';
+    bd+='</div></div>';
+  }
+  bd+='</div>';
+}
+bd+='</div>';
+mO('Inspection #'+(idx+1),bd,'<button class="btn" onclick="mC()">Close</button>');
+}
+
+function safeDelInsp(idx){
+if(!confirm('Delete?'))return;
+S.safetyInspections.splice(idx,1);
+save();notify('Deleted');doRender();
+}
 </script>
 </body>
 </html>
