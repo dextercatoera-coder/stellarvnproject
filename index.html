@@ -2229,21 +2229,6 @@ save();notify('Deleted');doRender();
   r+='</div>';
   el.innerHTML=r;
 }
-
-function debugSafeKeys(){
-  var el=document.getElementById('debugResult');
-  if(!el)return;
-  var r='<div style="margin-top:6px;padding:6px;background:var(--s1);border-radius:4px;max-height:120px;overflow-y:auto">';
-  r+='<div>Total keys: '+localStorage.length+'</div>';
-  for(var i=0;i<localStorage.length;i++){
-    var k=localStorage.key(i);
-    if(k.indexOf('buildsync')>=0||k.indexOf('safe')>=0||k.indexOf('insp')>=0){
-      r+='<div style="color:var(--am)">'+k+' ('+localStorage.getItem(k).length+' chars)</div>';
-    }
-  }
-  r+='</div>';
-  el.innerHTML=r;
-}
 </script>
 </body>
 </html>
