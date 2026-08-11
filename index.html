@@ -1877,26 +1877,156 @@ else{
 aiMessages.push({role:'ai',text:resp});
 doRender();
 }
-var safeChecklist=[
-{cat:'PPE',items:['Hard hats not worn','Safety boots missing','Hi-vis vest missing','Safety glasses missing','Wrong gloves','No hearing protection','Fall harness missing','Damaged PPE']},
-{cat:'Scaffolding & Heights',items:['Unstable scaffold base','Missing guardrails','Scaffold not inspected','Ladder not secured','Wrong ladder angle','No fall arrest','Hole covers missing','Unsafe access']},
-{cat:'Excavation',items:['Trench not shored','Spoils too close','No egress','Soil not classified','Utilities not located','Water in excavation','Equipment too close','No barricade']},
-{cat:'Electrical',items:['No GFCI','Damaged cords','Exposed wiring','No lockout/tagout','Overloaded circuits','Panels blocked','Wet near power','Unauthorized work']},
-{cat:'Lifting & Rigging',items:['Crane not inspected','Operator not certified','Damaged rigging','No signal person','Load not secured','Over capacity','Workers under load','Outriggers not set']},
-{cat:'Heavy Equipment',items:['No pre-use check','Operator not certified','Seatbelt off','Alarm broken','No spotter','Speeding','No exclusion zone','Keys left in']},
-{cat:'Fire & Hot Work',items:['No hot work permit','Extinguisher missing','Flammables nearby','No fire watch','Unauthorized smoking','Cylinders wrong','No screens','Combustibles not cleared']},
-{cat:'Housekeeping',items:['Cluttered area','Materials not stacked','Waste not removed','Nails exposed','Slippery surfaces','Debris falling','Blocked walkways','Improper storage']},
-{cat:'Chemical & Environment',items:['No SDS','Not labeled','No spill kit','Poor ventilation','Wrong PPE','Excessive dust','Excessive noise','Improper disposal']},
-{cat:'General Safety',items:['First aid missing','Contacts not posted','Signage missing','No toolbox talk','Not inducted','Missing barricades','Unauthorized persons','No supervisor']}
-];
-var safeTypeList=['Observation','Unsafe Act','Unsafe Condition','Near Miss','First Aid','Recordable','LTI'];
-var safeTypeCol={'Observation':'#6a6560','Unsafe Act':'#2d8a32','Unsafe Condition':'#9b59b6','Near Miss':'#2874a6','First Aid':'#e8c547','Recordable':'#d4930d','LTI':'#cc3333'};
-
 R.safety=function(){
-var h='<h2>Safety Part 1 OK</h2>';
-h+='<p>Checklist loaded: '+safeChecklist.length+' categories</p>';
+if(!S.safety)S.safety={};
+if(!Array.isArray(S.safetyInspections))S.safetyInspections=[];
+var s=S.safety;
+var inps=S.safetyInspections;
+var dLTI=dd(s.startDate||'2026-04-13',td());
+
+var tc={};
+for(var t=0;t<safeTypeList.length;t++){tc[safeTypeList[t]]=0}
+for(var i=0;i<inps.length;i++){
+  var its=inps[i].items||[];
+  for(var j=0;j<its.length;j++){
+    if(its[j].status!=='Satisfactory'&&its[j].status!=='N/A'){
+      tc[its[j].type]=(tc[its[j].type]||0)+1;
+    }
+  }
+}
+var satC=0,niC=0,unsC=0;
+for(var i=0;i<inps.length;i++){
+  if(inps[i].overall==='Satisfactory')satC++;
+  else if(inps[i].overall==='Needs Improvement')niC++;
+  else unsC++;
+}
+
+var h='';
+h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+h+='<div><h2>Safety Management</h2><p style="font-size:.72rem;color:var(--t3)">HSE Monitoring and Inspections</p></div>';
+h+='<button class="btn bp" onclick="safeAddInsp()">+ Safety Inspection</button></div>';
+
+h+='<div class="stats">';
+h+='<div class="si" style="border-left:4px solid var(--g)"><div class="sl">Safe Hours</div><div class="sv" style="color:var(--g)">'+(s.safeHours||0).toLocaleString()+'</div></div>';
+h+='<div class="si" style="border-left:4px solid var(--bl)"><div class="sl">Days w/o LTI</div><div class="sv" style="color:var(--bl)">'+dLTI+'</div></div>';
+h+='<div class="si" style="border-left:4px solid var(--or)"><div class="sl">Near Misses</div><div class="sv" style="color:var(--or)">'+tc['Near Miss']+'</div></div>';
+h+='<div class="si" style="border-left:4px solid var(--rd)"><div class="sl">Unsafe Acts</div><div class="sv" style="color:var(--rd)">'+tc['Unsafe Act']+'</div></div>';
+h+='<div class="si" style="border-left:4px solid var(--pu)"><div class="sl">Unsafe Cond.</div><div class="sv" style="color:var(--pu)">'+tc['Unsafe Condition']+'</div></div>';
+h+='<div class="si" style="border-left:4px solid var(--am)"><div class="sl">Inspections</div><div class="sv" style="color:var(--am)">'+inps.length+'</div></div>';
+h+='</div>';
+
+h+='<div class="card" style="border-left:4px solid var(--bl)"><div class="ch"><span class="ct" style="color:var(--bl)">Safety Metrics</span></div>';
+h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px">';
+h+='<div><label style="font-size:.6rem;color:var(--t3)">Start Date</label><input type="date" value="'+H(s.startDate||td())+'" style="width:100%" onchange="S.safety.startDate=this.value;save()"></div>';
+h+='<div><label style="font-size:.6rem;color:var(--t3)">Safe Hours</label><input type="number" value="'+(s.safeHours||0)+'" style="width:100%" onchange="S.safety.safeHours=parseInt(this.value)||0;save()"></div>';
+h+='<div><label style="font-size:.6rem;color:var(--t3)">Near Misses</label><input type="number" value="'+(s.nearMisses||0)+'" style="width:100%" onchange="S.safety.nearMisses=parseInt(this.value)||0;save()"></div>';
+h+='<div><label style="font-size:.6rem;color:var(--t3)">Incidents</label><input type="number" value="'+(s.incidents||0)+'" style="width:100%" onchange="S.safety.incidents=parseInt(this.value)||0;save()"></div>';
+h+='</div></div>';
+
+h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">';
+
+h+='<div class="card"><div class="ch"><span class="ct" style="color:var(--bl)">Safety Triangle</span></div>';
+h+='<div style="padding:10px 0">';
+var triLevels=[{l:'LTI',v:tc['LTI'],c:'#cc3333'},{l:'Recordable',v:tc['Recordable'],c:'#d4930d'},{l:'First Aid',v:tc['First Aid'],c:'#e8c547'},{l:'Near Miss',v:tc['Near Miss'],c:'#2874a6'},{l:'Unsafe Condition',v:tc['Unsafe Condition'],c:'#9b59b6'},{l:'Unsafe Act',v:tc['Unsafe Act'],c:'#2d8a32'},{l:'Observation',v:tc['Observation'],c:'#6a6560'}];
+for(var ti=0;ti<triLevels.length;ti++){
+  var lev=triLevels[ti];
+  var pctW=Math.round((ti+1)/triLevels.length*100);
+  var padL=Math.round((100-pctW)/2);
+  h+='<div style="text-align:center;padding:2px 0"><div style="display:inline-block;width:'+pctW+'%;margin-left:'+padL+'%;background:'+lev.c+';border-radius:3px;padding:8px 0;opacity:.75"><span style="color:#fff;font-family:JetBrains Mono;font-size:.68rem;font-weight:700">'+lev.l+': '+lev.v+'</span></div></div>';
+}
+h+='<div style="text-align:center;font-size:.56rem;color:var(--t3);font-family:JetBrains Mono;margin-top:6px">Narrow top = severe, Wide base = frequent</div>';
+h+='</div></div>';
+
+h+='<div class="card"><div class="ch"><span class="ct" style="color:var(--g)">Safety Rating</span></div>';
+var donutTotal=Math.max(satC+niC+unsC,1);
+var satDeg=Math.round(satC/donutTotal*360);
+var niDeg=Math.round(niC/donutTotal*360);
+h+='<div style="display:flex;align-items:center;gap:20px">';
+h+='<div style="width:140px;height:140px;border-radius:50%;background:conic-gradient(var(--g) 0deg '+satDeg+'deg, var(--or) '+satDeg+'deg '+(satDeg+niDeg)+'deg, var(--rd) '+(satDeg+niDeg)+'deg 360deg);position:relative;flex-shrink:0">';
+h+='<div style="position:absolute;inset:25px;border-radius:50%;background:var(--s1);display:flex;align-items:center;justify-content:center;flex-direction:column">';
+h+='<div style="font-size:1.6rem;font-weight:700;color:var(--t1)">'+inps.length+'</div>';
+h+='<div style="font-size:.5rem;color:var(--t3)">inspections</div>';
+h+='</div></div>';
+h+='<div style="font-size:.72rem;line-height:2.2">';
+h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--g);margin-right:6px"></span>Satisfactory: <b>'+satC+'</b></div>';
+h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--or);margin-right:6px"></span>Needs Improvement: <b>'+niC+'</b></div>';
+h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--rd);margin-right:6px"></span>Unsatisfactory: <b>'+unsC+'</b></div>';
+h+='</div></div></div>';
+h+='</div>';
+
+h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">';
+
+h+='<div class="card"><div class="ch"><span class="ct">Findings by Type</span></div>';
+var maxT=0;
+for(var tk in tc){if(tc[tk]>maxT){maxT=tc[tk]}}
+for(var ti2=0;ti2<safeTypeList.length;ti2++){
+  var tn=safeTypeList[ti2];
+  var tv=tc[tn];
+  var tw=maxT>0?Math.round(tv/maxT*100):0;
+  var tcol=safeTypeCol[tn]||'#6a6560';
+  h+='<div style="display:flex;align-items:center;gap:8px;padding:3px 0">';
+  h+='<div style="width:130px;font-size:.72rem">'+H(tn)+'</div>';
+  h+='<div style="flex:1;height:16px;background:var(--s2);border-radius:3px;overflow:hidden">';
+  h+='<div style="height:100%;width:'+tw+'%;background:'+tcol+';border-radius:3px;display:flex;align-items:center;padding-left:6px">';
+  h+='<span style="font-family:JetBrains Mono;font-size:.52rem;color:#fff">'+tv+'</span>';
+  h+='</div></div></div>';
+}
+h+='</div>';
+
+var catR={};
+for(var i=0;i<inps.length;i++){
+  var its2=inps[i].items||[];
+  for(var j=0;j<its2.length;j++){
+    var ck=its2[j].category||'Other';
+    if(!catR[ck]){catR[ck]={s:0,t:0}}
+    catR[ck].t++;
+    if(its2[j].status==='Satisfactory'){catR[ck].s++}
+  }
+}
+h+='<div class="card"><div class="ch"><span class="ct">Category Scores</span></div>';
+if(inps.length===0){h+='<div style="font-size:.76rem;color:var(--t3);padding:20px 0;text-align:center">No inspections yet</div>'}
+var cArr=[];
+for(var ck2 in catR){cArr.push({c:ck2,d:catR[ck2]})}
+cArr.sort(function(a,b){return(b.d.s/b.d.t)-(a.d.s/a.d.t)});
+for(var ci=0;ci<cArr.length;ci++){
+  var cd=cArr[ci].d;
+  var cp=cd.t>0?Math.round(cd.s/cd.t*100):0;
+  var cc=cp>=80?'var(--g)':cp>=50?'var(--or)':'var(--rd)';
+  h+='<div style="display:flex;align-items:center;gap:8px;padding:3px 0">';
+  h+='<div style="width:140px;font-size:.72rem">'+H(cArr[ci].c)+'</div>';
+  h+='<div style="flex:1;height:16px;background:var(--s2);border-radius:3px;overflow:hidden">';
+  h+='<div style="height:100%;width:'+cp+'%;background:'+cc+';border-radius:3px;display:flex;align-items:center;padding-left:6px">';
+  h+='<span style="font-family:JetBrains Mono;font-size:.52rem;color:#fff">'+cp+'%</span>';
+  h+='</div></div>';
+  h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+cd.s+'/'+cd.t+'</span></div>';
+}
+h+='</div></div>';
+
+if(inps.length>0){
+  h+='<div class="card"><div class="ch"><span class="ct">Inspection Log</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+inps.length+'</span></div>';
+  h+='<div class="tw"><table><thead><tr><th>Date</th><th>Area</th><th>Inspector</th><th>Contractor</th><th>Categories</th><th style="text-align:center">SAT</th><th style="text-align:center">NI</th><th style="text-align:center">UNSAT</th><th>Overall</th><th style="width:80px">Actions</th></tr></thead><tbody>';
+  for(var li=0;li<inps.length;li++){
+    var si=inps[li];
+    var ob=si.overall==='Satisfactory'?'bg2':si.overall==='Needs Improvement'?'by2':'bd2';
+    var catStr=(si.categories||[]).join(', ');
+    h+='<tr>';
+    h+='<td style="font-family:JetBrains Mono;font-size:.64rem">'+H(si.date)+'</td>';
+    h+='<td>'+H(si.area)+'</td>';
+    h+='<td>'+H(si.inspector)+'</td>';
+    h+='<td>'+H(si.contractor||'-')+'</td>';
+    h+='<td style="font-size:.58rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(catStr)+'">'+H(catStr||'-')+'</td>';
+    h+='<td style="text-align:center;color:var(--g);font-weight:700">'+(si.satCount||0)+'</td>';
+    h+='<td style="text-align:center;color:var(--or);font-weight:700">'+(si.niCount||0)+'</td>';
+    h+='<td style="text-align:center;color:var(--rd);font-weight:700">'+(si.unsatCount||0)+'</td>';
+    h+='<td><span class="badge '+ob+'">'+H(si.overall)+'</span></td>';
+    h+='<td style="white-space:nowrap"><button class="btn bs" onclick="safeViewInsp('+li+')">View</button> <button class="btn bs bd" onclick="safeDelInsp('+li+')">&times;</button></td>';
+    h+='</tr>';
+  }
+  h+='</tbody></table></div></div>';
+}
+
 $('app').innerHTML=h;
 };
-  </script>
+</script>
 </body>
 </html>
