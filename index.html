@@ -323,6 +323,189 @@ function addVGT(){mO('Add Task','<div class="fg"><label class="fl">Name</label><
 function savVGT(){var name=vgSel.substring(3),n=$('vgtN').value.trim();if(!n)return;S.vgc[name].tasks.push({name:n,s:$('vgtS').value,e:$('vgtE').value,prog:0});save();mC();notify('Added');go('gantt')}
 function delVGT(i){S.vgc[vgSel.substring(3)].tasks.splice(i,1);save();notify('Deleted');go('gantt')}
 /* === S-CURVE ENHANCED === */
+function calcCurve(months,m2,tDur,sc){
+var tasks=[];
+var outdoor=['Earthwork','Construction','Temp','Site','Infrastructure','Buildings','Closeout','MEP'];
+for(var j=0;j<m2.length;j++){
+  var t=m2[j];
+  if(!t.s||!t.e||!t.dur)continue;
+  var s=t.s,e=t.e,d=t.dur;
+  if(sc!=='baseline'){
+    if(sc==='weather'&&outdoor.indexOf(t.cat)>=0){s=addD(s,5);e=addD(e,25);d=dd(s,e)}
+    if(sc==='resource'){e=addD(e,Math.round(d*.3));d=dd(s,e)}
+    if(sc==='permitDelay'&&t.cat==='Permits'){s=addD(s,10);e=addD(e,30);d=dd(s,e)}
+    if(sc==='combined'){
+      if(t.cat==='Permits'){s=addD(s,10);e=addD(e,30)}
+      if(outdoor.indexOf(t.cat)>=0){s=addD(s,5);e=addD(e,25)}
+      e=addD(e,Math.round(dd(s,e)*.15));d=dd(s,e);
+    }
+  }
+  tasks.push({s:s,e:e,d:d});
+}
+var dur=0;
+for(var j=0;j<tasks.length;j++)dur+=tasks[j].d;
+if(dur<=0)return months.map(function(){return 0});
+var r=[];
+for(var mi=0;mi<months.length;mi++){
+  var mp=0,me=months[mi].end;
+  for(var j=0;j<tasks.length;j++){
+    var t=tasks[j],ts=new Date(t.s+'T12:00'),te=new Date(t.e+'T12:00'),w=t.d/dur;
+    if(me>=te)mp+=w;
+    else if(me>=ts&&te>ts)mp+=w*((me-ts)/(te-ts));
+  }
+  r.push(Math.round(mp*100));
+}
+return r;
+}
+
+function calcAct(months,oa){
+var el=Math.max(dd('2026-01-01',td()),1);
+var sp=dd('2026-01-01','2027-02-28');
+var ep=el/sp;
+var vel=ep>0?oa/(ep*100):1;
+var r=[];
+for(var mi=0;mi<14;mi++){
+  var f=(mi+1)/14;
+  if(f<=ep)r.push(Math.min(100,Math.round(oa*(f/ep))));
+  else{
+    var last=r.length?r[r.length-1]:oa;
+    var rf=(f-ep)/(1-ep);
+    r.push(Math.min(100,Math.round(last+(100-last)*Math.min(vel*1.2,1)*rf)));
+  }
+}
+return r;
+}
+
+function drawSC(months,lines,yMax,yFmt){
+var cv=$('scCV');
+if(!cv)return;
+var W=cv.width,H2=cv.height,pL=60,pR=25,pT=30,pB=50,cW=W-pL-pR,cH=H2-pT-pB;
+var ctx=cv.getContext('2d'),n=months.length;
+ctx.clearRect(0,0,W,H2);
+ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H2);
+for(var i=0;i<=10;i++){
+  var y=pT+(cH/10)*i;
+  ctx.strokeStyle='#ece9e3';ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(W-pR,y);ctx.stroke();
+  ctx.fillStyle='#999';ctx.font='10px JetBrains Mono';ctx.textAlign='right';ctx.textBaseline='middle';
+  ctx.fillText(yFmt(yMax-(yMax/10)*i),pL-8,y);
+}
+for(var i=0;i<n;i+=2){
+  ctx.fillStyle='#999';ctx.font='9px JetBrains Mono';ctx.textAlign='center';
+  ctx.fillText(months[i].label,pL+(cW/(n-1))*i,H2-pB+16);
+}
+function px(i){return pL+(cW/(n-1))*i}
+function py(v){return pT+cH-Math.max(0,Math.min(yMax,v)/yMax*cH)}
+var tFrac=(new Date()-new Date(2026,0,1))/(new Date(2027,1,28)-new Date(2026,0,1));
+if(tFrac>0&&tFrac<1){
+  var tx=pL+cW*tFrac;
+  ctx.strokeStyle='rgba(204,51,51,.4)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(tx,pT);ctx.lineTo(tx,pT+cH);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#cc3333';ctx.font='bold 9px JetBrains Mono';ctx.textAlign='center';
+  ctx.fillText('TODAY',tx,pT-4);
+}
+for(var li=0;li<lines.length;li++){
+  var ln=lines[li];
+  ctx.beginPath();ctx.strokeStyle=ln.color;ctx.lineWidth=ln.width||2;
+  ctx.setLineDash(li===0?[6,4]:[]);
+  var st=false;
+  for(var i=0;i<n;i++){
+    if(ln.data[i]==null){st=false;continue}
+    if(!st){ctx.moveTo(px(i),py(ln.data[i]));st=true}
+    else ctx.lineTo(px(i),py(ln.data[i]));
+  }
+  ctx.stroke();ctx.setLineDash([]);
+}
+}
+
+function runSim(){
+var m=mainT(),tDur=0;
+for(var i=0;i<m.length;i++)tDur+=m[i].dur;
+if(!tDur)return;
+var months=[];
+for(var mi=0;mi<14;mi++){
+  var yr=mi<12?2026:2027,mo=mi<12?mi:mi-12;
+  months.push({label:new Date(yr,mo,1).toLocaleString('en',{month:'short',year:'2-digit'}),end:new Date(yr,mo+1,0)});
+}
+var bl=calcCurve(months,m,tDur,'baseline');
+var outdoor=['Earthwork','Construction','Temp','Site','Infrastructure','Buildings','Closeout','MEP'];
+var runs=200;
+var completionMonths=[];
+for(var run=0;run<runs;run++){
+  var shift=0;
+  for(var i=0;i<m.length;i++){
+    var t=m[i];
+    if(outdoor.indexOf(t.cat)>=0)shift+=Math.random()*0.4;
+    if(t.dur>=45)shift+=Math.random()*0.3;
+    if(t.cat==='Permits')shift+=Math.random()*0.6;
+    shift+=Math.random()*0.1;
+  }
+  shift=Math.min(5,shift);
+  var completionMo=13;
+  for(var mi=0;mi<14;mi++){
+    var srcMi=Math.max(0,Math.round(mi-shift));
+    var adjP=bl[Math.min(srcMi,13)]||0;
+    if(adjP>=95){completionMo=mi;break}
+  }
+  completionMonths.push(completionMo);
+}
+var hist=[];
+for(var i=0;i<14;i++)hist[i]=0;
+for(var i=0;i<completionMonths.length;i++)hist[completionMonths[i]]++;
+var maxH=0;
+for(var i=0;i<14;i++)if(hist[i]>maxH)maxH=hist[i];
+completionMonths.sort(function(a,b){return a-b});
+var p50=completionMonths[Math.floor(runs*0.5)];
+var p80=completionMonths[Math.floor(runs*0.8)];
+var p90=completionMonths[Math.floor(runs*0.9)];
+var h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">';
+h+='<div>';
+h+='<div style="font-size:.72rem;font-weight:700;margin-bottom:10px">Completion Distribution ('+runs+' runs)</div>';
+for(var i=0;i<14;i++){
+  if(hist[i]===0)continue;
+  var pct=maxH>0?Math.round(hist[i]/maxH*100):0;
+  var barCol=i===p50?'var(--g)':i===p80?'var(--or)':'var(--bl)';
+  h+='<div style="display:flex;align-items:center;gap:6px;padding:2px 0">';
+  h+='<div style="width:50px;font-family:JetBrains Mono;font-size:.6rem;text-align:right">'+months[i].label+'</div>';
+  h+='<div style="flex:1;height:16px;background:var(--s2);border-radius:3px;overflow:hidden">';
+  h+='<div style="height:100%;width:'+pct+'%;background:'+barCol+';border-radius:3px;display:flex;align-items:center;padding-left:4px">';
+  h+='<span style="font-family:JetBrains Mono;font-size:.48rem;color:#fff">'+hist[i]+'</span>';
+  h+='</div></div>';
+  var labels=[];
+  if(i===p50)labels.push('P50');
+  if(i===p80)labels.push('P80');
+  if(i===p90)labels.push('P90');
+  if(labels.length)h+='<span style="font-size:.5rem;color:'+barCol+';font-family:JetBrains Mono;font-weight:700">'+labels.join('+')+'</span>';
+  h+='</div>';
+}
+h+='</div>';
+h+='<div>';
+h+='<div style="font-size:.72rem;font-weight:700;margin-bottom:10px">Completion Confidence</div>';
+var pCards=[
+  {label:'P50',month:months[p50].label,color:'var(--g)',desc:'50% probability'},
+  {label:'P80',month:months[p80].label,color:'var(--or)',desc:'80% probability'},
+  {label:'P90',month:months[p90].label,color:'var(--rd)',desc:'90% probability'}
+];
+for(var pi=0;pi<pCards.length;pi++){
+  var pc=pCards[pi];
+  h+='<div style="padding:14px;background:var(--s2);border-radius:var(--r);border-left:4px solid '+pc.color+';margin-bottom:8px">';
+  h+='<div style="font-size:.56rem;color:var(--t3);font-family:JetBrains Mono">'+pc.label+' - '+pc.desc+'</div>';
+  h+='<div style="font-size:1.6rem;font-weight:700;color:'+pc.color+'">'+pc.month+'</div>';
+  h+='</div>';
+}
+h+='<div style="font-size:.62rem;color:var(--t3);line-height:1.5">Based on '+runs+' iterations with weather, resource, and permit delay probability.</div>';
+h+='</div>';
+h+='</div>';
+h+='<div style="margin-top:12px;padding:12px;background:var(--s2);border-radius:var(--r);font-size:.74rem;line-height:1.6">';
+h+='<b>Simulation Analysis:</b> ';
+if(p50<=6)h+='Favorable outlook. 50% completion likely by <b>'+months[p50].label+'</b>. ';
+else if(p50<=9)h+='Moderate risk. 50% completion projected <b>'+months[p50].label+'</b>. ';
+else h+='<span style="color:var(--rd)">High risk. 50% completion not until <b>'+months[p50].label+'</b>. </span>';
+if(p90-p50>3)h+='Wide uncertainty range ('+months[p50].label+' to '+months[p90].label+'). Focus on risk mitigation.';
+else h+='Tight completion range. Schedule is well-bounded.';
+h+='</div>';
+$('simArea').innerHTML=h;
+}
+
 R.scurve=function(){
 var m=mainT(),oa=ovProg(S.tasks),tDur=0;
 for(var i=0;i<m.length;i++)tDur+=m[i].dur;
@@ -352,7 +535,6 @@ if(!tDur){
   return;
 }
 
-/* ALWAYS recalculate fresh */
 var bl=calcCurve(months,m,tDur,'baseline');
 var act=calcAct(months,oa);
 var curves={baseline:bl,actual:act};
@@ -360,33 +542,24 @@ var curves={baseline:bl,actual:act};
   if(scRisk[k])curves[k]=calcCurve(months,m,tDur,k);
 });
 
-/* Find current month index from today's date */
 var today=td();
-var startD='2026-01-01';
-var endD='2027-02-28';
-var totalProjDays=Math.max(dd(startD,endD),1);
-var elapsedDays=Math.max(dd(startD,today),0);
-var curMoI=Math.min(Math.floor(elapsedDays/30),13);
-
-/* Planned value at current month */
+var curMoI=0;
+for(var mi=0;mi<14;mi++){
+  var moStart=new Date(2026,mi<12?mi:mi-12,1);
+  var moEnd=new Date(2026,mi<12?mi+1:mi-11,0);
+  if(mi>=12){moStart=new Date(2027,mi-12,1);moEnd=new Date(2027,mi-11,0)}
+  var td2=new Date(today+'T12:00');
+  if(td2>=moStart)curMoI=mi;
+}
 var pvNow=bl[curMoI]||0;
-
-/* Actual value = fresh from tasks */
 var evNow=oa;
-
-/* Variance and SPI */
 var svNow=evNow-pvNow;
 var spiNow=pvNow>0?(evNow/pvNow):0;
-
-/* EAC and VAC */
 var eacVal=spiNow>0?Math.round(100/spiNow):999;
-var vacVal=eacVal-100;
 
-/* Fresh task analysis */
-var critTasks=[],delayedTasks=[],atRiskTasks=[],completeTasks=[],onTrackTasks=[];
+var critTasks=[],delayedTasks=[],atRiskTasks=[],completeTasks=[];
 var outdoor=['Earthwork','Construction','Temp','Site','Infrastructure','Buildings','Closeout','MEP'];
 var now=new Date(today+'T12:00');
-var totalWeight=0,weightedProgress=0;
 
 for(var i=0;i<m.length;i++){
   var t=m[i];
@@ -400,18 +573,12 @@ for(var i=0;i<m.length;i++){
     expectedProg=Math.min(100,Math.round(elapsed/t.dur*100));
   }
   var actualProg=t.prog||0;
-  var weight=t.dur||1;
-  totalWeight+=weight;
-  weightedProgress+=actualProg*weight/100;
-
   if(t.dur>=30)critTasks.push(t);
-  if(actualProg>=100){completeTasks.push(t)}
-  else if(actualProg>=expectedProg-10){onTrackTasks.push(t)}
-  else if(actualProg<expectedProg-10&&now<tEnd){delayedTasks.push({task:t,expected:expectedProg,actual:actualProg,variance:actualProg-expectedProg})}
-  if(now>tEnd&&actualProg<100){atRiskTasks.push({task:t,daysOver:dd(t.e,today),prog:actualProg})}
+  if(actualProg>=100)completeTasks.push(t);
+  else if(actualProg<expectedProg-10&&now<tEnd)delayedTasks.push({task:t,expected:expectedProg,actual:actualProg,variance:actualProg-expectedProg});
+  if(now>tEnd&&actualProg<100)atRiskTasks.push({task:t,daysOver:dd(t.e,today),prog:actualProg});
 }
 
-/* Risk scores */
 var weatherScore=0,resourceScore=0,permitScore=0,scheduleScore=0;
 for(var i=0;i<m.length;i++){
   var t=m[i];
@@ -424,11 +591,9 @@ var totalRisk=Math.min(100,Math.round((weatherScore+resourceScore+permitScore+sc
 var riskLevel=totalRisk>25?'High':totalRisk>12?'Medium':'Low';
 var riskCol=totalRisk>25?'var(--rd)':totalRisk>12?'var(--or)':'var(--g)';
 
-/* Debug info */
 h+='<div style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3);margin-bottom:8px">';
-h+='Tasks: '+m.length+' | Total Dur: '+tDur+'d | Actual: '+evNow.toFixed(1)+'% | Planned: '+pvNow+'% | Month: '+curMoI+' | Date: '+today+'</div>';
+h+='Tasks: '+m.length+' | Dur: '+tDur+'d | Actual: '+evNow.toFixed(1)+'% | Planned: '+pvNow+'% | Month: '+curMoI+' | Date: '+today+'</div>';
 
-/* Metrics */
 h+='<div class="stats">';
 h+='<div class="si" style="border-left:4px solid var(--g)"><div class="sl">Actual</div><div class="sv" style="color:var(--g)">'+fmtP(evNow)+'</div></div>';
 h+='<div class="si" style="border-left:4px solid var(--bl)"><div class="sl">Planned</div><div class="sv" style="color:var(--bl)">'+fmtP(pvNow)+'</div></div>';
@@ -438,13 +603,10 @@ h+='<div class="si" style="border-left:4px solid var(--pu)"><div class="sl">EAC<
 h+='<div class="si" style="border-left:4px solid '+riskCol+'"><div class="sl">Risk</div><div class="sv" style="color:'+riskCol+'">'+riskLevel+'</div></div>';
 h+='</div>';
 
-/* Chart */
 h+='<div class="card"><canvas id="scCV" width="920" height="380" style="width:100%;height:auto;display:block"></canvas></div>';
 
-/* Two column layout */
 h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">';
 
-/* Left: Schedule Analysis */
 h+='<div class="card"><div class="ch"><span class="ct">Schedule Analysis</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+completeTasks.length+' done / '+m.length+' total</span></div>';
 h+='<div class="tw"><table><thead><tr><th>Task</th><th>Planned</th><th>Actual</th><th>Var</th><th>Status</th></tr></thead><tbody>';
 for(var i=0;i<m.length;i++){
@@ -476,10 +638,8 @@ for(var i=0;i<m.length;i++){
 }
 h+='</tbody></table></div></div>';
 
-/* Right column */
 h+='<div>';
 
-/* Risk Assessment */
 h+='<div class="card" style="margin-bottom:12px"><div class="ch"><span class="ct">Risk Assessment</span></div>';
 h+='<div style="margin-top:10px">';
 var riskItems=[
@@ -507,7 +667,6 @@ h+='<div style="font-size:1.6rem;font-weight:700;color:'+riskCol+'">'+riskLevel+
 h+='<div style="font-size:.56rem;color:var(--t3)">'+totalRisk+'% composite score</div>';
 h+='</div></div></div>';
 
-/* Recommendations */
 h+='<div class="card"><div class="ch"><span class="ct">Recommendations</span></div>';
 h+='<div style="margin-top:8px">';
 var recs=[];
@@ -519,7 +678,7 @@ if(spiNow<0.8){
   recs.push({pri:'medium',icon:'fa-exclamation-circle',text:'Slightly behind plan. SPI = '+spiNow.toFixed(2)+'. Monitor closely.'});
 }
 if(eacVal>115){
-  recs.push({pri:'high',icon:'fa-calendar-times',text:'At current pace, project needs '+eacVal+'% effort ('+months[Math.min(Math.ceil(eacVal/100*14),13)].label+' completion). Recovery plan needed.'});
+  recs.push({pri:'high',icon:'fa-calendar-times',text:'At current pace, project needs '+eacVal+'% effort. Recovery plan needed.'});
 }
 if(atRiskTasks.length>0){
   recs.push({pri:'high',icon:'fa-clock',text:atRiskTasks.length+' overdue task(s): '+atRiskTasks.slice(0,3).map(function(x){return x.task.n||x.task.name||'Task'}).join(', ')+'. Prioritize completion.'});
@@ -534,18 +693,18 @@ if(resourceScore/tDur*100>10){
   recs.push({pri:'medium',icon:'fa-users',text:'Resource constraints on long-duration tasks. Consider crew augmentation.'});
 }
 if(permitScore/tDur*100>10){
-  recs.push({pri:'low',icon:'fa-file-alt',text:'Permit delays possible. Follow up with authorities. Prepare alternative sequencing.'});
+  recs.push({pri:'low',icon:'fa-file-alt',text:'Permit delays possible. Follow up with authorities.'});
 }
 if(spiNow>=1&&delayedTasks.length<=1&&totalRisk<15){
-  recs.push({pri:'good',icon:'fa-check-circle',text:'Schedule on track with low risk. Maintain current pace and continue monitoring.'});
+  recs.push({pri:'good',icon:'fa-check-circle',text:'Schedule on track with low risk. Maintain current pace.'});
 }else if(spiNow>=1){
-  recs.push({pri:'good',icon:'fa-check-circle',text:'Schedule on or ahead of plan. Monitor emerging risks closely.'});
+  recs.push({pri:'good',icon:'fa-check-circle',text:'Schedule on or ahead of plan. Monitor emerging risks.'});
 }
 if(completeTasks.length===m.length){
   recs.push({pri:'good',icon:'fa-trophy',text:'All tasks complete! Proceed to closeout.'});
 }
 if(recs.length===0){
-  recs.push({pri:'low',icon:'fa-info-circle',text:'Update task progress for detailed schedule recommendations.'});
+  recs.push({pri:'low',icon:'fa-info-circle',text:'Update task progress for detailed recommendations.'});
 }
 for(var ri2=0;ri2<recs.length;ri2++){
   var rec=recs[ri2];
@@ -561,7 +720,6 @@ h+='</div></div>';
 h+='</div>';
 h+='</div>';
 
-/* Simulation */
 h+='<div class="card" style="margin-top:14px"><div class="ch"><span class="ct">Schedule Simulation</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">Monte Carlo</span></div>';
 h+='<div id="simArea" style="margin-top:10px">';
 h+='<div style="text-align:center;padding:20px">';
