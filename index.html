@@ -1916,6 +1916,16 @@ for(var i=0;i<inps.length;i++){
   else unsC++;
 }
 var h='';
+h+='<div style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:10px;margin-bottom:10px;font-family:JetBrains Mono;font-size:.64rem">';
+h+='<div style="margin-bottom:4px"><b>Debug Info:</b></div>';
+h+='<div>Inspections in memory: '+S.safetyInspections.length+'</div>';
+h+='<div>SafetyInspections in save: '+(typeof S.safetyInspections)+'</div>';
+h+='<div>localStorage available: '+(typeof localStorage!==\'undefined\')+'</div>';
+h+='<div>localStorage keys: '+localStorage.length+'</div>';
+h+='<button class="btn bs" onclick="debugSafeSave()" style="margin-top:6px">Test Save/Load</button>';
+h+='<button class="btn bs" onclick="debugSafeKeys()" style="margin-top:6px">Show All Keys</button>';
+h+='<div id="debugResult"></div>';
+h+='</div>';
 h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
 h+='<div><h2>Safety Management</h2><p style="font-size:.72rem;color:var(--t3)">HSE Monitoring and Inspections</p></div>';
 h+='<button class="btn bp" onclick="safeAddInsp()">+ Safety Inspection</button></div>';
@@ -2211,6 +2221,38 @@ function safeDelInsp(idx){
 if(!confirm('Delete?'))return;
 S.safetyInspections.splice(idx,1);
 save();notify('Deleted');doRender();
+}
+  function debugSafeSave(){
+  var el=document.getElementById('debugResult');
+  if(!el)return;
+  var r='<div style="margin-top:6px;padding:6px;background:var(--s1);border-radius:4px">';
+  S.safetyInspections=[{id:999,test:true,date:'2026-01-01'}];
+  save();
+  r+='<div>Step 1: Saved test data to memory</div>';
+  var raw=localStorage.getItem('buildsync_safetyInspections');
+  r+='<div>Step 2: localStorage value: '+(raw||'NULL')+'</div>';
+  S.safetyInspections=lj('safetyInspections',[]);
+  r+='<div>Step 3: After reload from storage: '+JSON.stringify(S.safetyInspections)+'</div>';
+  S.safetyInspections=[];
+  save();
+  r+='<div>Step 4: Cleaned up</div>';
+  r+='</div>';
+  el.innerHTML=r;
+}
+
+function debugSafeKeys(){
+  var el=document.getElementById('debugResult');
+  if(!el)return;
+  var r='<div style="margin-top:6px;padding:6px;background:var(--s1);border-radius:4px;max-height:120px;overflow-y:auto">';
+  r+='<div>Total keys: '+localStorage.length+'</div>';
+  for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i);
+    if(k.indexOf('buildsync')>=0||k.indexOf('safe')>=0||k.indexOf('insp')>=0){
+      r+='<div style="color:var(--am)">'+k+' ('+localStorage.getItem(k).length+' chars)</div>';
+    }
+  }
+  r+='</div>';
+  el.innerHTML=r;
 }
 </script>
 </body>
