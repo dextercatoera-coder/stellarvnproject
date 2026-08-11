@@ -2158,11 +2158,21 @@ for(var c=0;c<safeChecklist.length;c++){
 if(!any){alert('Select at least one category.');return}
 if(items.length===0){alert('Set status for at least one item.');return}
 var tot=sat+ni+uns;
+var pct=tot>0?Math.round(sat/tot*100):0;
 var ov='Satisfactory';
-if(tot>0){
-  var sp=sat/tot*100;
-  ov=sp>=80?'Satisfactory':sp>=50?'Needs Improvement':'Unsatisfactory';
-}
+if(pct>=80)ov='Satisfactory';
+else if(pct>=50)ov='Needs Improvement';
+else ov='Unsatisfactory';
+
+var msg='Submit this inspection?\n\n';
+msg+='Items found: '+items.length+'\n';
+msg+='Satisfactory: '+sat+'\n';
+msg+='Needs Improvement: '+ni+'\n';
+msg+='Unsatisfactory: '+uns+'\n';
+msg+='Score: '+pct+'%\n';
+msg+='Overall: '+ov;
+if(!confirm(msg))return;
+
 var catsUsed=[];
 for(var ci=0;ci<safeChecklist.length;ci++){
   var cb2=document.getElementById('scc_'+ci);
