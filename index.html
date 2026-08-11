@@ -2041,12 +2041,12 @@ bd+='<div class="fg"><label class="fl">Inspector</label><input type="text" id="s
 bd+='<div class="fg"><label class="fl">Contractor</label><input type="text" id="siCo" style="width:100%"></div>';
 bd+='</div>';
 bd+='<div class="fg"><label class="fl">Remarks</label><textarea id="siR" rows="2" style="width:100%"></textarea></div>';
-bd+='<div style="font-weight:700;font-size:.82rem;margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--bd)">Select Categories to Inspect</div>';
-bd+='<div style="font-size:.62rem;color:var(--t3);margin-bottom:8px">Check only the categories you inspected. Items will appear below.</div>';
+bd+='<div style="font-weight:700;font-size:.82rem;margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--bd)">Select Categories to Inspect <span id="safeCatCount" style="font-family:JetBrains Mono;font-size:.62rem;color:var(--t3);font-weight:400">0 selected</span></div>';
+bd+='<div style="font-size:.62rem;color:var(--t3);margin-bottom:8px">Check multiple categories. All checked categories will be included in one inspection report.</div>';
 bd+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin-bottom:14px">';
 for(var c=0;c<safeChecklist.length;c++){
-  bd+='<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);cursor:pointer;font-size:.76rem">';
-  bd+='<input type="checkbox" id="scc_'+c+'" onchange="safeTogCat('+c+')" style="cursor:pointer">';
+  bd+='<label id="scc_lbl_'+c+'" style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);cursor:pointer;font-size:.76rem;transition:all .2s">';
+  bd+='<input type="checkbox" id="scc_'+c+'" onchange="safeTogCat('+c+');safeUpdateCatCount()" style="cursor:pointer">';
   bd+='<span>'+H(safeChecklist[c].cat)+'</span>';
   bd+='<span style="font-family:JetBrains Mono;font-size:.52rem;color:var(--t3);margin-left:auto">'+safeChecklist[c].items.length+' items</span>';
   bd+='</label>';
@@ -2055,6 +2055,22 @@ bd+='</div>';
 bd+='<div id="safeCLA"></div>';
 bd+='</div>';
 mO('Safety Inspection',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="safeSaveInsp()">Submit</button>');
+}
+
+function safeUpdateCatCount(){
+var count=0;
+for(var c=0;c<safeChecklist.length;c++){
+  var cb=document.getElementById('scc_'+c);
+  var lbl=document.getElementById('scc_lbl_'+c);
+  if(cb&&cb.checked){
+    count++;
+    if(lbl){lbl.style.borderColor='var(--bl)';lbl.style.background='rgba(40,116,166,.08)'}
+  }else{
+    if(lbl){lbl.style.borderColor='var(--bd)';lbl.style.background='var(--s2)'}
+  }
+}
+var el=document.getElementById('safeCatCount');
+if(el)el.textContent=count+' selected';
 }
 function safeTogCat(c){
 var area=document.getElementById('safeCLA');
