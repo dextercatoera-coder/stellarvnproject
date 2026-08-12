@@ -142,8 +142,8 @@ var R={};
 function nav(){var h='';for(var i=0;i<tabs.length;i++){if(!tabs[i]){h+='<div class="nsep"></div>';continue}h+='<button class="'+(tab===tabs[i].id?'act':'')+'" onclick="go(\''+tabs[i].id+'\')">'+tabs[i].l+'</button>'}$('nbar').innerHTML=h}
 function go(id){tab=id;nav();doRender()}
 function doRender(){try{if(R[tab])R[tab]()}catch(e){$('app').innerHTML='<div class="card" style="color:var(--rd)"><b>Error:</b> '+H(e.message)+'</div>';console.error(e)}}
-function save(){try{['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos'].forEach(function(k){localStorage.setItem('ss_'+k,JSON.stringify(S[k]))});localStorage.setItem('ss_siteCost',String(siteCost));syncUp()}catch(e){}}
-function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.photos=lj('photos',[]);
+function save(){try{['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos','phWebhookUrl','phSPFolder'].forEach(function(k){localStorage.setItem('ss_'+k,JSON.stringify(S[k]))});localStorage.setItem('ss_siteCost',String(siteCost));syncUp()}catch(e){}}
+function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.photos=lj('photos',[]);S.phWebhookUrl=lj('phWebhookUrl','');S.phSPFolder=lj('phSPFolder','Progress Photos');
 /* Merge Firebase teamMembers (no photos) with local (has photos) */
 try{
   var tmFb=S._fbTeamMembers||[];
@@ -2005,15 +2005,13 @@ save();notify('Deleted');doRender();
 var phFilterBuilding='all';
 var phFilterWeek='all';
 var phViewMode='grid';
+var phWebhookUrl='';
 
 R.photos=function(){
 if(!Array.isArray(S.photos))S.photos=[];
+if(!phWebhookUrl)phWebhookUrl=S.phWebhookUrl||'';
 
-/* Collect unique buildings and weeks */
-var buildings=[];
-var weeks=[];
-var buildSet={};
-var weekSet={};
+var buildings=[],weeks=[],buildSet={},weekSet={};
 for(var i=0;i<S.photos.length;i++){
   var p=S.photos[i];
   var b=p.building||'Unassigned';
@@ -2024,7 +2022,6 @@ for(var i=0;i<S.photos.length;i++){
 weeks.sort().reverse();
 buildings.sort();
 
-/* Filter */
 var filtered=[];
 for(var i=0;i<S.photos.length;i++){
   var p=S.photos[i];
@@ -2035,28 +2032,24 @@ for(var i=0;i<S.photos.length;i++){
   filtered.push({photo:p,building:b,week:w,idx:i});
 }
 
-/* Stats */
-var totalBuildings=buildings.length;
-var totalWeeks=weeks.length;
-
 var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
 h+='<div><h2>Progress Photos</h2><p style="font-size:.72rem;color:var(--t3)">Weekly site documentation</p></div>';
 h+='<div style="display:flex;gap:8px;align-items:center">';
 h+='<button class="btn bs'+(phViewMode==='grid'?' bp':'')+'" onclick="phViewMode=\'grid\';doRender()"><i class="fas fa-th"></i></button>';
 h+='<button class="btn bs'+(phViewMode==='week'?' bp':'')+'" onclick="phViewMode=\'week\';doRender()"><i class="fas fa-calendar-week"></i></button>';
+h+='<button class="btn bs" onclick="phSettings()"><i class="fas fa-cog"></i></button>';
 h+='<button class="btn bp" onclick="$(\'phF\').click()"><i class="fas fa-camera"></i> Upload</button>';
 h+='<input type="file" id="phF" accept="image/*" multiple style="display:none" onchange="phProcMulti(this.files)">';
 h+='</div></div>';
 
-/* Metrics */
 h+='<div class="stats">';
 h+='<div class="si" style="border-left:4px solid var(--bl)"><div class="sl">Total Photos</div><div class="sv" style="color:var(--bl)">'+S.photos.length+'</div></div>';
-h+='<div class="si" style="border-left:4px solid var(--g)"><div class="sl">Buildings</div><div class="sv" style="color:var(--g)">'+totalBuildings+'</div></div>';
-h+='<div class="si" style="border-left:4px solid var(--pu)"><div class="sl">Weeks</div><div class="sv" style="color:var(--pu)">'+totalWeeks+'</div></div>';
+h+='<div class="si" style="border-left:4px solid var(--g)"><div class="sl">Buildings</div><div class="sv" style="color:var(--g)">'+buildings.length+'</div></div>';
+h+='<div class="si" style="border-left:4px solid var(--pu)"><div class="sl">Weeks</div><div class="sv" style="color:var(--pu)">'+weeks.length+'</div></div>';
 h+='<div class="si" style="border-left:4px solid var(--am)"><div class="sl">This Week</div><div class="sv" style="color:var(--am)">'+phCountThisWeek()+'</div></div>';
+h+='<div class="si" style="border-left:4px solid '+(phWebhookUrl?'var(--g)':'var(--rd)')+'"><div class="sl">SharePoint</div><div class="sv" style="color:'+(phWebhookUrl?'var(--g)':'var(--rd)')+'">'+(phWebhookUrl?'Connected':'Not Set')+'</div></div>';
 h+='</div>';
 
-/* Filters */
 h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">';
 h+='<span style="font-size:.62rem;color:var(--t3);font-family:JetBrains Mono">FILTER:</span>';
 h+='<select style="padding:5px;font-size:.72rem" onchange="phFilterBuilding=this.value;doRender()">';
@@ -2086,80 +2079,75 @@ if(filtered.length===0){
   h+='<div style="margin-top:12px"><button class="btn bp" onclick="$(\'phF\').click()"><i class="fas fa-upload"></i> Upload Photos</button></div>';
   h+='</div>';
 }else if(phViewMode==='week'){
-
-  /* Group by week then building */
   var weekGroups={};
   for(var i=0;i<filtered.length;i++){
-    var w=filtered[i].week;
-    var b=filtered[i].building;
+    var w=filtered[i].week,b=filtered[i].building;
     if(!weekGroups[w])weekGroups[w]={};
     if(!weekGroups[w][b])weekGroups[w][b]=[];
     weekGroups[w][b].push(filtered[i]);
   }
   var sortedWeeks=[];for(var wk in weekGroups)sortedWeeks.push(wk);
   sortedWeeks.sort().reverse();
-
   for(var wi=0;wi<sortedWeeks.length;wi++){
-    var wk=sortedWeeks[wi];
-    var bldgs=weekGroups[wk];
-    var weekTotal=0;
+    var wk=sortedWeeks[wi],bldgs=weekGroups[wk],weekTotal=0;
     for(var bki in bldgs)weekTotal+=bldgs[bki].length;
-
     h+='<div style="margin-bottom:20px">';
     h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
     h+='<div style="font-family:JetBrains Mono;font-size:.82rem;font-weight:700;color:var(--bl)">'+H(wk)+'</div>';
     h+='<div style="font-family:JetBrains Mono;font-size:.62rem;color:var(--t3)">'+weekTotal+' photos</div>';
-    h+='<div style="flex:1;height:1px;background:var(--bd)"></div>';
-    h+='</div>';
-
+    h+='<div style="flex:1;height:1px;background:var(--bd)"></div></div>';
     for(var bki in bldgs){
       var bPhotos=bldgs[bki];
       h+='<div style="margin-bottom:12px">';
       h+='<div style="font-size:.76rem;font-weight:600;color:var(--pu);margin-bottom:6px;padding-left:10px;border-left:3px solid var(--pu)">'+H(bki)+' <span style="font-size:.56rem;color:var(--t3);font-weight:400">('+bPhotos.length+')</span></div>';
       h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">';
-      for(var pi=0;pi<bPhotos.length;pi++){
-        var fp=bPhotos[pi].photo;
-        var fidx=bPhotos[pi].idx;
-        h+='<div style="background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;transition:all .2s;cursor:pointer" onclick="phView('+fidx+')" onmouseover="this.style.borderColor=\'var(--bl)\'" onmouseout="this.style.borderColor=\'var(--bd)\'">';
-        h+='<div style="position:relative">';
-        h+='<img src="'+fp.data+'" style="width:100%;height:120px;object-fit:cover;display:block">';
-        h+='<button style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:0;color:#fff;width:20px;height:20px;border-radius:50%;font-size:.6rem;cursor:pointer" onclick="event.stopPropagation();phDel('+fp.id+')">&times;</button>';
-        h+='</div>';
-        h+='<div style="padding:6px">';
-        h+='<div style="font-size:.72rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+H(fp.title||'Photo')+'</div>';
-        h+='<div style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+fp.date+'</div>';
-        h+='</div></div>';
-      }
+      for(var pi=0;pi<bPhotos.length;pi++)h+=phCard(bPhotos[pi].photo,bPhotos[pi].idx);
       h+='</div></div>';
     }
     h+='</div>';
   }
-
 }else{
-
-  /* Grid view */
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">';
-  for(var i=0;i<filtered.length;i++){
-    var fp=filtered[i].photo;
-    var fidx=filtered[i].idx;
-    h+='<div style="background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;transition:all .2s;cursor:pointer" onclick="phView('+fidx+')" onmouseover="this.style.borderColor=\'var(--bl)\'" onmouseout="this.style.borderColor=\'var(--bd)\'">';
-    h+='<div style="position:relative">';
-    h+='<img src="'+fp.data+'" style="width:100%;height:140px;object-fit:cover;display:block">';
-    h+='<button style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:0;color:#fff;width:20px;height:20px;border-radius:50%;font-size:.6rem;cursor:pointer" onclick="event.stopPropagation();phDel('+fp.id+')">&times;</button>';
-    if(fp.building)h+='<div style="position:absolute;bottom:3px;left:3px;background:rgba(0,0,0,.6);color:#fff;padding:2px 6px;border-radius:3px;font-size:.48rem;font-family:JetBrains Mono">'+H(fp.building)+'</div>';
-    h+='</div>';
-    h+='<div style="padding:6px">';
-    h+='<div style="font-size:.72rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+H(fp.title||'Photo')+'</div>';
-    h+='<div style="display:flex;justify-content:space-between;align-items:center">';
-    h+='<div style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+fp.date+'</div>';
-    if(fp.week)h+='<div style="font-family:JetBrains Mono;font-size:.48rem;color:var(--bl);background:var(--s2);padding:1px 4px;border-radius:2px">'+H(fp.week)+'</div>';
-    h+='</div></div></div>';
-  }
+  for(var i=0;i<filtered.length;i++)h+=phCard(filtered[i].photo,filtered[i].idx);
   h+='</div>';
 }
 
 $('app').innerHTML=h;
 };
+
+function phCard(fp,fidx){
+var h='<div style="background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;transition:all .2s;cursor:pointer" onclick="phView('+fidx+')" onmouseover="this.style.borderColor=\'var(--bl)\'" onmouseout="this.style.borderColor=\'var(--bd)\'">';
+h+='<div style="position:relative">';
+if(fp.data)h+='<img src="'+fp.data+'" style="width:100%;height:140px;object-fit:cover;display:block">';
+else h+='<div style="width:100%;height:140px;background:var(--s2);display:flex;align-items:center;justify-content:center;color:var(--t3)"><i class="fas fa-image" style="font-size:1.4rem"></i></div>';
+h+='<button style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:0;color:#fff;width:20px;height:20px;border-radius:50%;font-size:.6rem;cursor:pointer" onclick="event.stopPropagation();phDel('+fp.id+')">&times;</button>';
+if(fp.uploaded)h+='<div style="position:absolute;top:3px;left:3px;background:rgba(45,138,50,.7);color:#fff;padding:1px 5px;border-radius:3px;font-size:.44rem;font-family:JetBrains Mono"><i class="fas fa-cloud" style="margin-right:2px"></i>SP</div>';
+if(fp.building)h+='<div style="position:absolute;bottom:3px;left:3px;background:rgba(0,0,0,.6);color:#fff;padding:2px 6px;border-radius:3px;font-size:.48rem;font-family:JetBrains Mono">'+H(fp.building)+'</div>';
+h+='</div>';
+h+='<div style="padding:6px"><div style="font-size:.72rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+H(fp.title||'Photo')+'</div>';
+h+='<div style="display:flex;justify-content:space-between;align-items:center">';
+h+='<div style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+fp.date+'</div>';
+if(fp.week)h+='<div style="font-family:JetBrains Mono;font-size:.48rem;color:var(--bl);background:var(--s2);padding:1px 4px;border-radius:2px">'+H(fp.week)+'</div>';
+h+='</div></div></div>';
+return h;
+}
+
+function phSettings(){
+var bd='<div class="fg"><label class="fl">Power Automate Webhook URL</label>';
+bd+='<input type="text" id="phWebhook" value="'+H(S.phWebhookUrl||'')+'" style="width:100%" placeholder="https://prod-XX.westus.logic.azure.com:443/workflows/...">';
+bd+='<div style="font-size:.62rem;color:var(--t3);margin-top:6px">Create a Power Automate flow with HTTP trigger. Paste the HTTP POST URL here.</div></div>';
+bd+='<div class="fg"><label class="fl">SharePoint Folder Path</label>';
+bd+='<input type="text" id="phSPFolder" value="'+H(S.phSPFolder||'Progress Photos')+'" style="width:100%" placeholder="Progress Photos">';
+bd+='<div style="font-size:.62rem;color:var(--t3);margin-top:6px">Photos saved as: Folder / Building / Week / filename.jpg</div></div>';
+mO('Photo Settings',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="phSaveSettings()">Save</button>');
+}
+
+function phSaveSettings(){
+S.phWebhookUrl=$('phWebhook').value.trim();
+S.phSPFolder=$('phSPFolder').value.trim()||'Progress Photos';
+phWebhookUrl=S.phWebhookUrl;
+save();mC();notify('Saved');doRender();
+}
 
 function phGetWeek(dateStr){
 if(!dateStr)return 'Unknown Week';
@@ -2174,28 +2162,20 @@ try{
 function phCountThisWeek(){
 var cw=phGetWeek(td());
 var count=0;
-for(var i=0;i<S.photos.length;i++){
-  if(S.photos[i].week===cw)count++;
-}
+for(var i=0;i<S.photos.length;i++){if(S.photos[i].week===cw)count++}
 return count;
 }
 
 function phProcMulti(files){
 if(!files||!files.length)return;
-window._phQueue=[];
-window._phIdx=0;
-for(var i=0;i<files.length;i++){
-  if(files[i].type.startsWith('image/'))window._phQueue.push(files[i]);
-}
+window._phQueue=[];window._phIdx=0;window._phProcessed=[];
+for(var i=0;i<files.length;i++){if(files[i].type.startsWith('image/'))window._phQueue.push(files[i])}
 if(window._phQueue.length===0)return;
 phProcNext();
 }
 
 function phProcNext(){
-if(window._phIdx>=window._phQueue.length){
-  if(window._phQueue.length>1){save();notify(window._phQueue.length+' photos saved');doRender()}
-  return;
-}
+if(window._phIdx>=window._phQueue.length)return;
 var f=window._phQueue[window._phIdx];
 var rd=new FileReader();
 rd.onload=function(e){
@@ -2205,19 +2185,22 @@ rd.onload=function(e){
     if(w>mx){h2=Math.round(h2*mx/w);w=mx}
     c.width=w;c.height=h2;
     c.getContext('2d').drawImage(img,0,0,w,h2);
-    try{
-      window._phData=c.toDataURL('image/jpeg',.25);
-      if(window._phQueue.length===1){
-        phShowSaveDialog();
-      }else{
-        /* Batch: use default values */
-        var bld=window._phLastBuilding||'Unassigned';
-        var wk=phGetWeek(td());
-        S.photos.push({id:Date.now()+window._phIdx,title:'Photo '+(window._phIdx+1),date:td(),data:window._phData,building:bld,week:wk});
-        window._phIdx++;
-        phProcNext();
-      }
-    }catch(er){alert('Image too large');window._phIdx++;phProcNext()}
+    var thumb=c.toDataURL('image/jpeg',.25);
+
+    var c2=document.createElement('canvas'),w2=img.width,h3=img.height,mx2=1200;
+    if(w2>mx2){h3=Math.round(h3*mx2/w2);w2=mx2}
+    c2.width=w2;c2.height=h3;
+    c2.getContext('2d').drawImage(img,0,0,w2,h3);
+    var full=c2.toDataURL('image/jpeg',.5);
+
+    window._phProcessed.push({thumb:thumb,full:full});
+    window._phIdx++;
+    if(window._phIdx<window._phQueue.length){
+      phProcNext();
+    }else{
+      window._phData=window._phProcessed[0].thumb;
+      phShowSaveDialog();
+    }
   };
   img.src=e.target.result;
 };
@@ -2225,34 +2208,37 @@ rd.readAsDataURL(f);
 }
 
 function phShowSaveDialog(){
-/* Build building options from existing photos and projects */
 var bldgs={};
-for(var i=0;i<S.photos.length;i++){
-  var b=S.photos[i].building||'';
-  if(b)bldgs[b]=true;
-}
-for(var i=0;i<S.taskProjects.length;i++){
-  bldgs[S.taskProjects[i].name]=true;
-}
+for(var i=0;i<S.photos.length;i++){var b=S.photos[i].building||'';if(b)bldgs[b]=true}
+for(var i=0;i<S.taskProjects.length;i++){bldgs[S.taskProjects[i].name]=true}
 bldgs['Building A']=true;bldgs['Building B']=true;bldgs['Building C']=true;
 bldgs['Site Works']=true;bldgs['Common Areas']=true;
-
 var bOpts='<option value="">-- Select --</option>';
 for(var bk in bldgs)bOpts+='<option value="'+H(bk)+'">'+H(bk)+'</option>';
-
 var currentWeek=phGetWeek(td());
+var total=window._phProcessed?window._phProcessed.length:1;
+
 var bd='<div class="fg"><label class="fl">Title</label><input type="text" id="phTi" style="width:100%" placeholder="e.g. Foundation pour"></div>';
 bd+='<div class="fg"><label class="fl">Date</label><input type="date" id="phD" value="'+td()+'" style="width:100%" onchange="document.getElementById(\'phWk\').value=phGetWeek(this.value)"></div>';
-bd+='<div class="fg"><label class="fl">Building / Area</label>';
-bd+='<div style="display:flex;gap:8px">';
-bd+='<select id="phBd" style="flex:1" onchange="if(this.value===\'__custom\')document.getElementById(\'phBdC\').style.display=\'block\';else document.getElementById(\'phBdC\').style.display=\'none\'">'+bOpts;
-bd+='<option value="__custom">+ Add New</option></select>';
-bd+='<input type="text" id="phBdC" placeholder="Enter building name..." style="display:none;flex:1">';
-bd+='</div></div>';
+bd+='<div class="fg"><label class="fl">Building / Area</label><div style="display:flex;gap:8px">';
+bd+='<select id="phBd" style="flex:1" onchange="if(this.value===\'__custom\')document.getElementById(\'phBdC\').style.display=\'block\';else document.getElementById(\'phBdC\').style.display=\'none\'">'+bOpts+'<option value="__custom">+ Add New</option></select>';
+bd+='<input type="text" id="phBdC" placeholder="Enter building name..." style="display:none;flex:1"></div></div>';
 bd+='<div class="fg"><label class="fl">Week</label><input type="text" id="phWk" value="'+currentWeek+'" style="width:100%" readonly></div>';
-bd+='<div style="margin-top:10px"><img src="'+window._phData+'" style="width:100%;max-height:200px;object-fit:contain;border-radius:var(--r)"></div>';
+bd+='<div style="margin-top:10px">';
+if(total>1){
+  bd+='<div style="font-size:.68rem;color:var(--bl);margin-bottom:6px"><i class="fas fa-images" style="margin-right:4px"></i>'+total+' photos selected</div>';
+  bd+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:4px">';
+  for(var pi=0;pi<Math.min(total,12);pi++){bd+='<img src="'+window._phProcessed[pi].thumb+'" style="width:100%;height:60px;object-fit:cover;border-radius:4px">'}
+  if(total>12)bd+='<div style="display:flex;align-items:center;justify-content:center;background:var(--s2);border-radius:4px;font-size:.62rem;color:var(--t3);height:60px">+'+(total-12)+' more</div>';
+  bd+='</div>';
+}else{
+  bd+='<img src="'+window._phData+'" style="width:100%;max-height:200px;object-fit:contain;border-radius:var(--r)">';
+}
+bd+='</div>';
+if(phWebhookUrl)bd+='<div style="font-size:.62rem;color:var(--g);margin-top:6px"><i class="fas fa-cloud" style="margin-right:4px"></i>Will be saved to SharePoint</div>';
+else bd+='<div style="font-size:.62rem;color:var(--or);margin-top:6px"><i class="fas fa-exclamation-triangle" style="margin-right:4px"></i>SharePoint not connected. Set webhook in settings.</div>';
 
-mO('Save Photo',bd,'<button class="btn" onclick="mC();window._phQueue=null">Cancel</button><button class="btn bp" onclick="phSave()">Save</button>');
+mO('Save Photo',bd,'<button class="btn" onclick="mC();window._phQueue=null;window._phProcessed=null">Cancel</button><button class="btn bp" onclick="phSave()">Save</button>');
 }
 
 function phSave(){
@@ -2260,46 +2246,60 @@ var title=$('phTi').value.trim()||'Photo';
 var date=$('phD').value||td();
 var building='';
 var bSel=$('phBd').value;
-if(bSel==='__custom'){
-  building=$('phBdC').value.trim();
-}else{
-  building=bSel;
-}
+if(bSel==='__custom')building=$('phBdC').value.trim();
+else building=bSel;
 if(!building)building='Unassigned';
 var week=$('phWk').value||phGetWeek(date);
-
 window._phLastBuilding=building;
 
-if(S.photos.length>=50){S.photos.pop()}
-S.photos.push({id:Date.now(),title:title,date:date,data:window._phData,building:building,week:week});
-try{
-  save();
-  mC();
-  if(window._phQueue&&window._phQueue.length>1){
-    window._phIdx++;
-    phProcNext();
-  }else{
-    notify('Saved');
-    doRender();
+var total=window._phProcessed?window._phProcessed.length:1;
+
+for(var i=0;i<total;i++){
+  var proc=window._phProcessed[i];
+  var ts=Date.now()+i;
+  var photoTitle=total>1?(title+' '+(i+1)):title;
+  var fileName=photoTitle.replace(/[^a-z0-9]/gi,'_')+'_'+date+'_'+ts+'.jpg';
+
+  S.photos.push({id:ts,title:photoTitle,date:date,data:proc.thumb,building:building,week:week,fileName:fileName,uploaded:false});
+
+  if(phWebhookUrl&&proc.full){
+    (function(fn,pTitle){
+      var base64=proc.full.replace(/^data:image\/\w+;base64,/,'');
+      fetch(phWebhookUrl,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({fileName:building+'/'+week+'/'+fn,fileData:base64,title:pTitle,building:building,week:week,date:date})
+      }).then(function(resp){
+        if(resp.ok){for(var j=0;j<S.photos.length;j++){if(S.photos[j].fileName===fn){S.photos[j].uploaded=true;break}}save()}
+      }).catch(function(){});
+    })(fileName,photoTitle);
   }
+}
+
+try{
+  save();mC();
+  window._phProcessed=null;window._phQueue=null;
+  notify(total+' photo'+(total>1?'s':'')+' saved'+(phWebhookUrl?' (uploading to SharePoint...)':''));
+  doRender();
 }catch(er){
-  S.photos.pop();
+  for(var i=0;i<total;i++)S.photos.pop();
   alert('Storage full. Try deleting old photos.');
 }
 }
 
 function phView(idx){
-var p=S.photos[idx];
-if(!p)return;
+var p=S.photos[idx];if(!p)return;
 var bd='<div style="text-align:center">';
-bd+='<img src="'+p.data+'" style="max-width:100%;max-height:60vh;border-radius:var(--r)">';
+if(p.data)bd+='<img src="'+p.data+'" style="max-width:100%;max-height:60vh;border-radius:var(--r)">';
+else bd+='<div style="padding:40px;color:var(--t3)"><i class="fas fa-image" style="font-size:3rem"></i><div>Photo stored in SharePoint</div></div>';
 bd+='<div style="margin-top:12px;text-align:left">';
 bd+='<div style="font-size:.88rem;font-weight:700">'+H(p.title||'Photo')+'</div>';
 bd+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px">';
 bd+='<div style="font-size:.72rem;color:var(--t3)"><b>Date:</b> '+p.date+'</div>';
 bd+='<div style="font-size:.72rem;color:var(--t3)"><b>Building:</b> '+(p.building||'Unassigned')+'</div>';
 bd+='<div style="font-size:.72rem;color:var(--t3)"><b>Week:</b> '+(p.week||phGetWeek(p.date))+'</div>';
-bd+='<div style="font-size:.72rem;color:var(--t3)"><b>Size:</b> '+Math.round(p.data.length/1024)+' KB</div>';
+bd+='<div style="font-size:.72rem;color:var(--t3)"><b>SP:</b> '+(p.uploaded?'<span style="color:var(--g)">Uploaded</span>':'<span style="color:var(--or)">Local</span>')+'</div>';
+if(p.fileName)bd+='<div style="font-size:.62rem;color:var(--t3);grid-column:span 2"><b>File:</b> '+H(p.fileName)+'</div>';
 bd+='</div></div></div>';
 mO('Photo Detail',bd,'<button class="btn" onclick="mC()">Close</button> <button class="btn bs bd" onclick="phDel('+p.id+');mC()">Delete</button>');
 }
@@ -2307,8 +2307,7 @@ mO('Photo Detail',bd,'<button class="btn" onclick="mC()">Close</button> <button 
 function phDel(id){
 if(!confirm('Delete this photo?'))return;
 S.photos=S.photos.filter(function(p){return p.id!==id});
-save();
-notify('Deleted');doRender();
+save();notify('Deleted');doRender();
 }
 /* === CLOUD SETTINGS === */
 R.cloud=function(){var c;try{c=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}var h='<div style="margin-bottom:10px"><span class="ct" style="font-size:.92rem">Cloud Sync</span></div><div class="card" style="border-left:4px solid var(--or);background:var(--orc)"><div style="font-size:.76rem;font-weight:700;color:var(--or);margin-bottom:6px">Setup</div><div style="font-size:.72rem;line-height:1.8">1. Create Firebase project<br>2. Enable Realtime DB + Email Auth<br>3. Enter config below</div></div><div class="card"><div class="ch"><span class="ct">Config</span></div><div class="fg"><label class="fl">API Key</label><input type="text" id="cKey" value="'+H((c&&c.apiKey)||'')+'" style="width:100%"></div><div class="fg"><label class="fl">Database URL</label><input type="text" id="cURL" value="'+H((c&&c.databaseURL)||'')+'" style="width:100%"></div><div class="fg"><label class="fl">Project ID</label><input type="text" id="cPid" value="'+H((c&&c.projectId)||'')+'" style="width:100%"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn" onclick="if(confirm(\'Clear?\')){localStorage.removeItem(\'ss_cloud\');location.reload()}">Clear</button><button class="btn bp" onclick="saveCloud()">Save &amp; Connect</button></div></div><div class="card"><div class="ch"><span class="ct">Data</span></div><button class="btn" onclick="expAll()">Export</button> <button class="btn bb" onclick="impAll()">Import</button> <button class="btn bd" onclick="if(confirm(\'Reset ALL?\')){localStorage.clear();location.reload()}">Reset</button></div>';$('app').innerHTML=h};
