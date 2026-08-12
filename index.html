@@ -142,8 +142,8 @@ var R={};
 function nav(){var h='';for(var i=0;i<tabs.length;i++){if(!tabs[i]){h+='<div class="nsep"></div>';continue}h+='<button class="'+(tab===tabs[i].id?'act':'')+'" onclick="go(\''+tabs[i].id+'\')">'+tabs[i].l+'</button>'}$('nbar').innerHTML=h}
 function go(id){tab=id;nav();doRender()}
 function doRender(){try{if(R[tab])R[tab]()}catch(e){$('app').innerHTML='<div class="card" style="color:var(--rd)"><b>Error:</b> '+H(e.message)+'</div>';console.error(e)}}
-function save(){try{['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos','phWebhookUrl','phSPFolder'].forEach(function(k){localStorage.setItem('ss_'+k,JSON.stringify(S[k]))});localStorage.setItem('ss_siteCost',String(siteCost));syncUp()}catch(e){}}
-function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.photos=lj('photos',[]);S.phWebhookUrl=lj('phWebhookUrl','');S.phSPFolder=lj('phSPFolder','Progress Photos');
+function save(){try{['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos','phWebhookUrl','phSPFolder','phSPSite'].forEach(function(k){localStorage.setItem('ss_'+k,JSON.stringify(S[k]))});localStorage.setItem('ss_siteCost',String(siteCost));syncUp()}catch(e){}}
+function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.photos=lj('photos',[]);S.phWebhookUrl=lj('phWebhookUrl','');S.phSPFolder=lj('phSPFolder','Progress Photos');S.phSPSite=lj('phSPSite','https://stellarseedscorporg.sharepoint.com/sites/VietnamProjectTeam');
 /* Merge Firebase teamMembers (no photos) with local (has photos) */
 try{
   var tmFb=S._fbTeamMembers||[];
@@ -2035,8 +2035,8 @@ for(var i=0;i<S.photos.length;i++){
 var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
 h+='<div><h2>Progress Photos</h2><p style="font-size:.72rem;color:var(--t3)">Weekly site documentation</p></div>';
 h+='<div style="display:flex;gap:8px;align-items:center">';
-h+='<button class="btn bs'+(phViewMode==='grid'?' bp':'')+'" onclick="phViewMode=\'grid\';doRender()"><i class="fas fa-th"></i></button>';
-h+='<button class="btn bs'+(phViewMode==='week'?' bp':'')+'" onclick="phViewMode=\'week\';doRender()"><i class="fas fa-calendar-week"></i></button>';
+h+='<button class="btn bs'+(phViewMode==='grid'?' bp':'')+'" onclick="phViewMode=\'grid\';doRender()"><i class="fas fa-th"></i> Grid</button>';
+h+='<button class="btn bs'+(phViewMode==='week'?' bp':'')+'" onclick="phViewMode=\'week\';doRender()"><i class="fas fa-calendar-week"></i> Week</button>';
 h+='<button class="btn bs" onclick="phSettings()">Settings</button>';
 h+='<button class="btn bp" onclick="$(\'phF\').click()"><i class="fas fa-camera"></i> Upload</button>';
 h+='<input type="file" id="phF" accept="image/*" multiple style="display:none" onchange="phProcMulti(this.files)">';
@@ -2065,7 +2065,7 @@ for(var wi=0;wi<weeks.length;wi++){
 }
 h+='</select>';
 if(phFilterBuilding!=='all'||phFilterWeek!=='all'){
-  h+='<button class="btn bs" onclick="phFilterBuilding=\'all\';phFilterWeek=\'all\';doRender()">Clear Filters</button>';
+  h+='<button class="btn bs" onclick="phFilterBuilding=\'all\';phFilterWeek=\'all\';doRender()">Clear</button>';
 }
 h+='<span style="flex:1"></span>';
 h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+filtered.length+' photos</span>';
@@ -2074,7 +2074,7 @@ h+='</div>';
 if(filtered.length===0){
   h+='<div class="card" style="text-align:center;padding:40px">';
   h+='<div style="font-size:2rem;color:var(--t3);margin-bottom:8px"><i class="fas fa-camera"></i></div>';
-  h+='<div style="font-size:.82rem;color:var(--t3)">No photos found</div>';
+  h+='<div style="font-size:.82rem;color:var(--t3)">No photos yet</div>';
   h+='<div style="font-size:.68rem;color:var(--t3);margin-top:4px">Upload progress photos organized by building and week</div>';
   h+='<div style="margin-top:12px"><button class="btn bp" onclick="$(\'phF\').click()"><i class="fas fa-upload"></i> Upload Photos</button></div>';
   h+='</div>';
@@ -2119,7 +2119,7 @@ function phCard(fp,fidx){
 var h='<div style="background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;transition:all .2s;cursor:pointer" onclick="phView('+fidx+')" onmouseover="this.style.borderColor=\'var(--bl)\'" onmouseout="this.style.borderColor=\'var(--bd)\'">';
 h+='<div style="position:relative">';
 if(fp.data)h+='<img src="'+fp.data+'" style="width:100%;height:140px;object-fit:cover;display:block">';
-else h+='<div style="width:100%;height:140px;background:var(--s2);display:flex;align-items:center;justify-content:center;color:var(--t3)"><i class="fas fa-image" style="font-size:1.4rem"></i></div>';
+else h+='<div style="width:100%;height:140px;background:var(--s2);display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--t3)"><i class="fas fa-image" style="font-size:1.4rem"></i><div style="font-size:.56rem;margin-top:4px">View on SharePoint</div></div>';
 h+='<button style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:0;color:#fff;width:20px;height:20px;border-radius:50%;font-size:.6rem;cursor:pointer" onclick="event.stopPropagation();phDel('+fp.id+')">&times;</button>';
 if(fp.uploaded)h+='<div style="position:absolute;top:3px;left:3px;background:rgba(45,138,50,.7);color:#fff;padding:1px 5px;border-radius:3px;font-size:.44rem;font-family:JetBrains Mono"><i class="fas fa-cloud" style="margin-right:2px"></i>SP</div>';
 if(fp.building)h+='<div style="position:absolute;bottom:3px;left:3px;background:rgba(0,0,0,.6);color:#fff;padding:2px 6px;border-radius:3px;font-size:.48rem;font-family:JetBrains Mono">'+H(fp.building)+'</div>';
@@ -2134,17 +2134,19 @@ return h;
 
 function phSettings(){
 var bd='<div class="fg"><label class="fl">Power Automate Webhook URL</label>';
-bd+='<input type="text" id="phWebhook" value="'+H(S.phWebhookUrl||'')+'" style="width:100%" placeholder="https://prod-XX.westus.logic.azure.com:443/workflows/...">';
-bd+='<div style="font-size:.62rem;color:var(--t3);margin-top:6px">Create a Power Automate flow with HTTP trigger. Paste the HTTP POST URL here.</div></div>';
-bd+='<div class="fg"><label class="fl">SharePoint Folder Path</label>';
-bd+='<input type="text" id="phSPFolder" value="'+H(S.phSPFolder||'Progress Photos')+'" style="width:100%" placeholder="Progress Photos">';
-bd+='<div style="font-size:.62rem;color:var(--t3);margin-top:6px">Photos saved as: Folder / Building / Week / filename.jpg</div></div>';
+bd+='<input type="text" id="phWebhook" value="'+H(S.phWebhookUrl||'')+'" style="width:100%" placeholder="Paste your HTTP POST URL here">';
+bd+='<div style="font-size:.62rem;color:var(--t3);margin-top:6px">Power Automate → When HTTP request received → SharePoint Create file. Copy the HTTP POST URL.</div></div>';
+bd+='<div class="fg"><label class="fl">SharePoint Site</label>';
+bd+='<input type="text" id="phSPSite" value="'+H(S.phSPSite||'https://stellarseedscorporg.sharepoint.com/sites/VietnamProjectTeam')+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">SharePoint Folder</label>';
+bd+='<input type="text" id="phSPFolder" value="'+H(S.phSPFolder||'Shared Documents/Progress Photos')+'" style="width:100%"></div>';
 mO('Photo Settings',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="phSaveSettings()">Save</button>');
 }
 
 function phSaveSettings(){
 S.phWebhookUrl=$('phWebhook').value.trim();
-S.phSPFolder=$('phSPFolder').value.trim()||'Progress Photos';
+S.phSPSite=$('phSPSite').value.trim();
+S.phSPFolder=$('phSPFolder').value.trim()||'Shared Documents/Progress Photos';
 phWebhookUrl=S.phWebhookUrl;
 save();mC();notify('Saved');doRender();
 }
@@ -2181,12 +2183,14 @@ var rd=new FileReader();
 rd.onload=function(e){
   var img=new Image();
   img.onload=function(){
-    var c=document.createElement('canvas'),w=img.width,h2=img.height,mx=300;
+    /* Tiny thumbnail for app display */
+    var c=document.createElement('canvas'),w=img.width,h2=img.height,mx=150;
     if(w>mx){h2=Math.round(h2*mx/w);w=mx}
     c.width=w;c.height=h2;
     c.getContext('2d').drawImage(img,0,0,w,h2);
-    var thumb=c.toDataURL('image/jpeg',.25);
+    var thumb=c.toDataURL('image/jpeg',.2);
 
+    /* Full size for SharePoint */
     var c2=document.createElement('canvas'),w2=img.width,h3=img.height,mx2=1200;
     if(w2>mx2){h3=Math.round(h3*mx2/w2);w2=mx2}
     c2.width=w2;c2.height=h3;
@@ -2195,12 +2199,8 @@ rd.onload=function(e){
 
     window._phProcessed.push({thumb:thumb,full:full});
     window._phIdx++;
-    if(window._phIdx<window._phQueue.length){
-      phProcNext();
-    }else{
-      window._phData=window._phProcessed[0].thumb;
-      phShowSaveDialog();
-    }
+    if(window._phIdx<window._phQueue.length)phProcNext();
+    else{window._phData=window._phProcessed[0].thumb;phShowSaveDialog()}
   };
   img.src=e.target.result;
 };
@@ -2227,16 +2227,14 @@ bd+='<div class="fg"><label class="fl">Week</label><input type="text" id="phWk" 
 bd+='<div style="margin-top:10px">';
 if(total>1){
   bd+='<div style="font-size:.68rem;color:var(--bl);margin-bottom:6px"><i class="fas fa-images" style="margin-right:4px"></i>'+total+' photos selected</div>';
-  bd+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:4px">';
-  for(var pi=0;pi<Math.min(total,12);pi++){bd+='<img src="'+window._phProcessed[pi].thumb+'" style="width:100%;height:60px;object-fit:cover;border-radius:4px">'}
-  if(total>12)bd+='<div style="display:flex;align-items:center;justify-content:center;background:var(--s2);border-radius:4px;font-size:.62rem;color:var(--t3);height:60px">+'+(total-12)+' more</div>';
+  bd+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:3px">';
+  for(var pi=0;pi<Math.min(total,20);pi++)bd+='<img src="'+window._phProcessed[pi].thumb+'" style="width:100%;height:50px;object-fit:cover;border-radius:3px">';
+  if(total>20)bd+='<div style="display:flex;align-items:center;justify-content:center;background:var(--s2);border-radius:3px;font-size:.5rem;color:var(--t3);height:50px">+'+(total-20)+'</div>';
   bd+='</div>';
-}else{
-  bd+='<img src="'+window._phData+'" style="width:100%;max-height:200px;object-fit:contain;border-radius:var(--r)">';
-}
+}else bd+='<img src="'+window._phData+'" style="width:100%;max-height:200px;object-fit:contain;border-radius:var(--r)">';
 bd+='</div>';
-if(phWebhookUrl)bd+='<div style="font-size:.62rem;color:var(--g);margin-top:6px"><i class="fas fa-cloud" style="margin-right:4px"></i>Will be saved to SharePoint</div>';
-else bd+='<div style="font-size:.62rem;color:var(--or);margin-top:6px"><i class="fas fa-exclamation-triangle" style="margin-right:4px"></i>SharePoint not connected. Set webhook in settings.</div>';
+if(phWebhookUrl)bd+='<div style="font-size:.62rem;color:var(--g);margin-top:6px"><i class="fas fa-cloud" style="margin-right:4px"></i>Will upload to SharePoint</div>';
+else bd+='<div style="font-size:.62rem;color:var(--or);margin-top:6px"><i class="fas fa-exclamation-triangle" style="margin-right:4px"></i>Set webhook URL in Settings first</div>';
 
 mO('Save Photo',bd,'<button class="btn" onclick="mC();window._phQueue=null;window._phProcessed=null">Cancel</button><button class="btn bp" onclick="phSave()">Save</button>');
 }
@@ -2260,30 +2258,37 @@ for(var i=0;i<total;i++){
   var photoTitle=total>1?(title+' '+(i+1)):title;
   var fileName=photoTitle.replace(/[^a-z0-9]/gi,'_')+'_'+date+'_'+ts+'.jpg';
 
+  /* Store ONLY metadata (no image data) — photos live in SharePoint */
   S.photos.push({id:ts,title:photoTitle,date:date,data:proc.thumb,building:building,week:week,fileName:fileName,uploaded:false});
 
-  if(phWebhookUrl&&proc.full){
-    (function(fn,pTitle){
-      var base64=proc.full.replace(/^data:image\/\w+;base64,/,'');
+  if(phWebhookUrl){
+    (function(fn,pt,thumbData,fullData){
+      var base64=fullData.replace(/^data:image\/\w+;base64,/,'');
       fetch(phWebhookUrl,{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({fileName:building+'/'+week+'/'+fn,fileData:base64,title:pTitle,building:building,week:week,date:date})
+        body:JSON.stringify({fileName:building+'/'+week+'/'+fn,fileData:base64,title:pt,building:building,week:week,date:date})
       }).then(function(resp){
-        if(resp.ok){for(var j=0;j<S.photos.length;j++){if(S.photos[j].fileName===fn){S.photos[j].uploaded=true;break}}save()}
+        if(resp.ok){
+          for(var j=0;j<S.photos.length;j++){
+            if(S.photos[j].fileName===fn){S.photos[j].uploaded=true;break}
+          }
+          save();
+        }
       }).catch(function(){});
-    })(fileName,photoTitle);
+    })(fileName,photoTitle,proc.thumb,proc.full);
   }
 }
 
 try{
-  save();mC();
+  save();
+  mC();
   window._phProcessed=null;window._phQueue=null;
-  notify(total+' photo'+(total>1?'s':'')+' saved'+(phWebhookUrl?' (uploading to SharePoint...)':''));
+  notify(total+' photo'+(total>1?'s':'')+' saved'+(phWebhookUrl?' uploading to SharePoint...':''));
   doRender();
 }catch(er){
   for(var i=0;i<total;i++)S.photos.pop();
-  alert('Storage full. Try deleting old photos.');
+  alert('Storage full. Try fewer photos.');
 }
 }
 
@@ -2291,7 +2296,7 @@ function phView(idx){
 var p=S.photos[idx];if(!p)return;
 var bd='<div style="text-align:center">';
 if(p.data)bd+='<img src="'+p.data+'" style="max-width:100%;max-height:60vh;border-radius:var(--r)">';
-else bd+='<div style="padding:40px;color:var(--t3)"><i class="fas fa-image" style="font-size:3rem"></i><div>Photo stored in SharePoint</div></div>';
+else bd+='<div style="padding:40px;color:var(--t3)"><i class="fas fa-image" style="font-size:3rem"></i><div style="margin-top:8px">Photo stored in SharePoint</div></div>';
 bd+='<div style="margin-top:12px;text-align:left">';
 bd+='<div style="font-size:.88rem;font-weight:700">'+H(p.title||'Photo')+'</div>';
 bd+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px">';
