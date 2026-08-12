@@ -2002,10 +2002,313 @@ S.teamMembers=S.teamMembers.filter(function(x){return x.id!==id});
 save();notify('Deleted');doRender();
 }
 /* === PHOTOS === */
-R.photos=function(){var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="ct">Photos</span><span style="font-family:JetBrains Mono;font-size:.6rem;color:var(--t3)">'+S.photos.length+'</span></div><div class="card"><div class="dropzone" onclick="$(\'phF\').click()"><div>Click to upload</div><input type="file" id="phF" accept="image/*" style="display:none" onchange="if(this.files[0])phProc(this.files[0])"></div></div><div class="card"><div class="ch"><span class="ct">Gallery</span></div>';if(!S.photos.length)h+='<div style="text-align:center;padding:24px;color:var(--t3)">No photos</div>';else{h+='<div class="gallery">';for(var i=0;i<S.photos.length;i++){var p=S.photos[i];h+='<div class="pcard"><div style="position:relative"><img src="'+p.data+'"><button style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.5);border:0;color:#fff;width:20px;height:20px;border-radius:50%;font-size:.65rem;cursor:pointer" onclick="phDel('+p.id+')">&times;</button></div><div class="pinfo"><div style="font-weight:600;font-size:.76rem">'+H(p.title)+'</div><div style="font-family:JetBrains Mono;font-size:.58rem;color:var(--t3)">'+p.date+'</div></div></div>'}h+='</div>'}h+='</div>';$('app').innerHTML=h};
-function phProc(f){if(!f.type.startsWith('image/'))return;var rd=new FileReader();rd.onload=function(e){var img=new Image();img.onload=function(){var c=document.createElement('canvas'),w=img.width,h2=img.height,mx=800;if(w>mx){h2=Math.round(h2*mx/w);w=mx}c.width=w;c.height=h2;c.getContext('2d').drawImage(img,0,0,w,h2);try{window._phData=c.toDataURL('image/jpeg',.6);mO('Save Photo','<div class="fg"><label class="fl">Title</label><input type="text" id="phTi" style="width:100%"></div><div class="fg"><label class="fl">Date</label><input type="date" id="phD" value="'+td()+'" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="phSave()">Save</button>')}catch(er){alert('Image too large')}};img.src=e.target.result};rd.readAsDataURL(f)}
-function phSave(){S.photos.push({id:Date.now(),title:$('phTi').value.trim()||'Photo',date:$('phD').value||td(),data:window._phData});try{save();mC();notify('Saved');doRender()}catch(er){S.photos.pop();alert('Storage full')}}
-function phDel(id){if(!confirm('Delete?'))return;S.photos=S.photos.filter(function(p){return p.id!==id});localStorage.setItem('ss_photos',JSON.stringify(S.photos));notify('Deleted');doRender()}
+var phFilterBuilding='all';
+var phFilterWeek='all';
+var phViewMode='grid';
+
+R.photos=function(){
+if(!Array.isArray(S.photos))S.photos=[];
+
+/* Collect unique buildings and weeks */
+var buildings=[];
+var weeks=[];
+var buildSet={};
+var weekSet={};
+for(var i=0;i<S.photos.length;i++){
+  var p=S.photos[i];
+  var b=p.building||'Unassigned';
+  if(!buildSet[b]){buildSet[b]=true;buildings.push(b)}
+  var w=p.week||phGetWeek(p.date);
+  if(!weekSet[w]){weekSet[w]=true;weeks.push(w)}
+}
+weeks.sort().reverse();
+buildings.sort();
+
+/* Filter */
+var filtered=[];
+for(var i=0;i<S.photos.length;i++){
+  var p=S.photos[i];
+  var b=p.building||'Unassigned';
+  var w=p.week||phGetWeek(p.date);
+  if(phFilterBuilding!=='all'&&b!==phFilterBuilding)continue;
+  if(phFilterWeek!=='all'&&w!==phFilterWeek)continue;
+  filtered.push({photo:p,building:b,week:w,idx:i});
+}
+
+/* Stats */
+var totalBuildings=buildings.length;
+var totalWeeks=weeks.length;
+
+var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+h+='<div><h2>Progress Photos</h2><p style="font-size:.72rem;color:var(--t3)">Weekly site documentation</p></div>';
+h+='<div style="display:flex;gap:8px;align-items:center">';
+h+='<button class="btn bs'+(phViewMode==='grid'?' bp':'')+'" onclick="phViewMode=\'grid\';doRender()"><i class="fas fa-th"></i></button>';
+h+='<button class="btn bs'+(phViewMode==='week'?' bp':'')+'" onclick="phViewMode=\'week\';doRender()"><i class="fas fa-calendar-week"></i></button>';
+h+='<button class="btn bp" onclick="$(\'phF\').click()"><i class="fas fa-camera"></i> Upload</button>';
+h+='<input type="file" id="phF" accept="image/*" multiple style="display:none" onchange="phProcMulti(this.files)">';
+h+='</div></div>';
+
+/* Metrics */
+h+='<div class="stats">';
+h+='<div class="si" style="border-left:4px solid var(--bl)"><div class="sl">Total Photos</div><div class="sv" style="color:var(--bl)">'+S.photos.length+'</div></div>';
+h+='<div class="si" style="border-left:4px solid var(--g)"><div class="sl">Buildings</div><div class="sv" style="color:var(--g)">'+totalBuildings+'</div></div>';
+h+='<div class="si" style="border-left:4px solid var(--pu)"><div class="sl">Weeks</div><div class="sv" style="color:var(--pu)">'+totalWeeks+'</div></div>';
+h+='<div class="si" style="border-left:4px solid var(--am)"><div class="sl">This Week</div><div class="sv" style="color:var(--am)">'+phCountThisWeek()+'</div></div>';
+h+='</div>';
+
+/* Filters */
+h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">';
+h+='<span style="font-size:.62rem;color:var(--t3);font-family:JetBrains Mono">FILTER:</span>';
+h+='<select style="padding:5px;font-size:.72rem" onchange="phFilterBuilding=this.value;doRender()">';
+h+='<option value="all"'+(phFilterBuilding==='all'?' selected':'')+'>All Buildings</option>';
+for(var bi=0;bi<buildings.length;bi++){
+  h+='<option value="'+H(buildings[bi])+'"'+(phFilterBuilding===buildings[bi]?' selected':'')+'>'+H(buildings[bi])+'</option>';
+}
+h+='</select>';
+h+='<select style="padding:5px;font-size:.72rem" onchange="phFilterWeek=this.value;doRender()">';
+h+='<option value="all"'+(phFilterWeek==='all'?' selected':'')+'>All Weeks</option>';
+for(var wi=0;wi<weeks.length;wi++){
+  h+='<option value="'+H(weeks[wi])+'"'+(phFilterWeek===weeks[wi]?' selected':'')+'>'+H(weeks[wi])+'</option>';
+}
+h+='</select>';
+if(phFilterBuilding!=='all'||phFilterWeek!=='all'){
+  h+='<button class="btn bs" onclick="phFilterBuilding=\'all\';phFilterWeek=\'all\';doRender()">Clear Filters</button>';
+}
+h+='<span style="flex:1"></span>';
+h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+filtered.length+' photos</span>';
+h+='</div>';
+
+if(filtered.length===0){
+  h+='<div class="card" style="text-align:center;padding:40px">';
+  h+='<div style="font-size:2rem;color:var(--t3);margin-bottom:8px"><i class="fas fa-camera"></i></div>';
+  h+='<div style="font-size:.82rem;color:var(--t3)">No photos found</div>';
+  h+='<div style="font-size:.68rem;color:var(--t3);margin-top:4px">Upload progress photos organized by building and week</div>';
+  h+='<div style="margin-top:12px"><button class="btn bp" onclick="$(\'phF\').click()"><i class="fas fa-upload"></i> Upload Photos</button></div>';
+  h+='</div>';
+}else if(phViewMode==='week'){
+
+  /* Group by week then building */
+  var weekGroups={};
+  for(var i=0;i<filtered.length;i++){
+    var w=filtered[i].week;
+    var b=filtered[i].building;
+    if(!weekGroups[w])weekGroups[w]={};
+    if(!weekGroups[w][b])weekGroups[w][b]=[];
+    weekGroups[w][b].push(filtered[i]);
+  }
+  var sortedWeeks=[];for(var wk in weekGroups)sortedWeeks.push(wk);
+  sortedWeeks.sort().reverse();
+
+  for(var wi=0;wi<sortedWeeks.length;wi++){
+    var wk=sortedWeeks[wi];
+    var bldgs=weekGroups[wk];
+    var weekTotal=0;
+    for(var bki in bldgs)weekTotal+=bldgs[bki].length;
+
+    h+='<div style="margin-bottom:20px">';
+    h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+    h+='<div style="font-family:JetBrains Mono;font-size:.82rem;font-weight:700;color:var(--bl)">'+H(wk)+'</div>';
+    h+='<div style="font-family:JetBrains Mono;font-size:.62rem;color:var(--t3)">'+weekTotal+' photos</div>';
+    h+='<div style="flex:1;height:1px;background:var(--bd)"></div>';
+    h+='</div>';
+
+    for(var bki in bldgs){
+      var bPhotos=bldgs[bki];
+      h+='<div style="margin-bottom:12px">';
+      h+='<div style="font-size:.76rem;font-weight:600;color:var(--pu);margin-bottom:6px;padding-left:10px;border-left:3px solid var(--pu)">'+H(bki)+' <span style="font-size:.56rem;color:var(--t3);font-weight:400">('+bPhotos.length+')</span></div>';
+      h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">';
+      for(var pi=0;pi<bPhotos.length;pi++){
+        var fp=bPhotos[pi].photo;
+        var fidx=bPhotos[pi].idx;
+        h+='<div style="background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;transition:all .2s;cursor:pointer" onclick="phView('+fidx+')" onmouseover="this.style.borderColor=\'var(--bl)\'" onmouseout="this.style.borderColor=\'var(--bd)\'">';
+        h+='<div style="position:relative">';
+        h+='<img src="'+fp.data+'" style="width:100%;height:120px;object-fit:cover;display:block">';
+        h+='<button style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:0;color:#fff;width:20px;height:20px;border-radius:50%;font-size:.6rem;cursor:pointer" onclick="event.stopPropagation();phDel('+fp.id+')">&times;</button>';
+        h+='</div>';
+        h+='<div style="padding:6px">';
+        h+='<div style="font-size:.72rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+H(fp.title||'Photo')+'</div>';
+        h+='<div style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+fp.date+'</div>';
+        h+='</div></div>';
+      }
+      h+='</div></div>';
+    }
+    h+='</div>';
+  }
+
+}else{
+
+  /* Grid view */
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">';
+  for(var i=0;i<filtered.length;i++){
+    var fp=filtered[i].photo;
+    var fidx=filtered[i].idx;
+    h+='<div style="background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;transition:all .2s;cursor:pointer" onclick="phView('+fidx+')" onmouseover="this.style.borderColor=\'var(--bl)\'" onmouseout="this.style.borderColor=\'var(--bd)\'">';
+    h+='<div style="position:relative">';
+    h+='<img src="'+fp.data+'" style="width:100%;height:140px;object-fit:cover;display:block">';
+    h+='<button style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:0;color:#fff;width:20px;height:20px;border-radius:50%;font-size:.6rem;cursor:pointer" onclick="event.stopPropagation();phDel('+fp.id+')">&times;</button>';
+    if(fp.building)h+='<div style="position:absolute;bottom:3px;left:3px;background:rgba(0,0,0,.6);color:#fff;padding:2px 6px;border-radius:3px;font-size:.48rem;font-family:JetBrains Mono">'+H(fp.building)+'</div>';
+    h+='</div>';
+    h+='<div style="padding:6px">';
+    h+='<div style="font-size:.72rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+H(fp.title||'Photo')+'</div>';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center">';
+    h+='<div style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+fp.date+'</div>';
+    if(fp.week)h+='<div style="font-family:JetBrains Mono;font-size:.48rem;color:var(--bl);background:var(--s2);padding:1px 4px;border-radius:2px">'+H(fp.week)+'</div>';
+    h+='</div></div></div>';
+  }
+  h+='</div>';
+}
+
+$('app').innerHTML=h;
+};
+
+function phGetWeek(dateStr){
+if(!dateStr)return 'Unknown Week';
+try{
+  var d=new Date(dateStr+'T12:00');
+  var start=new Date(d.getFullYear(),0,1);
+  var wk=Math.ceil(((d-start)/86400000+start.getDay()+1)/7);
+  return d.getFullYear()+'-W'+(wk<10?'0':'')+wk;
+}catch(e){return 'Unknown Week'}
+}
+
+function phCountThisWeek(){
+var cw=phGetWeek(td());
+var count=0;
+for(var i=0;i<S.photos.length;i++){
+  if(S.photos[i].week===cw)count++;
+}
+return count;
+}
+
+function phProcMulti(files){
+if(!files||!files.length)return;
+window._phQueue=[];
+window._phIdx=0;
+for(var i=0;i<files.length;i++){
+  if(files[i].type.startsWith('image/'))window._phQueue.push(files[i]);
+}
+if(window._phQueue.length===0)return;
+phProcNext();
+}
+
+function phProcNext(){
+if(window._phIdx>=window._phQueue.length){
+  if(window._phQueue.length>1){save();notify(window._phQueue.length+' photos saved');doRender()}
+  return;
+}
+var f=window._phQueue[window._phIdx];
+var rd=new FileReader();
+rd.onload=function(e){
+  var img=new Image();
+  img.onload=function(){
+    var c=document.createElement('canvas'),w=img.width,h2=img.height,mx=800;
+    if(w>mx){h2=Math.round(h2*mx/w);w=mx}
+    c.width=w;c.height=h2;
+    c.getContext('2d').drawImage(img,0,0,w,h2);
+    try{
+      window._phData=c.toDataURL('image/jpeg',.6);
+      if(window._phQueue.length===1){
+        phShowSaveDialog();
+      }else{
+        /* Batch: use default values */
+        var bld=window._phLastBuilding||'Unassigned';
+        var wk=phGetWeek(td());
+        S.photos.push({id:Date.now()+window._phIdx,title:'Photo '+(window._phIdx+1),date:td(),data:window._phData,building:bld,week:wk});
+        window._phIdx++;
+        phProcNext();
+      }
+    }catch(er){alert('Image too large');window._phIdx++;phProcNext()}
+  };
+  img.src=e.target.result;
+};
+rd.readAsDataURL(f);
+}
+
+function phShowSaveDialog(){
+/* Build building options from existing photos and projects */
+var bldgs={};
+for(var i=0;i<S.photos.length;i++){
+  var b=S.photos[i].building||'';
+  if(b)bldgs[b]=true;
+}
+for(var i=0;i<S.taskProjects.length;i++){
+  bldgs[S.taskProjects[i].name]=true;
+}
+bldgs['Building A']=true;bldgs['Building B']=true;bldgs['Building C']=true;
+bldgs['Site Works']=true;bldgs['Common Areas']=true;
+
+var bOpts='<option value="">-- Select --</option>';
+for(var bk in bldgs)bOpts+='<option value="'+H(bk)+'">'+H(bk)+'</option>';
+
+var currentWeek=phGetWeek(td());
+var bd='<div class="fg"><label class="fl">Title</label><input type="text" id="phTi" style="width:100%" placeholder="e.g. Foundation pour"></div>';
+bd+='<div class="fg"><label class="fl">Date</label><input type="date" id="phD" value="'+td()+'" style="width:100%" onchange="document.getElementById(\'phWk\').value=phGetWeek(this.value)"></div>';
+bd+='<div class="fg"><label class="fl">Building / Area</label>';
+bd+='<div style="display:flex;gap:8px">';
+bd+='<select id="phBd" style="flex:1" onchange="if(this.value===\'__custom\')document.getElementById(\'phBdC\').style.display=\'block\';else document.getElementById(\'phBdC\').style.display=\'none\'">'+bOpts;
+bd+='<option value="__custom">+ Add New</option></select>';
+bd+='<input type="text" id="phBdC" placeholder="Enter building name..." style="display:none;flex:1">';
+bd+='</div></div>';
+bd+='<div class="fg"><label class="fl">Week</label><input type="text" id="phWk" value="'+currentWeek+'" style="width:100%" readonly></div>';
+bd+='<div style="margin-top:10px"><img src="'+window._phData+'" style="width:100%;max-height:200px;object-fit:contain;border-radius:var(--r)"></div>';
+
+mO('Save Photo',bd,'<button class="btn" onclick="mC();window._phQueue=null">Cancel</button><button class="btn bp" onclick="phSave()">Save</button>');
+}
+
+function phSave(){
+var title=$('phTi').value.trim()||'Photo';
+var date=$('phD').value||td();
+var building='';
+var bSel=$('phBd').value;
+if(bSel==='__custom'){
+  building=$('phBdC').value.trim();
+}else{
+  building=bSel;
+}
+if(!building)building='Unassigned';
+var week=$('phWk').value||phGetWeek(date);
+
+window._phLastBuilding=building;
+
+S.photos.push({id:Date.now(),title:title,date:date,data:window._phData,building:building,week:week});
+try{
+  save();
+  mC();
+  if(window._phQueue&&window._phQueue.length>1){
+    window._phIdx++;
+    phProcNext();
+  }else{
+    notify('Saved');
+    doRender();
+  }
+}catch(er){
+  S.photos.pop();
+  alert('Storage full. Try deleting old photos.');
+}
+}
+
+function phView(idx){
+var p=S.photos[idx];
+if(!p)return;
+var bd='<div style="text-align:center">';
+bd+='<img src="'+p.data+'" style="max-width:100%;max-height:60vh;border-radius:var(--r)">';
+bd+='<div style="margin-top:12px;text-align:left">';
+bd+='<div style="font-size:.88rem;font-weight:700">'+H(p.title||'Photo')+'</div>';
+bd+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px">';
+bd+='<div style="font-size:.72rem;color:var(--t3)"><b>Date:</b> '+p.date+'</div>';
+bd+='<div style="font-size:.72rem;color:var(--t3)"><b>Building:</b> '+(p.building||'Unassigned')+'</div>';
+bd+='<div style="font-size:.72rem;color:var(--t3)"><b>Week:</b> '+(p.week||phGetWeek(p.date))+'</div>';
+bd+='<div style="font-size:.72rem;color:var(--t3)"><b>Size:</b> '+Math.round(p.data.length/1024)+' KB</div>';
+bd+='</div></div></div>';
+mO('Photo Detail',bd,'<button class="btn" onclick="mC()">Close</button> <button class="btn bs bd" onclick="phDel('+p.id+');mC()">Delete</button>');
+}
+
+function phDel(id){
+if(!confirm('Delete this photo?'))return;
+S.photos=S.photos.filter(function(p){return p.id!==id});
+localStorage.setItem('ss_photos',JSON.stringify(S.photos));
+notify('Deleted');doRender();
+}
 /* === CLOUD SETTINGS === */
 R.cloud=function(){var c;try{c=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}var h='<div style="margin-bottom:10px"><span class="ct" style="font-size:.92rem">Cloud Sync</span></div><div class="card" style="border-left:4px solid var(--or);background:var(--orc)"><div style="font-size:.76rem;font-weight:700;color:var(--or);margin-bottom:6px">Setup</div><div style="font-size:.72rem;line-height:1.8">1. Create Firebase project<br>2. Enable Realtime DB + Email Auth<br>3. Enter config below</div></div><div class="card"><div class="ch"><span class="ct">Config</span></div><div class="fg"><label class="fl">API Key</label><input type="text" id="cKey" value="'+H((c&&c.apiKey)||'')+'" style="width:100%"></div><div class="fg"><label class="fl">Database URL</label><input type="text" id="cURL" value="'+H((c&&c.databaseURL)||'')+'" style="width:100%"></div><div class="fg"><label class="fl">Project ID</label><input type="text" id="cPid" value="'+H((c&&c.projectId)||'')+'" style="width:100%"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn" onclick="if(confirm(\'Clear?\')){localStorage.removeItem(\'ss_cloud\');location.reload()}">Clear</button><button class="btn bp" onclick="saveCloud()">Save &amp; Connect</button></div></div><div class="card"><div class="ch"><span class="ct">Data</span></div><button class="btn" onclick="expAll()">Export</button> <button class="btn bb" onclick="impAll()">Import</button> <button class="btn bd" onclick="if(confirm(\'Reset ALL?\')){localStorage.clear();location.reload()}">Reset</button></div>';$('app').innerHTML=h};
 function saveCloud(){var cfg={apiKey:$('cKey').value.trim(),databaseURL:$('cURL').value.trim(),projectId:$('cPid').value.trim(),authDomain:($('cPid').value.trim()||'')+'.firebaseapp.com'};if(!cfg.apiKey||!cfg.databaseURL)return;localStorage.setItem('ss_cloud',JSON.stringify(cfg));notify('Connecting...');setTimeout(function(){location.reload()},600)}
