@@ -101,6 +101,7 @@ var dSortCol='name',dSortAsc=true,dProjSearch='';
 var dashSearch='',dashFStatus='all',dashFCategory='all';
 var aiMessages=[];
 var aiInput='';
+var showCost=true;
 function H(s){if(s==null)return '';var d=document.createElement('span');d.textContent=String(s);return d.innerHTML}
 function pct(a,b){return b>0?Math.round(a/b*100):0}
 function td(){var d=new Date();return d.getFullYear()+'-'+LZ(d.getMonth()+1)+'-'+LZ(d.getDate())}
@@ -184,15 +185,21 @@ function doLogin(){var em=$('lEmail').value.trim(),pw=$('lPass').value;if(!em||!
 function doLogout(){if(fbAuth)fbAuth.signOut();$('loginScr').style.display='none'}
 function skipAuth(){$('loginScr').style.display='none';$('mainApp').style.display='block';load();nav();doRender()}
 
-/* === DASHBOARD === */
 R.dash=function(){
 var s=S.safety||{},dLTI=dd(s.startDate||'2026-04-13',td());
 var oa=ovProg(S.tasks),sC=siteCost,sP=sPaid(),pC=0,pP=0;
 for(var i=0;i<S.taskProjects.length;i++){pC+=(S.taskProjects[i].cost||0);pP+=pPaid(S.taskProjects[i])}
 var ovC=sC+pC,ovP=sP+pP,ovPct=ovC>0?pct(ovP,ovC):0;
 var pc=oa>=60?'var(--g)':oa>=30?'var(--or)':'var(--bl)';
+var money=function(v){return showCost?fmtD(v):'***'};
+var moneyPct=function(v){return showCost?(v+'%'):'***'};
 
-var h='<div class="stats">';
+var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+h+='<span></span>';
+h+='<button class="btn '+(showCost?'bs':'bp')+'" onclick="showCost=!showCost;doRender()"><i class="fas '+(showCost?'fa-eye':'fa-eye-slash')+'"></i> '+(showCost?'Hide Costs':'Show Costs')+'</button>';
+h+='</div>';
+
+h+='<div class="stats">';
 h+='<div class="si" style="border-left:4px solid var(--g)"><div class="sl">Safe Hours</div><div class="sv" style="color:var(--g)">'+(s.safeHours||0).toLocaleString()+'</div></div>';
 h+='<div class="si" style="border-left:4px solid var(--bl)"><div class="sl">Days w/o LTI</div><div class="sv" style="color:var(--bl)">'+dLTI+'</div></div>';
 h+='<div class="si" style="border-left:4px solid var(--or)"><div class="sl">Near Misses</div><div class="sv" style="color:var(--or)">'+(s.nearMisses||0)+'</div></div>';
@@ -200,22 +207,22 @@ h+='<div class="si" style="border-left:4px solid var(--pu)"><div class="sl">Insp
 h+='<div class="si" style="border-left:4px solid var(--am)"><div class="sl">Projects</div><div class="sv" style="color:var(--am)">'+S.taskProjects.length+'</div></div>';
 h+='</div>';
 
-/* Overall cost card */
 h+='<div class="card" style="border-left:4px solid var(--am)">';
-h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:700;font-size:.82rem;color:var(--am)">Overall Cost</span><span style="font-size:1.2rem;font-weight:700;color:var(--am)">'+fmtD(ovC)+'</span></div>';
-h+='<div class="pbar" style="margin-bottom:8px"><div class="pf" style="width:'+ovPct+'%;background:var(--g)"></div></div>';
+h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:700;font-size:.82rem;color:var(--am)">Overall Cost</span><span style="font-size:1.2rem;font-weight:700;color:var(--am)">'+money(ovC)+'</span></div>';
+if(showCost){
+  h+='<div class="pbar" style="margin-bottom:8px"><div class="pf" style="width:'+ovPct+'%;background:var(--g)"></div></div>';
+}else{
+  h+='<div class="pbar" style="margin-bottom:8px"><div class="pf" style="width:0%;background:var(--g)"></div></div>';
+}
 h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">';
-h+='<div style="text-align:center;padding:8px;background:var(--amc);border-radius:var(--r)"><div style="font-family:JetBrains Mono;font-size:.44rem;color:var(--am)">SITE</div><div style="font-size:.82rem;font-weight:700;color:var(--am)">'+fmtD(sC)+'</div></div>';
-h+='<div style="text-align:center;padding:8px;background:var(--puc);border-radius:var(--r)"><div style="font-family:JetBrains Mono;font-size:.44rem;color:var(--pu)">PROJECTS</div><div style="font-size:.82rem;font-weight:700;color:var(--pu)">'+fmtD(pC)+'</div></div>';
-h+='<div style="text-align:center;padding:8px;background:var(--gc);border-radius:var(--r)"><div style="font-family:JetBrains Mono;font-size:.44rem;color:var(--g)">PAID</div><div style="font-size:.82rem;font-weight:700;color:var(--g)">'+fmtD(ovP)+'</div></div>';
-h+='<div style="text-align:center;padding:8px;background:var(--orc);border-radius:var(--r)"><div style="font-family:JetBrains Mono;font-size:.44rem;color:var(--or)">BALANCE</div><div style="font-size:.82rem;font-weight:700;color:var(--or)">'+fmtD(ovC-ovP)+'</div></div>';
+h+='<div style="text-align:center;padding:8px;background:var(--amc);border-radius:var(--r)"><div style="font-family:JetBrains Mono;font-size:.44rem;color:var(--am)">SITE</div><div style="font-size:.82rem;font-weight:700;color:var(--am)">'+money(sC)+'</div></div>';
+h+='<div style="text-align:center;padding:8px;background:var(--puc);border-radius:var(--r)"><div style="font-family:JetBrains Mono;font-size:.44rem;color:var(--pu)">PROJECTS</div><div style="font-size:.82rem;font-weight:700;color:var(--pu)">'+money(pC)+'</div></div>';
+h+='<div style="text-align:center;padding:8px;background:var(--gc);border-radius:var(--r)"><div style="font-family:JetBrains Mono;font-size:.44rem;color:var(--g)">PAID</div><div style="font-size:.82rem;font-weight:700;color:var(--g)">'+money(ovP)+'</div></div>';
+h+='<div style="text-align:center;padding:8px;background:var(--orc);border-radius:var(--r)"><div style="font-family:JetBrains Mono;font-size:.44rem;color:var(--or)">BALANCE</div><div style="font-size:.82rem;font-weight:700;color:var(--or)">'+money(ovC-ovP)+'</div></div>';
 h+='</div></div>';
 
-/* Projects summary table — sortable + searchable */
 var allRows=[];
-/* Site row */
 allRows.push({name:'Site (Master)',prog:oa,cost:sC,paid:sP,bal:sC-sP,paidPct:sC>0?pct(sP,sC):0,site:true,id:null,progC:pc});
-/* Sub-project rows */
 for(var p=0;p<S.taskProjects.length;p++){
   var pj=S.taskProjects[p],pt=pj.tasks||[];
   var pp=ovProg(pt),pl=pPaid(pj),co=pj.cost||0,bal=co-pl;
@@ -223,10 +230,8 @@ for(var p=0;p<S.taskProjects.length;p++){
   var ppc=pp>=80?'var(--g)':pp>=40?'var(--or)':'var(--pu)';
   allRows.push({name:pj.name,prog:pp,cost:co,paid:pl,bal:bal,paidPct:ppPct,site:false,id:pj.id,progC:ppc});
 }
-/* Totals (calculated before filtering) */
 var tProg=oa,tCost=ovC,tPaid=ovP,tBal=ovC-ovP,tPaidPct=ovPct;
 
-/* Filter */
 var filtered=[];
 for(var i=0;i<allRows.length;i++){
   var r=allRows[i];
@@ -237,7 +242,6 @@ for(var i=0;i<allRows.length;i++){
   filtered.push(r);
 }
 
-/* Sort */
 filtered.sort(function(a,b){
   var va,vb;
   if(dSortCol==='name'){va=a.name.toLowerCase();vb=b.name.toLowerCase();return dSortAsc?(va>vb?1:va<vb?-1:0):(va<vb?1:va>vb?-1:0)}
@@ -258,10 +262,12 @@ h+='<div style="margin-bottom:10px"><input type="text" id="dPQ" placeholder="Sea
 h+='<div class="tw"><table><thead><tr>';
 h+='<th '+hdrClick('name')+'>Project '+sortArrow('name')+'</th>';
 h+='<th style="text-align:right" '+hdrClick('prog')+'>Progress % '+sortArrow('prog')+'</th>';
-h+='<th style="text-align:right" '+hdrClick('cost')+'>Cost '+sortArrow('cost')+'</th>';
-h+='<th style="text-align:right" '+hdrClick('paid')+'>Paid '+sortArrow('paid')+'</th>';
-h+='<th style="text-align:right" '+hdrClick('bal')+'>Balance '+sortArrow('bal')+'</th>';
-h+='<th style="text-align:right" '+hdrClick('paidPct')+'>Paid % '+sortArrow('paidPct')+'</th>';
+if(showCost){
+  h+='<th style="text-align:right" '+hdrClick('cost')+'>Cost '+sortArrow('cost')+'</th>';
+  h+='<th style="text-align:right" '+hdrClick('paid')+'>Paid '+sortArrow('paid')+'</th>';
+  h+='<th style="text-align:right" '+hdrClick('bal')+'>Balance '+sortArrow('bal')+'</th>';
+  h+='<th style="text-align:right" '+hdrClick('paidPct')+'>Paid % '+sortArrow('paidPct')+'</th>';
+}
 h+='</tr></thead><tbody>';
 
 for(var i=0;i<filtered.length;i++){
@@ -270,33 +276,35 @@ for(var i=0;i<filtered.length;i++){
   if(r.site)h+='<td style="color:var(--bl)">'+H(r.name)+'</td>';
   else h+='<td style="cursor:pointer;color:var(--pu)" onclick="tpSel='+r.id+';go(\'tasks\')">'+H(r.name)+'</td>';
   h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:'+r.progC+'">'+fmtP(r.prog)+'</td>';
-  h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--am)">'+fmtD(r.cost)+'</td>';
-  h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--g)">'+fmtD(r.paid)+'</td>';
-  h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--or)">'+fmtD(r.bal)+'</td>';
-  h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--pu)">'+r.paidPct+'%</td>';
+  if(showCost){
+    h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--am)">'+fmtD(r.cost)+'</td>';
+    h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--g)">'+fmtD(r.paid)+'</td>';
+    h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--or)">'+fmtD(r.bal)+'</td>';
+    h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--pu)">'+r.paidPct+'%</td>';
+  }
   h+='</tr>';
 }
 
-/* Totals row */
 h+='<tr style="font-weight:700;background:var(--s2)">';
 h+='<td>Total</td>';
 h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:'+pc+'">'+fmtP(tProg)+'</td>';
-h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--am)">'+fmtD(tCost)+'</td>';
-h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--g)">'+fmtD(tPaid)+'</td>';
-h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--or)">'+fmtD(tBal)+'</td>';
-h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--pu)">'+tPaidPct+'%</td>';
+if(showCost){
+  h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--am)">'+fmtD(tCost)+'</td>';
+  h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--g)">'+fmtD(tPaid)+'</td>';
+  h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--or)">'+fmtD(tBal)+'</td>';
+  h+='<td style="text-align:right;font-family:JetBrains Mono;font-size:.72rem;color:var(--pu)">'+tPaidPct+'%</td>';
+}
 h+='</tr>';
 
 h+='</tbody></table></div>';
 h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">Click column headers to sort</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">Click project name to view details</span></div>';
 h+='</div>';
-  
-/* Activity + Quick Links */
+
 h+='<div class="row2">';
 h+='<div class="card"><div class="ch"><span class="ct">Activity</span></div>';
-var log=S.userLog||[],show=Math.min(log.length,8);
-if(!show)h+='<div style="text-align:center;padding:16px;color:var(--t3)">No activity</div>';
-for(var i=0;i<show;i++){var e=log[i];h+='<div style="padding:5px 0;border-bottom:1px solid var(--b2)"><div style="font-size:.7rem"><b>'+H(e.user)+'</b> '+H(e.action)+'</div><div style="font-size:.54rem;color:var(--t3);font-family:JetBrains Mono">'+tAgo(e.ts)+'</div></div>'}
+var log=S.userLog||[],show2=Math.min(log.length,8);
+if(!show2)h+='<div style="text-align:center;padding:16px;color:var(--t3)">No activity</div>';
+for(var i=0;i<show2;i++){var e=log[i];h+='<div style="padding:5px 0;border-bottom:1px solid var(--b2)"><div style="font-size:.7rem"><b>'+H(e.user)+'</b> '+H(e.action)+'</div><div style="font-size:.54rem;color:var(--t3);font-family:JetBrains Mono">'+tAgo(e.ts)+'</div></div>'}
 h+='</div>';
 h+='<div class="card"><div class="ch"><span class="ct">Quick Links</span></div>';
 h+='<a href="'+MF+'" target="_blank" class="btn bp" style="margin:0 6px 6px 0;text-decoration:none">Inspection Form</a>';
