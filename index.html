@@ -159,7 +159,7 @@ function loadScr(src,cb){var s=document.createElement('script');s.src=src;s.onlo
 function tryCloud(){var c;try{c=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}if(!c||!c.apiKey||!c.databaseURL)return;$('loginScr').style.display='flex';if(typeof firebase!=='undefined'){initFB(c);return}loadScr('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js',function(){if(typeof firebase==='undefined')return;loadScr('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js',function(){loadScr('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js',function(){initFB(c)})})})}
 function initFB(c){try{if(!firebase.apps.length)firebase.initializeApp(c);db=firebase.database();fbAuth=firebase.auth();cOn=true;fbAuth.onAuthStateChanged(function(u){if(u){curUser=u;$('hUser').textContent=u.email||'';$('hUser').style.display='inline';$('hOut').style.display='inline';$('loginScr').style.display='none';$('mainApp').style.display='block';syncDown()}else{curUser=null;$('hUser').style.display='none';$('hOut').style.display='none'}})}catch(e){console.error(e)}}
 function syncDown(){if(!db)return;$('hDot').className='dot wr';$('hLbl').textContent='Syncing...';db.ref('ss').once('value').then(function(s){var v=s.val();if(v&&v.tasks){applyR(v);notify('Synced')}else{syncUp()}$('hDot').className='dot on';$('hLbl').textContent='Connected';db.ref('ss').on('value',function(s2){applyR(s2.val())});db.ref('.info/connected').on('value',function(s2){$('hDot').className=s2.val()?'dot on':'dot off';$('hLbl').textContent=s2.val()?'Connected':'Offline'})}).catch(function(){$('hDot').className='dot off';$('hLbl').textContent='Failed'})}
-function applyR(v){if(!v)return;['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections'].forEach(function(k){if(v[k]!==undefined){S[k]=v[k];localStorage.setItem('ss_'+k,JSON.stringify(v[k]))}});if(v.siteCost!==undefined){siteCost=v.siteCost;localStorage.setItem('ss_siteCost',String(siteCost))}doRender()}
+function applyR(v){if(!v)return;['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos'].forEach(function(k){if(v[k]!==undefined){S[k]=v[k];localStorage.setItem('ss_'+k,JSON.stringify(v[k]))}});if(v.siteCost!==undefined){siteCost=v.siteCost;localStorage.setItem('ss_siteCost',String(siteCost))}doRender()}
 function syncUp(){
   if(!db||!curUser)return;
   var p={};
@@ -2201,12 +2201,12 @@ var rd=new FileReader();
 rd.onload=function(e){
   var img=new Image();
   img.onload=function(){
-    var c=document.createElement('canvas'),w=img.width,h2=img.height,mx=800;
+    var c=document.createElement('canvas'),w=img.width,h2=img.height,mx=500;
     if(w>mx){h2=Math.round(h2*mx/w);w=mx}
     c.width=w;c.height=h2;
     c.getContext('2d').drawImage(img,0,0,w,h2);
     try{
-      window._phData=c.toDataURL('image/jpeg',.6);
+      window._phData=c.toDataURL('image/jpeg',.4);
       if(window._phQueue.length===1){
         phShowSaveDialog();
       }else{
