@@ -2843,9 +2843,7 @@ video.src=URL.createObjectURL(f);
 function phShowSaveDialog(){
 var bldgs={};
 for(var i=0;i<S.photos.length;i++){var b=S.photos[i].building||'';if(b)bldgs[b]=true}
-for(var i=0;i<S.taskProjects.length;i++)bldgs[S.taskProjects[i].name]=true;
-bldgs['Building A']=true;bldgs['Building B']=true;bldgs['Building C']=true;
-bldgs['Site Works']=true;bldgs['Common Areas']=true;
+for(var i=0;i<(S.inspections||[]).length;i++){var a=S.inspections[i].area||'';if(a)bldgs[a]=true}
 var bOpts='<option value="">-- Select --</option>';
 for(var bk in bldgs)bOpts+='<option value="'+H(bk)+'">'+H(bk)+'</option>';
 var total=window._phProcessed?window._phProcessed.length:1;
