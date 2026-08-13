@@ -2970,7 +2970,7 @@ for(var i=0;i<inps.length;i++){
 var h='';
 h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
 h+='<div><h2>Safety Management</h2><p style="font-size:.72rem;color:var(--t3)">HSE Monitoring and Inspections</p></div>';
-h+='<button class="btn bs" onclick="safeSync()"><i class="fas fa-sync"></i> Sync</button> ';
+h+='<button class="btn bs" onclick="safeSync()">Sync</button> <button class="btn bs" onclick="safeDebug()" style="font-size:.56rem">Debug</button> ';
 h+='<button class="btn bp" onclick="safeAddInsp()">+ Safety Inspection</button></div>';
 h+='<div class="stats">';
 h+='<div class="si" style="border-left:4px solid var(--g)"><div class="sl">Safe Hours</div><div class="sv" style="color:var(--g)">'+(s.safeHours||0).toLocaleString()+'</div></div>';
@@ -3533,6 +3533,103 @@ function safeSync(){
   }).catch(function(err){
     notify('Error: '+err.message);
   });
+  function safeDebug(){
+  var bd='<div id="safeDebugOut" style="font-family:JetBrains Mono;font-size:.66rem;line-height:2">';
+  bd+='<div>Starting debug...</div></div>';
+  mO('Sync Debug',bd,'<button class="btn" onclick="mC()">Close</button>');
+
+  var out=function(msg){
+    var el=document.getElementById('safeDebugOut');
+    if(el)el.innerHTML+='<div style="padding:4px 0;border-bottom:1px solid var(--bd)">'+msg+'</div>';
+  };
+
+  out('1. db type: <b>'+(typeof db)+'</b>');
+  out('2. curUser: <b>'+(curUser?curUser.email:'NULL')+'</b>');
+  out('3. safetyInspections in memory: <b>'+(S.safetyInspections?S.safetyInspections.length:0)+' items</b>');
+
+  if(typeof db==='undefined'||!db){
+    out('<span style="color:var(--rd)">❌ Firebase db not available</span>');
+    return;
+  }
+  if(!curUser){
+    out('<span style="color:var(--rd)">❌ Not logged in</span>');
+    return;
+  }
+
+  out('4. Reading Firebase ss...');
+  db.ref('ss').once('value').then(function(snap){
+    var v=snap.val();
+    if(!v){
+      out('5. <span style="color:var(--rd)">❌ Firebase ss is EMPTY</span>');
+      out('   → Running syncUp now...');
+      trySyncUp();
+      return;
+    }
+    var keys=Object.keys(v);
+    out('5. Firebase ss keys: <b>'+keys.join(', ')+'</b>');
+    var si=v.safetyInspections;
+    out('6. safetyInspections in Firebase: <b>'+(Array.isArray(si)?si.length+' items':typeof si)+'</b>');
+
+    if(Array.isArray(si)&&si.length>0){
+      out('7. First item ID: <b>'+si[0].id+'</b>');
+      var existIds={};
+      for(var i=0;i<S.safetyInspections.length;i++){
+        if(S.safetyInspections[i].id)existIds[S.safetyInspections[i].id]=true;
+      }
+      var newCount=0;
+      for(var i=0;i<si.length;i++){
+        if(si[i].id&&!existIds[si[i].id])newCount++;
+      }
+      out('8. New items to merge: <b>'+newCount+'</b>');
+      if(newCount>0){
+        for(var i=0;i<si.length;i++){
+          if(si[i].id&&!existIds[si[i].id]){
+            S.safetyInspections.push(si[i]);
+          }
+        }
+        S.safetyInspections.sort(function(a,b){return(b.id||0)-(a.id||0)});
+        save();
+        out('<span style="color:var(--g)">✅ Merged '+newCount+' items!</span>');
+        doRender();
+      }else{
+        out('<span style="color:var(--g)">✅ Already in sync</span>');
+      }
+    }else{
+      out('7. No safetyInspections array in Firebase');
+      out('   → Pushing local data to Firebase...');
+      trySyncUp();
+    }
+  }).catch(function(err){
+    out('<span style="color:var(--rd)">❌ Read error: '+err.message+'</span>');
+    out('   → Trying write test...');
+    tryWriteTest();
+  });
+
+  function trySyncUp(){
+    var data={};
+    ['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos'].forEach(function(k){
+      if(S[k]!==undefined)data[k]=S[k];
+    });
+    data.siteCost=siteCost||0;
+    db.ref('ss').update(data).then(function(){
+      out('<span style="color:var(--g)">✅ syncUp succeeded! Refresh other devices.</span>');
+    }).catch(function(err){
+      out('<span style="color:var(--rd)">❌ syncUp failed: '+err.message+'</span>');
+      out('   → Data might be too large. Size: '+JSON.stringify(data).length+' chars');
+      tryWriteTest();
+    });
+  }
+
+  function tryWriteTest(){
+    db.ref('ss').update({syncTest:Date.now()}).then(function(){
+      out('<span style="color:var(--g)">✅ Small write OK. Data might be too large.</span>');
+      out('   → Try reducing photo count/size.');
+    }).catch(function(err){
+      out('<span style="color:var(--rd)">❌ Write failed: '+err.message+'</span>');
+      out('   → Check Firebase rules.');
+    });
+  }
+}
 }
 </script>
 </body>
