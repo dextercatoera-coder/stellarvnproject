@@ -2690,137 +2690,68 @@ var phWebhookUrl='';
 
 R.photos=function(){
 if(!Array.isArray(S.photos))S.photos=[];
-
 var buildings=[],weeks=[],buildSet={},weekSet={};
 for(var i=0;i<S.photos.length;i++){
-  var p=S.photos[i];
-  var b=p.building||'Unassigned';
+  var p=S.photos[i];var b=p.building||'Unassigned';
   if(!buildSet[b]){buildSet[b]=true;buildings.push(b)}
   var w=p.week||phGetWeek(p.date);
   if(!weekSet[w]){weekSet[w]=true;weeks.push(w)}
 }
-weeks.sort().reverse();
-buildings.sort();
-
+weeks.sort().reverse();buildings.sort();
 var filtered=[];
 for(var i=0;i<S.photos.length;i++){
-  var p=S.photos[i];
-  var b=p.building||'Unassigned';
+  var p=S.photos[i];var b=p.building||'Unassigned';
   var w=p.week||phGetWeek(p.date);
   if(phFilterBuilding!=='all'&&b!==phFilterBuilding)continue;
   if(phFilterWeek!=='all'&&w!==phFilterWeek)continue;
   filtered.push({media:p,building:b,week:w,idx:i});
 }
-
-var photoCount=0,videoCount=0;
-for(var i=0;i<S.photos.length;i++){
-  if(S.photos[i].isVideo)videoCount++;else photoCount++;
-}
-
-var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+var h='';
+h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
 h+='<div><h2>Progress Media</h2><p style="font-size:.72rem;color:var(--t3)">Site documentation</p></div>';
 h+='<div style="display:flex;gap:8px;align-items:center">';
-h+='<button class="btn bs'+(phViewMode==='grid'?' bp':'')+'" onclick="phViewMode=\'grid\';doRender()"><i class="fas fa-th"></i> Grid</button>';
-h+='<button class="btn bs'+(phViewMode==='week'?' bp':'')+'" onclick="phViewMode=\'week\';doRender()"><i class="fas fa-calendar-week"></i> Week</button>';
 h+='<button class="btn bp" onclick="document.getElementById(\'phF\').click()"><i class="fas fa-camera"></i> Upload</button>';
 h+='<input type="file" id="phF" accept="image/*,video/*" multiple style="display:none" onchange="phProcMulti(this.files)">';
 h+='</div></div>';
-
 h+='<div class="stats">';
-h+='<div class="si" style="border-left:4px solid var(--bl)"><div class="sl">Photos</div><div class="sv" style="color:var(--bl)">'+photoCount+'</div></div>';
-h+='<div class="si" style="border-left:4px solid var(--pu)"><div class="sl">Videos</div><div class="sv" style="color:var(--pu)">'+videoCount+'</div></div>';
+h+='<div class="si" style="border-left:4px solid var(--bl)"><div class="sl">Total</div><div class="sv" style="color:var(--bl)">'+S.photos.length+'</div></div>';
 h+='<div class="si" style="border-left:4px solid var(--g)"><div class="sl">Buildings</div><div class="sv" style="color:var(--g)">'+buildings.length+'</div></div>';
 h+='<div class="si" style="border-left:4px solid var(--am)"><div class="sl">This Week</div><div class="sv" style="color:var(--am)">'+phCountThisWeek()+'</div></div>';
-h+='<div class="si" style="border-left:4px solid var(--or)"><div class="sl">Storage</div><div class="sv" style="color:var(--or)">'+phGetStorageSize()+'</div></div>';
 h+='</div>';
-
 h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">';
-h+='<span style="font-size:.62rem;color:var(--t3);font-family:JetBrains Mono">FILTER:</span>';
 h+='<select style="padding:5px;font-size:.72rem" onchange="phFilterBuilding=this.value;doRender()">';
-h+='<option value="all"'+(phFilterBuilding==='all'?' selected':'')+'>All Buildings</option>';
-for(var bi=0;bi<buildings.length;bi++){
-  h+='<option value="'+H(buildings[bi])+'"'+(phFilterBuilding===buildings[bi]?' selected':'')+'>'+H(buildings[bi])+'</option>';
-}
+h+='<option value="all">All Buildings</option>';
+for(var bi=0;bi<buildings.length;bi++)h+='<option value="'+H(buildings[bi])+'"'+(phFilterBuilding===buildings[bi]?' selected':'')+'>'+H(buildings[bi])+'</option>';
 h+='</select>';
 h+='<select style="padding:5px;font-size:.72rem" onchange="phFilterWeek=this.value;doRender()">';
-h+='<option value="all"'+(phFilterWeek==='all'?' selected':'')+'>All Weeks</option>';
-for(var wi=0;wi<weeks.length;wi++){
-  h+='<option value="'+H(weeks[wi])+'"'+(phFilterWeek===weeks[wi]?' selected':'')+'>'+H(weeks[wi])+'</option>';
-}
+h+='<option value="all">All Weeks</option>';
+for(var wi=0;wi<weeks.length;wi++)h+='<option value="'+H(weeks[wi])+'"'+(phFilterWeek===weeks[wi]?' selected':'')+'>'+H(weeks[wi])+'</option>';
 h+='</select>';
-if(phFilterBuilding!=='all'||phFilterWeek!=='all'){
-  h+='<button class="btn bs" onclick="phFilterBuilding=\'all\';phFilterWeek=\'all\';doRender()">Clear</button>';
-}
-h+='<span style="flex:1"></span>';
-h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+filtered.length+' items</span>';
+if(phFilterBuilding!=='all'||phFilterWeek!=='all')h+='<button class="btn bs" onclick="phFilterBuilding=\'all\';phFilterWeek=\'all\';doRender()">Clear</button>';
+h+='<span style="flex:1"></span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+filtered.length+' items</span>';
 h+='</div>';
-
 if(filtered.length===0){
   h+='<div class="card" style="text-align:center;padding:40px">';
   h+='<div style="font-size:2rem;color:var(--t3);margin-bottom:8px"><i class="fas fa-camera"></i></div>';
   h+='<div style="font-size:.82rem;color:var(--t3)">No media yet</div>';
-  h+='<div style="font-size:.68rem;color:var(--t3);margin-top:4px">Upload progress photos and videos</div>';
-  h+='<div style="margin-top:12px"><button class="btn bp" onclick="document.getElementById(\'phF\').click()"><i class="fas fa-upload"></i> Upload</button></div>';
+  h+='<div style="margin-top:12px"><button class="btn bp" onclick="document.getElementById(\'phF\').click()">Upload Photos/Videos</button></div>';
   h+='</div>';
-}else if(phViewMode==='week'){
-  var weekGroups={};
-  for(var i=0;i<filtered.length;i++){
-    var w=filtered[i].week,b=filtered[i].building;
-    if(!weekGroups[w])weekGroups[w]={};
-    if(!weekGroups[w][b])weekGroups[w][b]=[];
-    weekGroups[w][b].push(filtered[i]);
-  }
-  var sortedWeeks=[];
-  for(var wk in weekGroups)sortedWeeks.push(wk);
-  sortedWeeks.sort().reverse();
-  for(var wi=0;wi<sortedWeeks.length;wi++){
-    var wk=sortedWeeks[wi];
-    var bldgs=weekGroups[wk];
-    var weekTotal=0;
-    for(var bki in bldgs)weekTotal+=bldgs[bki].length;
-    h+='<div style="margin-bottom:20px">';
-    h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
-    h+='<div style="font-family:JetBrains Mono;font-size:.82rem;font-weight:700;color:var(--bl)">'+H(wk)+'</div>';
-    h+='<div style="font-family:JetBrains Mono;font-size:.62rem;color:var(--t3)">'+weekTotal+' items</div>';
-    h+='<div style="flex:1;height:1px;background:var(--bd)"></div></div>';
-    for(var bki in bldgs){
-      var bMedia=bldgs[bki];
-      h+='<div style="margin-bottom:12px">';
-      h+='<div style="font-size:.76rem;font-weight:600;color:var(--pu);margin-bottom:6px;padding-left:10px;border-left:3px solid var(--pu)">'+H(bki)+' <span style="font-size:.56rem;color:var(--t3);font-weight:400">('+bMedia.length+')</span></div>';
-      h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">';
-      for(var pi=0;pi<bMedia.length;pi++){
-        h+=phCard(bMedia[pi].media,bMedia[pi].idx);
-      }
-      h+='</div></div>';
-    }
-    h+='</div>';
-  }
 }else{
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">';
-  for(var i=0;i<filtered.length;i++){
-    h+=phCard(filtered[i].media,filtered[i].idx);
-  }
+  for(var i=0;i<filtered.length;i++)h+=phCard(filtered[i].media,filtered[i].idx);
   h+='</div>';
 }
-
 $('app').innerHTML=h;
 };
 
 function phCard(fp,fidx){
-var isVid=fp.isVideo;
-var imgSrc=fp.thumb||fp.data;
-var h='<div style="background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;transition:all .2s;cursor:pointer" onclick="phView('+fidx+')" onmouseover="this.style.borderColor=\'var(--bl)\'" onmouseout="this.style.borderColor=\'var(--bd)\'">';
+var src=fp.thumb||fp.data;
+var h='<div style="background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;cursor:pointer" onclick="phView('+fidx+')">';
 h+='<div style="position:relative">';
-if(isVid&&imgSrc){
-  h+='<img src="'+imgSrc+'" style="width:100%;height:160px;object-fit:cover;display:block">';
-  h+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)"><div style="width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center"><i class="fas fa-play" style="color:#fff;font-size:1rem;margin-left:3px"></i></div></div>';
-  h+='<div style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.7);color:#fff;padding:1px 6px;border-radius:3px;font-size:.48rem;font-family:JetBrains Mono"><i class="fas fa-video" style="margin-right:3px"></i>VIDEO</div>';
-}else if(imgSrc){
-  h+='<img src="'+imgSrc+'" style="width:100%;height:160px;object-fit:cover;display:block">';
-}else{
-  h+='<div style="width:100%;height:160px;background:var(--s2);display:flex;align-items:center;justify-content:center;color:var(--t3)"><i class="fas fa-image" style="font-size:1.4rem"></i></div>';
-}
-h+='<button style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:0;color:#fff;width:22px;height:22px;border-radius:50%;font-size:.6rem;cursor:pointer" onclick="event.stopPropagation();phDel('+fp.id+')">&times;</button>';
+if(src)h+='<img src="'+src+'" style="width:100%;height:160px;object-fit:cover;display:block">';
+else h+='<div style="width:100%;height:160px;background:var(--s2);display:flex;align-items:center;justify-content:center;color:var(--t3)"><i class="fas fa-image" style="font-size:1.4rem"></i></div>';
+if(fp.isVideo)h+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)"><i class="fas fa-play" style="color:#fff;font-size:1.5rem"></i></div>';
+h+='<button style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:0;color:#fff;width:22px;height:22px;border-radius:50%;font-size:.6rem;cursor:pointer" onclick="event.stopPropagation();phDel('+fp.id+')">X</button>';
 if(fp.building)h+='<div style="position:absolute;bottom:3px;left:3px;background:rgba(0,0,0,.6);color:#fff;padding:2px 6px;border-radius:3px;font-size:.48rem;font-family:JetBrains Mono">'+H(fp.building)+'</div>';
 h+='</div>';
 h+='<div style="padding:8px"><div style="font-size:.72rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+H(fp.title||'Media')+'</div>';
@@ -2833,45 +2764,21 @@ return h;
 
 function phGetWeek(dateStr){
 if(!dateStr)return 'Unknown Week';
-try{
-  var d=new Date(dateStr+'T12:00');
-  var start=new Date(d.getFullYear(),0,1);
-  var wk=Math.ceil(((d-start)/86400000+start.getDay()+1)/7);
-  return d.getFullYear()+'-W'+(wk<10?'0':'')+wk;
-}catch(e){return 'Unknown Week'}
+try{var d=new Date(dateStr+'T12:00');var start=new Date(d.getFullYear(),0,1);var wk=Math.ceil(((d-start)/86400000+start.getDay()+1)/7);return d.getFullYear()+'-W'+(wk<10?'0':'')+wk}catch(e){return 'Unknown Week'}
 }
 
 function phCountThisWeek(){
-var cw=phGetWeek(td());
-var count=0;
-for(var i=0;i<S.photos.length;i++){
-  if(S.photos[i].week===cw)count++;
-}
-return count;
-}
-
-function phGetStorageSize(){
-var total=0;
-try{
-  for(var i=0;i<localStorage.length;i++){
-    var k=localStorage.key(i);
-    if(k&&k.indexOf('ss_')===0)total+=localStorage.getItem(k).length;
-  }
-}catch(e){}
-if(total>1048576)return (total/1048576).toFixed(1)+'MB';
-return (total/1024).toFixed(0)+'KB';
+var cw=phGetWeek(td());var c=0;
+for(var i=0;i<S.photos.length;i++){if(S.photos[i].week===cw)c++}
+return c;
 }
 
 function phProcMulti(files){
 if(!files||!files.length)return;
-window._phQueue=[];
-window._phIdx=0;
-window._phProcessed=[];
+window._phQueue=[];window._phIdx=0;window._phProcessed=[];
 for(var i=0;i<files.length;i++){
   var f=files[i];
-  if(f.type.startsWith('image/')||f.type.startsWith('video/')){
-    window._phQueue.push(f);
-  }
+  if(f.type.indexOf('image')===0||f.type.indexOf('video')===0)window._phQueue.push(f);
 }
 if(window._phQueue.length===0)return;
 phProcNext();
@@ -2880,46 +2787,27 @@ phProcNext();
 function phProcNext(){
 if(window._phIdx>=window._phQueue.length)return;
 var f=window._phQueue[window._phIdx];
-
-if(f.type.startsWith('video/')){
-  phProcVideo(f,function(result){
-    window._phProcessed.push(result);
-    window._phIdx++;
-    if(window._phIdx<window._phQueue.length)phProcNext();
-    else phShowSaveDialog();
-  });
+if(f.type.indexOf('video')===0){
+  phProcVideo(f,function(r){window._phProcessed.push(r);window._phIdx++;if(window._phIdx<window._phQueue.length)phProcNext();else phShowSaveDialog()});
 }else{
   var rd=new FileReader();
-  rd.onerror=function(){
-    window._phIdx++;
-    phProcNext();
-  };
+  rd.onerror=function(){window._phIdx++;phProcNext()};
   rd.onload=function(e){
     var img=new Image();
-    img.onerror=function(){
-      window._phIdx++;
-      phProcNext();
-    };
+    img.onerror=function(){window._phIdx++;phProcNext()};
     img.onload=function(){
       var c=document.createElement('canvas');
-      var w=img.width;
-      var h2=img.height;
-      var mx=1000;
+      var w=img.width,h2=img.height,mx=1000;
       if(w>mx){h2=Math.round(h2*mx/w);w=mx}
-      c.width=w;
-      c.height=h2;
+      c.width=w;c.height=h2;
       c.getContext('2d').drawImage(img,0,0,w,h2);
-      var fullData=c.toDataURL('image/jpeg',0.6);
-
+      var full=c.toDataURL('image/jpeg',0.6);
       var ct=document.createElement('canvas');
-      var tw=300;
-      var th=Math.round(img.height*tw/img.width);
-      ct.width=tw;
-      ct.height=th;
+      var tw=300,th=Math.round(img.height*tw/img.width);
+      ct.width=tw;ct.height=th;
       ct.getContext('2d').drawImage(img,0,0,tw,th);
-      var thumbData=ct.toDataURL('image/jpeg',0.5);
-
-      window._phProcessed.push({isVideo:false,data:fullData,thumb:thumbData});
+      var thumb=ct.toDataURL('image/jpeg',0.5);
+      window._phProcessed.push({isVideo:false,data:full,thumb:thumb});
       window._phIdx++;
       if(window._phIdx<window._phQueue.length)phProcNext();
       else phShowSaveDialog();
@@ -2930,219 +2818,106 @@ if(f.type.startsWith('video/')){
 }
 }
 
-function phProcVideo(f,callback){
+function phProcVideo(f,cb){
 var video=document.createElement('video');
-video.preload='metadata';
-video.muted=true;
-video.playsInline=true;
+video.preload='metadata';video.muted=true;video.playsInline=true;
 video.onloadedmetadata=function(){
   var dur=video.duration;
-  var sizeMB=f.size/1048576;
-  if(sizeMB>50){
-    alert('Video is '+sizeMB.toFixed(0)+'MB. Maximum recommended is 50MB.');
-  }
   video.currentTime=0.1;
   video.onseeked=function(){
     var ct=document.createElement('canvas');
     ct.width=Math.min(video.videoWidth,640);
     ct.height=Math.round(video.videoHeight/video.videoWidth*ct.width);
     ct.getContext('2d').drawImage(video,0,0,ct.width,ct.height);
-    var thumbData=ct.toDataURL('image/jpeg',0.7);
+    var thumb=ct.toDataURL('image/jpeg',0.7);
     var rd=new FileReader();
-    rd.onload=function(e){
-      callback({isVideo:true,data:e.target.result,thumb:thumbData,duration:dur,size:f.size});
-    };
-    rd.onerror=function(){
-      callback({isVideo:true,data:'',thumb:thumbData,duration:dur,size:f.size});
-    };
+    rd.onload=function(e){cb({isVideo:true,data:e.target.result,thumb:thumb,duration:dur,size:f.size})};
+    rd.onerror=function(){cb({isVideo:true,data:'',thumb:thumb,duration:dur,size:f.size})};
     rd.readAsDataURL(f);
   };
 };
-video.onerror=function(){
-  callback({isVideo:true,data:'',thumb:'',duration:0,size:f.size});
-};
+video.onerror=function(){cb({isVideo:true,data:'',thumb:'',duration:0,size:f.size})};
 video.src=URL.createObjectURL(f);
 }
 
 function phShowSaveDialog(){
 var bldgs={};
 for(var i=0;i<S.photos.length;i++){var b=S.photos[i].building||'';if(b)bldgs[b]=true}
-for(var i=0;i<S.taskProjects.length;i++){bldgs[S.taskProjects[i].name]=true}
-bldgs['Building A']=true;
-bldgs['Building B']=true;
-bldgs['Building C']=true;
-bldgs['Site Works']=true;
-bldgs['Common Areas']=true;
+for(var i=0;i<S.taskProjects.length;i++)bldgs[S.taskProjects[i].name]=true;
+bldgs['Building A']=true;bldgs['Building B']=true;bldgs['Building C']=true;
+bldgs['Site Works']=true;bldgs['Common Areas']=true;
 var bOpts='<option value="">-- Select --</option>';
 for(var bk in bldgs)bOpts+='<option value="'+H(bk)+'">'+H(bk)+'</option>';
-var currentWeek=phGetWeek(td());
 var total=window._phProcessed?window._phProcessed.length:1;
-
 var bd='<div class="fg"><label class="fl">Title</label><input type="text" id="phTi" style="width:100%" placeholder="e.g. Foundation pour"></div>';
 bd+='<div class="fg"><label class="fl">Date</label><input type="date" id="phD" value="'+td()+'" style="width:100%" onchange="document.getElementById(\'phWk\').value=phGetWeek(this.value)"></div>';
-bd+='<div class="fg"><label class="fl">Building / Area</label><div style="display:flex;gap:8px">';
-bd+='<select id="phBd" style="flex:1" onchange="if(this.value===\'__custom\')document.getElementById(\'phBdC\').style.display=\'block\';else document.getElementById(\'phBdC\').style.display=\'none\'">';
-bd+=bOpts;
-bd+='<option value="__custom">+ Add New</option></select>';
-bd+='<input type="text" id="phBdC" placeholder="Enter building name..." style="display:none;flex:1"></div></div>';
-bd+='<div class="fg"><label class="fl">Week</label><input type="text" id="phWk" value="'+currentWeek+'" style="width:100%" readonly></div>';
+bd+='<div class="fg"><label class="fl">Building</label><select id="phBd" style="width:100%">'+bOpts+'</select></div>';
+bd+='<div class="fg"><label class="fl">Week</label><input type="text" id="phWk" value="'+phGetWeek(td())+'" style="width:100%" readonly></div>';
 bd+='<div style="margin-top:10px">';
-
 if(total>1){
-  var vidC=0;
-  var imgC=0;
-  for(var i=0;i<total;i++){
-    if(window._phProcessed[i].isVideo)vidC++;else imgC++;
-  }
-  bd+='<div style="font-size:.68rem;color:var(--bl);margin-bottom:6px">';
-  bd+='<i class="fas fa-images" style="margin-right:4px"></i>'+total+' files ('+imgC+' photos, '+vidC+' videos)</div>';
+  bd+='<div style="font-size:.68rem;color:var(--bl);margin-bottom:6px">'+total+' files selected</div>';
   bd+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:3px">';
   for(var pi=0;pi<Math.min(total,20);pi++){
-    var proc=window._phProcessed[pi];
-    var src=proc.thumb||proc.data;
-    if(src){
-      bd+='<div style="position:relative">';
-      bd+='<img src="'+src+'" style="width:100%;height:50px;object-fit:cover;border-radius:3px">';
-      if(proc.isVideo){
-        bd+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">';
-        bd+='<i class="fas fa-play" style="color:#fff;font-size:.6rem;background:rgba(0,0,0,.5);border-radius:50%;padding:3px 4px"></i></div>';
-      }
-      bd+='</div>';
-    }
+    var src=window._phProcessed[pi].thumb||window._phProcessed[pi].data;
+    if(src)bd+='<img src="'+src+'" style="width:100%;height:50px;object-fit:cover;border-radius:3px">';
   }
-  if(total>20){
-    bd+='<div style="display:flex;align-items:center;justify-content:center;background:var(--s2);border-radius:3px;font-size:.5rem;color:var(--t3);height:50px">+'+(total-20)+'</div>';
-  }
+  if(total>20)bd+='<div style="display:flex;align-items:center;justify-content:center;background:var(--s2);border-radius:3px;font-size:.5rem;height:50px">+'+(total-20)+'</div>';
   bd+='</div>';
 }else{
   var proc=window._phProcessed[0];
-  if(proc.isVideo){
-    bd+='<div style="text-align:center;padding:10px;background:var(--s2);border-radius:var(--r)">';
-    if(proc.thumb){
-      bd+='<img src="'+proc.thumb+'" style="max-width:100%;max-height:200px;border-radius:var(--r)">';
-    }
-    bd+='<div style="margin-top:6px;font-size:.72rem;color:var(--pu)">';
-    bd+='<i class="fas fa-video" style="margin-right:4px"></i>Video ('+phFormatSize(proc.size||0)+')</div>';
-    if(proc.duration){
-      bd+='<div style="font-size:.62rem;color:var(--t3)">Duration: '+phFormatDuration(proc.duration)+'</div>';
-    }
-    bd+='</div>';
-  }else{
-    var src=proc.data||proc.thumb;
-    if(src){
-      bd+='<img src="'+src+'" style="width:100%;max-height:300px;object-fit:contain;border-radius:var(--r)">';
-    }
-  }
+  var src=proc.thumb||proc.data;
+  if(src)bd+='<img src="'+src+'" style="width:100%;max-height:300px;object-fit:contain;border-radius:var(--r)">';
+  if(proc.isVideo)bd+='<div style="font-size:.72rem;color:var(--pu);margin-top:6px;text-align:center"><i class="fas fa-video"></i> Video</div>';
 }
-
-bd+='<div style="font-size:.62rem;color:var(--or);margin-top:8px">';
-bd+='<i class="fas fa-info-circle" style="margin-right:4px"></i>Saved locally. Large videos may fill storage.</div>';
+bd+='<div style="font-size:.62rem;color:var(--or);margin-top:8px">Saved locally on this device.</div>';
 bd+='</div>';
-
 mO('Save Media',bd,'<button class="btn" onclick="mC();window._phQueue=null;window._phProcessed=null">Cancel</button><button class="btn bp" onclick="phSave()">Save</button>');
 }
 
 function phSave(){
-var title=document.getElementById('phTi').value.trim()||'Media';
-var date=document.getElementById('phD').value||td();
-var building='';
-var bSel=document.getElementById('phBd').value;
-if(bSel==='__custom')building=document.getElementById('phBdC').value.trim();
-else building=bSel;
+var ti=document.getElementById('phTi');
+var dd=document.getElementById('phD');
+var bd=document.getElementById('phBd');
+var wk=document.getElementById('phWk');
+var title=ti?ti.value.trim():'Media';
+var date=dd?dd.value:td();
+var building=bd?bd.value:'';
 if(!building)building='Unassigned';
-var week=document.getElementById('phWk').value||phGetWeek(date);
+var week=wk?wk.value:phGetWeek(date);
 var total=window._phProcessed?window._phProcessed.length:1;
-var savedCount=0;
-
+var saved=0;
 for(var i=0;i<total;i++){
   var proc=window._phProcessed[i];
-  var ts=Date.now()+i;
-  var mediaTitle=total>1?(title+' '+(i+1)):title;
-  var entry={
-    id:ts,
-    title:mediaTitle,
-    date:date,
-    building:building,
-    week:week,
-    isVideo:!!proc.isVideo,
-    data:proc.data||'',
-    thumb:proc.thumb||''
-  };
-  if(proc.isVideo){
-    entry.duration=proc.duration||0;
-    entry.size=proc.size||0;
-  }
-  S.photos.push(entry);
-  savedCount++;
+  var entry={id:Date.now()+i,title:total>1?(title+' '+(i+1)):title,date:date,building:building,week:week,isVideo:!!proc.isVideo,data:proc.data||'',thumb:proc.thumb||''};
+  if(proc.isVideo){entry.duration=proc.duration||0;entry.size=proc.size||0}
+  S.photos.push(entry);saved++;
 }
-
-try{
-  save();
-  mC();
-  window._phProcessed=null;
-  window._phQueue=null;
-  notify(savedCount+' item'+(savedCount>1?'s':'')+' saved');
-  doRender();
-}catch(er){
-  for(var i=0;i<savedCount;i++)S.photos.pop();
-  alert('Storage full. Try fewer files or shorter videos.');
-}
+try{save();mC();window._phProcessed=null;window._phQueue=null;notify(saved+' saved');doRender()}
+catch(er){for(var i=0;i<saved;i++)S.photos.pop();alert('Storage full. Try fewer files.')}
 }
 
 function phView(idx){
-var p=S.photos[idx];
-if(!p)return;
+var p=S.photos[idx];if(!p)return;
 var bd='<div style="text-align:center">';
-if(p.isVideo&&p.data){
-  bd+='<video src="'+p.data+'" controls style="max-width:100%;max-height:60vh;border-radius:var(--r)"></video>';
-  bd+='<div style="margin-top:6px;font-size:.72rem;color:var(--pu)"><i class="fas fa-video" style="margin-right:4px"></i>Video';
-  if(p.duration)bd+=' - '+phFormatDuration(p.duration);
-  if(p.size)bd+=' ('+phFormatSize(p.size)+')';
-  bd+='</div>';
-}else if(p.isVideo&&p.thumb){
-  bd+='<img src="'+p.thumb+'" style="max-width:100%;max-height:60vh;border-radius:var(--r)">';
-}else if(p.data){
-  bd+='<img src="'+p.data+'" style="max-width:100%;max-height:60vh;border-radius:var(--r);cursor:pointer" onclick="phFullScreen(this)">';
-  bd+='<div style="font-size:.58rem;color:var(--t3);margin-top:4px">Tap image for full screen</div>';
-}else{
-  bd+='<div style="padding:40px;color:var(--t3)"><i class="fas fa-image" style="font-size:3rem"></i></div>';
-}
+if(p.isVideo&&p.data)bd+='<video src="'+p.data+'" controls style="max-width:100%;max-height:60vh;border-radius:var(--r)"></video>';
+else if(p.isVideo&&p.thumb)bd+='<img src="'+p.thumb+'" style="max-width:100%;max-height:60vh;border-radius:var(--r)">';
+else if(p.data)bd+='<img src="'+p.data+'" style="max-width:100%;max-height:60vh;border-radius:var(--r)">';
+else bd+='<div style="padding:40px;color:var(--t3)"><i class="fas fa-image" style="font-size:3rem"></i></div>';
 bd+='<div style="margin-top:12px;text-align:left">';
 bd+='<div style="font-size:.88rem;font-weight:700">'+H(p.title||'Media')+'</div>';
 bd+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px">';
 bd+='<div style="font-size:.72rem;color:var(--t3)"><b>Date:</b> '+p.date+'</div>';
-bd+='<div style="font-size:.72rem;color:var(--t3)"><b>Building:</b> '+(p.building||'Unassigned')+'</div>';
-bd+='<div style="font-size:.72rem;color:var(--t3)"><b>Week:</b> '+(p.week||phGetWeek(p.date))+'</div>';
+bd+='<div style="font-size:.72rem;color:var(--t3)"><b>Building:</b> '+(p.building||'-')+'</div>';
+bd+='<div style="font-size:.72rem;color:var(--t3)"><b>Week:</b> '+(p.week||'-')+'</div>';
 bd+='<div style="font-size:.72rem;color:var(--t3)"><b>Type:</b> '+(p.isVideo?'Video':'Photo')+'</div>';
 bd+='</div></div></div>';
 mO('Media Detail',bd,'<button class="btn" onclick="mC()">Close</button> <button class="btn bs bd" onclick="phDel('+p.id+');mC()">Delete</button>');
 }
 
-function phFullScreen(img){
-if(img.requestFullscreen)img.requestFullscreen();
-else if(img.webkitRequestFullscreen)img.webkitRequestFullscreen();
-}
-
 function phDel(id){
-if(!confirm('Delete this item?'))return;
+if(!confirm('Delete?'))return;
 S.photos=S.photos.filter(function(p){return p.id!==id});
-save();
-notify('Deleted');
-doRender();
-}
-
-function phFormatDuration(sec){
-if(!sec)return '0:00';
-var m=Math.floor(sec/60);
-var s=Math.floor(sec%60);
-return m+':'+(s<10?'0':'')+s;
-}
-
-function phFormatSize(bytes){
-if(!bytes)return '0B';
-if(bytes>1048576)return (bytes/1048576).toFixed(1)+'MB';
-if(bytes>1024)return (bytes/1024).toFixed(0)+'KB';
-return bytes+'B';
+save();notify('Deleted');doRender();
 }
 /* === CLOUD SETTINGS === */
 R.cloud=function(){var c;try{c=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}var h='<div style="margin-bottom:10px"><span class="ct" style="font-size:.92rem">Cloud Sync</span></div><div class="card" style="border-left:4px solid var(--or);background:var(--orc)"><div style="font-size:.76rem;font-weight:700;color:var(--or);margin-bottom:6px">Setup</div><div style="font-size:.72rem;line-height:1.8">1. Create Firebase project<br>2. Enable Realtime DB + Email Auth<br>3. Enter config below</div></div><div class="card"><div class="ch"><span class="ct">Config</span></div><div class="fg"><label class="fl">API Key</label><input type="text" id="cKey" value="'+H((c&&c.apiKey)||'')+'" style="width:100%"></div><div class="fg"><label class="fl">Database URL</label><input type="text" id="cURL" value="'+H((c&&c.databaseURL)||'')+'" style="width:100%"></div><div class="fg"><label class="fl">Project ID</label><input type="text" id="cPid" value="'+H((c&&c.projectId)||'')+'" style="width:100%"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn" onclick="if(confirm(\'Clear?\')){localStorage.removeItem(\'ss_cloud\');location.reload()}">Clear</button><button class="btn bp" onclick="saveCloud()">Save &amp; Connect</button></div></div><div class="card"><div class="ch"><span class="ct">Data</span></div><button class="btn" onclick="expAll()">Export</button> <button class="btn bb" onclick="impAll()">Import</button> <button class="btn bd" onclick="if(confirm(\'Reset ALL?\')){localStorage.clear();location.reload()}">Reset</button></div>';$('app').innerHTML=h};
