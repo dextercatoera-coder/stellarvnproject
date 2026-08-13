@@ -2806,8 +2806,8 @@ if(isVid&&fp.thumb){
   h+='<img src="'+fp.thumb+'" style="width:100%;height:160px;object-fit:cover;display:block">';
   h+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)"><div style="width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center"><i class="fas fa-play" style="color:#fff;font-size:1rem;margin-left:3px"></i></div></div>';
   h+='<div style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.7);color:#fff;padding:1px 6px;border-radius:3px;font-size:.48rem;font-family:JetBrains Mono"><i class="fas fa-video" style="margin-right:3px"></i>VIDEO</div>';
-}else if(fp.data){
-  h+='<img src="'+fp.data+'" style="width:100%;height:160px;object-fit:cover;display:block">';
+}else var imgSrc=fp.thumb||fp.data;
+if(imgSrc)h+='<img src="'+imgSrc+'" style="width:100%;height:160px;object-fit:cover;display:block">';
 }else{
   h+='<div style="width:100%;height:160px;background:var(--s2);display:flex;align-items:center;justify-content:center;color:var(--t3)"><i class="fas fa-image" style="font-size:1.4rem"></i></div>';
 }
@@ -2867,7 +2867,6 @@ if(window._phIdx>=window._phQueue.length)return;
 var f=window._phQueue[window._phIdx];
 
 if(f.type.startsWith('video/')){
-  /* Video processing */
   phProcVideo(f,function(result){
     window._phProcessed.push(result);
     window._phIdx++;
@@ -2875,27 +2874,26 @@ if(f.type.startsWith('video/')){
     else phShowSaveDialog();
   });
 }else{
-  /* Image processing */
   var rd=new FileReader();
+  rd.onerror=function(){window._phIdx++;phProcNext()};
   rd.onload=function(e){
     var img=new Image();
+    img.onerror=function(){window._phIdx++;phProcNext()};
     img.onload=function(){
-      /* Display quality - good resolution, decent compression */
+      /* Display: 1000px wide, JPEG .6 — good quality, reasonable size */
       var c=document.createElement('canvas');
-      var w=img.width,h2=img.height;
-      var maxW=1920;
-      if(w>maxW){h2=Math.round(h2*maxW/w);w=maxW}
+      var w=img.width,h2=img.height,mx=1000;
+      if(w>mx){h2=Math.round(h2*mx/w);w=mx}
       c.width=w;c.height=h2;
       c.getContext('2d').drawImage(img,0,0,w,h2);
-      var fullData=c.toDataURL('image/jpeg',.8);
+      var fullData=c.toDataURL('image/jpeg',.6);
 
-      /* Thumbnail for grid */
+      /* Thumbnail: 300px wide, JPEG .5 */
       var ct=document.createElement('canvas');
-      var tw=400,th=img.height;
-      if(img.width>tw){th=Math.round(th*tw/img.width)}
+      var tw=300,th=Math.round(img.height*tw/img.width);
       ct.width=tw;ct.height=th;
       ct.getContext('2d').drawImage(img,0,0,tw,th);
-      var thumbData=ct.toDataURL('image/jpeg',.7);
+      var thumbData=ct.toDataURL('image/jpeg',.5);
 
       window._phProcessed.push({isVideo:false,data:fullData,thumb:thumbData});
       window._phIdx++;
