@@ -4307,6 +4307,65 @@ save();
 try{if(typeof db!=='undefined'&&db)db.ref('ss/reports').set(S.reports)}catch(e){}
 mC();notify(idx>=0?'Updated':'Report created');doRender();
 }
+  function rptEdit(idx){
+var r=S.reports[idx];
+if(!r)return;
+var m=mainT();
+var bd='<div style="max-height:75vh;overflow-y:auto;padding-right:8px">';
+bd+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+bd+='<div class="fg"><label class="fl">Report Date</label><input type="date" id="rptDate" value="'+H(r.date)+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Report Number</label><input type="number" id="rptNum" value="'+(r.reportNum||1)+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Period From</label><input type="date" id="rptFrom" value="'+H(r.periodFrom||'')+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Period To</label><input type="date" id="rptTo" value="'+H(r.periodTo||'')+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Current Phase</label><input type="text" id="rptPhase" value="'+H(r.phase||'')+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">% Site Completion</label><input type="number" id="rptComp" value="'+(r.completion||0)+'" min="0" max="100" step="0.1" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Prepared By</label><input type="text" id="rptPrep" value="'+H(r.preparedBy||'')+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Approved By</label><input type="text" id="rptAppr" value="'+H(r.approvedBy||'')+'" style="width:100%"></div>';
+bd+='</div>';
+bd+='<div class="fg" style="margin-top:10px"><label class="fl" style="color:var(--g)">Highlights</label>';
+bd+='<textarea id="rptHigh" rows="4" style="width:100%">'+H(r.highlights||'')+'</textarea></div>';
+bd+='<div class="fg"><label class="fl" style="color:var(--bl)">Next Steps</label>';
+bd+='<textarea id="rptNext" rows="4" style="width:100%">'+H(r.nextSteps||'')+'</textarea></div>';
+bd+='<div class="fg"><label class="fl" style="color:var(--or)">Support Needed</label>';
+bd+='<textarea id="rptSupport" rows="3" style="width:100%">'+H(r.supportNeeded||'')+'</textarea></div>';
+bd+='<div class="fg"><label class="fl" style="color:var(--rd)">Risks &amp; Mitigation</label>';
+bd+='<textarea id="rptRisks" rows="4" style="width:100%">'+H(r.risks||'')+'</textarea></div>';
+bd+='<div class="fg"><label class="fl">Safety Notes</label>';
+bd+='<textarea id="rptSafe" rows="2" style="width:100%">'+H(r.safetyNotes||'')+'</textarea></div>';
+bd+='</div>';
+mO('Edit Report',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="rptSave('+idx+')">Update</button>');
+}
+
+function rptView(idx){
+var r=S.reports[idx];
+if(!r)return;
+mO('Report #'+(r.reportNum||idx+1),rptRenderCard(r),'<button class="btn" onclick="mC()">Close</button> <button class="btn bs bb" onclick="rptExport('+idx+');mC()">Export PDF</button>');
+}
+
+function rptDel(idx){
+if(!confirm('Delete report?'))return;
+S.reports.splice(idx,1);
+save();
+try{if(typeof db!=='undefined'&&db)db.ref('ss/reports').set(S.reports)}catch(e){}
+notify('Deleted');doRender();
+}
+
+function rptConfig(){
+var cfg=S.reportConfig;
+var bd='<div class="fg"><label class="fl">Project Name</label><input type="text" id="rcPN" value="'+H(cfg.projectName)+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Company</label><input type="text" id="rcCo" value="'+H(cfg.company)+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Default Prepared By</label><input type="text" id="rcPrep" value="'+H(cfg.preparedBy)+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Default Approved By</label><input type="text" id="rcAppr" value="'+H(cfg.approvedBy)+'" style="width:100%"></div>';
+mO('Report Settings',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="rptSaveConfig()">Save</button>');
+}
+
+function rptSaveConfig(){
+S.reportConfig.projectName=$('rcPN').value.trim();
+S.reportConfig.company=$('rcCo').value.trim();
+S.reportConfig.preparedBy=$('rcPrep').value.trim();
+S.reportConfig.approvedBy=$('rcAppr').value.trim();
+save();mC();notify('Saved');doRender();
+}
 </script>
 </body>
 </html>
