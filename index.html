@@ -4207,10 +4207,10 @@ for(var si=0;si<data.length;si++){
 }
 bd+='<button class="btn bs bd" onclick="mC()" style="margin-left:8px"><i class="fas fa-times"></i> Close</button>';
 bd+='</div></div>';
-bd+='<div style="padding:80px 40px 40px;max-width:900px;margin:0 auto">';
-bd+='<div style="background:'+bgColors[idx]+';border-left:6px solid '+colors[idx]+';border-radius:0 var(--r) var(--r) 0;padding:30px 36px;min-height:300px">';
+bd+='<div style="padding:80px 60px 40px;max-width:1200px;margin:0 auto">';
+bd+='<div style="background:'+bgColors[idx]+';border-left:6px solid '+colors[idx]+';border-radius:0 var(--r) var(--r) 0;padding:36px 48px;min-height:300px">';
 bd+='<div style="font-size:1.4rem;font-weight:700;color:'+colors[idx]+';margin-bottom:16px;font-family:JetBrains Mono">'+titles[idx]+'</div>';
-bd+='<div class="rpt-content" style="font-size:1rem;line-height:2;color:var(--t2)">'+(data[idx]||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div>';
+bd+='<div class="rpt-content" style="font-size:1.15rem;line-height:2.2;color:var(--t2);word-wrap:break-word;overflow-wrap:break-word">';+(data[idx]||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div>';
 bd+='</div></div>';
 mO(' ',bd,'<button class="btn" onclick="mC()" style="display:none"></button>');
 setTimeout(function(){
