@@ -224,6 +224,7 @@ function syncUp(){
   }catch(e){}
 }
 function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.originalPlan=lj('originalPlan',[]);S.reports=lj('reports',[]);S.reportConfig=lj('reportConfig',{projectName:'Vietnam Construction Project',company:'Stellar Seeds Corp',preparedBy:'',approvedBy:''})}catch(e){}}
+  
 /* Merge remote inspections if available */
 try{
   var remote=localStorage.getItem('buildsync_safetyInspections_remote');
@@ -4397,7 +4398,7 @@ html+='<div><div class="label">Safe Hours</div><span class="sv" style="color:#28
 html+='</div></div>';
 if(r.safetyNotes)html+='<div style="font-size:12px;color:#555;margin-bottom:16px"><b>Safety Notes:</b> '+H(r.safetyNotes)+'</div>';
 html+='<div class="footer"><div>Prepared by: '+H(r.preparedBy||'-')+' | Approved by: '+H(r.approvedBy||'-')+'</div><div>'+H(S.reportConfig.projectName)+' | '+H(r.date)+'</div></div>';
-html+='<script>setTimeout(function(){window.print()},500)</script>';
+html+='<scr'+'ipt>setTimeout(function(){window.print()},500)</scr'+'ipt>';
 html+='</body></html>';
 w.document.write(html);
 w.document.close();
