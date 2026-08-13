@@ -4149,6 +4149,7 @@ $('app').innerHTML=h;
 
 function rptCard(r){
 var h='';
+h+='<style>.rpt-content blockquote{margin:4px 0 4px 24px;padding-left:12px;border-left:3px solid var(--bd)}.rpt-content ul,.rpt-content ol{margin:4px 0 4px 20px}.rpt-content h3{font-size:.88rem;margin:8px 0 4px}.rpt-content p{margin:4px 0}</style>';
 h+='<div style="background:var(--s1);border:2px solid var(--bl);border-radius:var(--r);overflow:hidden">';
 h+='<div style="background:linear-gradient(135deg,#1a3a5c,#2874a6);color:#fff;padding:20px 24px;display:flex;justify-content:space-between;align-items:center">';
 h+='<div><div style="font-size:1.2rem;font-weight:700">PROGRESS REPORT</div><div style="font-size:.76rem;opacity:.8">'+H(S.reportConfig.projectName||'')+'</div></div>';
@@ -4164,16 +4165,16 @@ h+='<div style="padding:0 24px 20px;display:grid;grid-template-columns:1fr 1fr;g
 window._rptData=[r.highlights||'',r.nextSteps||'',r.supportNeeded||'',r.risks||''];
 h+='<div style="background:var(--gc);border-left:4px solid var(--g);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(0)" onmouseover="this.style.transform=\'scale(1.01)\';this.style.boxShadow=\'0 4px 20px rgba(45,138,50,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
 h+='<div style="font-weight:700;color:var(--g);margin-bottom:8px"><i class="fas fa-check-circle" style="margin-right:6px"></i>HIGHLIGHTS <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div>';
-h+='<div style="font-size:.72rem;line-height:1.8">'+(r.highlights||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
+h+='<div class="rpt-content" style="font-size:.72rem;line-height:1.8">'+(r.highlights||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
 h+='<div style="background:var(--blc);border-left:4px solid var(--bl);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(1)" onmouseover="this.style.transform=\'scale(1.01)\';this.style.boxShadow=\'0 4px 20px rgba(40,116,166,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
 h+='<div style="font-weight:700;color:var(--bl);margin-bottom:8px"><i class="fas fa-arrow-right" style="margin-right:6px"></i>NEXT STEPS <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div>';
-h+='<div style="font-size:.72rem;line-height:1.8">'+(r.nextSteps||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
+h+='<div class="rpt-content" style="font-size:.72rem;line-height:1.8">'+(r.nextSteps||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
 h+='<div style="background:var(--orc);border-left:4px solid var(--or);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(2)" onmouseover="this.style.transform=\'scale(1.01)\';this.style.boxShadow=\'0 4px 20px rgba(212,147,13,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
 h+='<div style="font-weight:700;color:var(--or);margin-bottom:8px"><i class="fas fa-hand-holding-heart" style="margin-right:6px"></i>SUPPORT NEEDED <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div>';
-h+='<div style="font-size:.72rem;line-height:1.8">'+(r.supportNeeded||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
+h+='<div class="rpt-content" style="font-size:.72rem;line-height:1.8">'+(r.supportNeeded||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
 h+='<div style="background:var(--rdc);border-left:4px solid var(--rd);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(3)" onmouseover="this.style.transform=\'scale(1.01)\';this.style.boxShadow=\'0 4px 20px rgba(204,51,51,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
 h+='<div style="font-weight:700;color:var(--rd);margin-bottom:8px"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>RISKS <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div>';
-h+='<div style="font-size:.72rem;line-height:1.8">'+(r.risks||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
+h+='<div class="rpt-content" style="font-size:.72rem;line-height:1.8">'+(r.risks||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
 h+='</div>';
 h+='<div style="padding:0 24px 20px"><div style="font-weight:600;margin-bottom:8px">Safety</div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">';
 h+='<div style="text-align:center;padding:10px;background:var(--gc);border-radius:var(--r)"><div style="font-size:.48rem;color:var(--g)">DAYS W/O LTI</div><div style="font-size:1.2rem;font-weight:700;color:var(--g)">'+dd((S.safety?S.safety.startDate:'')||'2026-04-13',r.date)+'</div></div>';
@@ -4195,7 +4196,7 @@ var colors=['var(--g)','var(--bl)','var(--or)','var(--rd)'];
 var bgColors=['var(--gc)','var(--blc)','var(--orc)','var(--rdc)'];
 var icons=['fas fa-check-circle','fas fa-arrow-right','fas fa-hand-holding-heart','fas fa-exclamation-triangle'];
 if(idx<0||idx>=data.length)return;
-var bd='<div style="position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 24px;background:var(--s1);border-bottom:3px solid '+colors[idx]+';z-index:10001">';
+var bd=bd+='<style>.rpt-content blockquote{margin:4px 0 4px 24px;padding-left:12px;border-left:3px solid var(--bd)}.rpt-content ul,.rpt-content ol{margin:4px 0 4px 20px}.rpt-content h3{font-size:1.2rem;margin:8px 0 4px}.rpt-content p{margin:4px 0}</style>';'<div style="position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 24px;background:var(--s1);border-bottom:3px solid '+colors[idx]+';z-index:10001">';
 bd+='<div style="display:flex;align-items:center;gap:12px">';
 if(idx>0)bd+='<button class="btn bs" onclick="rptExpand('+(idx-1)+')"><i class="fas fa-chevron-left"></i></button>';
 bd+='<div style="font-family:JetBrains Mono;font-size:1rem;font-weight:700;color:'+colors[idx]+'"><i class="'+icons[idx]+'" style="margin-right:8px"></i>'+titles[idx]+'</div>';
@@ -4209,7 +4210,7 @@ bd+='</div></div>';
 bd+='<div style="padding:80px 40px 40px;max-width:900px;margin:0 auto">';
 bd+='<div style="background:'+bgColors[idx]+';border-left:6px solid '+colors[idx]+';border-radius:0 var(--r) var(--r) 0;padding:30px 36px;min-height:300px">';
 bd+='<div style="font-size:1.4rem;font-weight:700;color:'+colors[idx]+';margin-bottom:16px;font-family:JetBrains Mono">'+titles[idx]+'</div>';
-bd+='<div style="font-size:1rem;line-height:2;color:var(--t2)">'+(data[idx]||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div>';
+bd+='<div class="rpt-content" style="font-size:1rem;line-height:2;color:var(--t2)">'+(data[idx]||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div>';
 bd+='</div></div>';
 mO('',bd,'');
 }
