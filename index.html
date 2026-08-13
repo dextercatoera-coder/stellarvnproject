@@ -4156,6 +4156,70 @@ if(!latest){
 }
 $('app').innerHTML=h;
 };
+  function rptRenderCard(r){
+var h='';
+h+='<div style="background:var(--s1);border:2px solid var(--bl);border-radius:var(--r);overflow:hidden;margin-bottom:14px">';
+h+='<div style="background:linear-gradient(135deg,#1a3a5c,#2874a6);color:#fff;padding:20px 24px;display:flex;justify-content:space-between;align-items:center">';
+h+='<div><div style="font-size:1.2rem;font-weight:700;letter-spacing:.5px">PROGRESS REPORT</div>';
+h+='<div style="font-size:.76rem;opacity:.8;margin-top:2px">'+H(S.reportConfig.projectName)+'</div></div>';
+h+='<div style="text-align:right"><div style="font-size:.72rem;opacity:.8">'+H(S.reportConfig.company)+'</div>';
+h+='<div style="font-size:1.6rem;font-weight:700">'+fmtP(r.completion||0)+'</div>';
+h+='<div style="font-size:.62rem;opacity:.7">Site Completion</div></div></div>';
+h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bd)">';
+h+='<div style="padding:10px 14px;background:var(--s1);text-align:center"><div style="font-size:.5rem;color:var(--t3);font-family:JetBrains Mono">REPORT DATE</div><div style="font-size:.76rem;font-weight:700">'+H(r.date)+'</div></div>';
+h+='<div style="padding:10px 14px;background:var(--s1);text-align:center"><div style="font-size:.5rem;color:var(--t3);font-family:JetBrains Mono">PERIOD</div><div style="font-size:.76rem;font-weight:700">'+H(r.periodFrom||'')+' to '+H(r.periodTo||'')+'</div></div>';
+h+='<div style="padding:10px 14px;background:var(--s1);text-align:center"><div style="font-size:.5rem;color:var(--t3);font-family:JetBrains Mono">PHASE</div><div style="font-size:.76rem;font-weight:700;color:var(--bl)">'+H(r.phase||'-')+'</div></div>';
+h+='<div style="padding:10px 14px;background:var(--s1);text-align:center"><div style="font-size:.5rem;color:var(--t3);font-family:JetBrains Mono">REPORT #</div><div style="font-size:.76rem;font-weight:700">'+(r.reportNum||1)+'</div></div>';
+h+='</div>';
+h+='<div style="padding:16px 24px">';
+h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+h+='<span style="font-size:.72rem;font-weight:600">Overall Site Progress</span>';
+h+='<span style="font-family:JetBrains Mono;font-size:1rem;font-weight:700;color:var(--bl)">'+fmtP(r.completion||0)+'</span></div>';
+h+='<div style="height:12px;background:var(--s2);border-radius:6px;overflow:hidden">';
+h+='<div style="height:100%;width:'+(r.completion||0)+'%;background:linear-gradient(90deg,#2874a6,#3498db);border-radius:6px"></div></div></div>';
+var rTasks=r.taskBreakdown||[];
+if(rTasks.length>0){
+  h+='<div style="padding:0 24px 16px"><div style="font-size:.72rem;font-weight:600;margin-bottom:8px">Phase Progress</div>';
+  for(var i=0;i<rTasks.length;i++){
+    var rt=rTasks[i];
+    var rc=rt.prog>=80?'var(--g)':rt.prog>=40?'var(--or)':rt.prog>0?'var(--bl)':'var(--t3)';
+    h+='<div style="display:flex;align-items:center;gap:10px;padding:4px 0">';
+    h+='<div style="width:180px;font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+H(rt.name)+'</div>';
+    h+='<div style="flex:1;height:8px;background:var(--s2);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+rt.prog+'%;background:'+rc+';border-radius:4px"></div></div>';
+    h+='<div style="width:50px;text-align:right;font-family:JetBrains Mono;font-size:.68rem;font-weight:700;color:'+rc+'">'+fmtP(rt.prog)+'</div></div>';
+  }
+  h+='</div>';
+}
+h+='<div style="padding:0 24px 20px;display:grid;grid-template-columns:1fr 1fr;gap:16px">';
+h+='<div><div style="background:var(--gc);border-left:4px solid var(--g);border-radius:0 var(--r) var(--r) 0;padding:14px">';
+h+='<div style="font-size:.72rem;font-weight:700;color:var(--g);margin-bottom:8px"><i class="fas fa-star" style="margin-right:4px"></i>HIGHLIGHTS</div>';
+h+='<div style="font-size:.72rem;line-height:1.8;white-space:pre-wrap">'+H(r.highlights||'No highlights')+'</div></div></div>';
+h+='<div><div style="background:var(--blc);border-left:4px solid var(--bl);border-radius:0 var(--r) var(--r) 0;padding:14px">';
+h+='<div style="font-size:.72rem;font-weight:700;color:var(--bl);margin-bottom:8px"><i class="fas fa-arrow-right" style="margin-right:4px"></i>NEXT STEPS</div>';
+h+='<div style="font-size:.72rem;line-height:1.8;white-space:pre-wrap">'+H(r.nextSteps||'No next steps')+'</div></div></div>';
+h+='<div><div style="background:var(--orc);border-left:4px solid var(--or);border-radius:0 var(--r) var(--r) 0;padding:14px">';
+h+='<div style="font-size:.72rem;font-weight:700;color:var(--or);margin-bottom:8px"><i class="fas fa-hands-helping" style="margin-right:4px"></i>SUPPORT NEEDED</div>';
+h+='<div style="font-size:.72rem;line-height:1.8;white-space:pre-wrap">'+H(r.supportNeeded||'None')+'</div></div></div>';
+h+='<div><div style="background:var(--rdc);border-left:4px solid var(--rd);border-radius:0 var(--r) var(--r) 0;padding:14px">';
+h+='<div style="font-size:.72rem;font-weight:700;color:var(--rd);margin-bottom:8px"><i class="fas fa-shield-alt" style="margin-right:4px"></i>RISKS &amp; MITIGATION</div>';
+h+='<div style="font-size:.72rem;line-height:1.8;white-space:pre-wrap">'+H(r.risks||'No risks')+'</div></div></div>';
+h+='</div>';
+h+='<div style="padding:0 24px 20px"><div style="font-size:.72rem;font-weight:600;margin-bottom:8px">Safety Summary</div>';
+h+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">';
+h+='<div style="text-align:center;padding:10px;background:var(--gc);border-radius:var(--r)"><div style="font-size:.48rem;color:var(--g);font-family:JetBrains Mono">DAYS W/O LTI</div><div style="font-size:1.2rem;font-weight:700;color:var(--g)">'+dd((S.safety?S.safety.startDate:'')||'2026-04-13',r.date)+'</div></div>';
+h+='<div style="text-align:center;padding:10px;background:var(--s2);border-radius:var(--r)"><div style="font-size:.48rem;color:var(--t3);font-family:JetBrains Mono">INSPECTIONS</div><div style="font-size:1.2rem;font-weight:700;color:var(--t2)">'+(r.safetyInspCount||0)+'</div></div>';
+h+='<div style="text-align:center;padding:10px;background:var(--s2);border-radius:var(--r)"><div style="font-size:.48rem;color:var(--t3);font-family:JetBrains Mono">NEAR MISSES</div><div style="font-size:1.2rem;font-weight:700;color:var(--or)">'+(r.nearMisses||0)+'</div></div>';
+h+='<div style="text-align:center;padding:10px;background:var(--s2);border-radius:var(--r)"><div style="font-size:.48rem;color:var(--t3);font-family:JetBrains Mono">UNSAFE ACTS</div><div style="font-size:1.2rem;font-weight:700;color:var(--rd)">'+(r.unsafeActs||0)+'</div></div>';
+h+='<div style="text-align:center;padding:10px;background:var(--s2);border-radius:var(--r)"><div style="font-size:.48rem;color:var(--t3);font-family:JetBrains Mono">SAFE HOURS</div><div style="font-size:1.2rem;font-weight:700;color:var(--bl)">'+((r.safeHours||0).toLocaleString())+'</div></div>';
+h+='</div></div>';
+h+='<div style="padding:12px 24px;background:var(--s2);display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--bd)">';
+h+='<div style="font-size:.62rem;color:var(--t3)">Prepared by: '+H(r.preparedBy||S.reportConfig.preparedBy||'-')+' | Approved by: '+H(r.approvedBy||S.reportConfig.approvedBy||'-')+'</div>';
+h+='<div style="display:flex;gap:6px">';
+h+='<button class="btn bs" onclick="rptEdit(0)">Edit</button>';
+h+='<button class="btn bs bb" onclick="rptExport(0)">Export PDF</button>';
+h+='</div></div></div>';
+return h;
+}
 </script>
 </body>
 </html>
