@@ -216,7 +216,7 @@ function syncUp(){
     }
   }catch(e){}
 }
-function load(){S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.originalPlan=lj('originalPlan',[])
+function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.originalPlan=lj('originalPlan',[])
                
 /* Merge remote inspections if available */
 try{
