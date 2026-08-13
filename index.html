@@ -4159,10 +4159,12 @@ h+='<div style="padding:10px;background:var(--s1);text-align:center"><div style=
 h+='</div>';
 h+='<div style="padding:16px 24px"><div style="height:12px;background:var(--s2);border-radius:6px;overflow:hidden"><div style="height:100%;width:'+(r.completion||0)+'%;background:linear-gradient(90deg,#2874a6,#3498db);border-radius:6px"></div></div></div>';
 h+='<div style="padding:0 24px 20px;display:grid;grid-template-columns:1fr 1fr;gap:16px">';
-h+='<div style="background:var(--gc);border-left:4px solid var(--g);padding:14px;border-radius:0 var(--r) var(--r) 0"><div style="font-weight:700;color:var(--g);margin-bottom:8px">HIGHLIGHTS</div><div style="font-size:.72rem;line-height:1.8;white-space:pre-wrap">'+H(r.highlights||'None')+'</div></div>';
-h+='<div style="background:var(--blc);border-left:4px solid var(--bl);padding:14px;border-radius:0 var(--r) var(--r) 0"><div style="font-weight:700;color:var(--bl);margin-bottom:8px">NEXT STEPS</div><div style="font-size:.72rem;line-height:1.8;white-space:pre-wrap">'+H(r.nextSteps||'None')+'</div></div>';
-h+='<div style="background:var(--orc);border-left:4px solid var(--or);padding:14px;border-radius:0 var(--r) var(--r) 0"><div style="font-weight:700;color:var(--or);margin-bottom:8px">SUPPORT NEEDED</div><div style="font-size:.72rem;line-height:1.8;white-space:pre-wrap">'+H(r.supportNeeded||'None')+'</div></div>';
-h+='<div style="background:var(--rdc);border-left:4px solid var(--rd);padding:14px;border-radius:0 var(--r) var(--r) 0"><div style="font-weight:700;color:var(--rd);margin-bottom:8px">RISKS</div><div style="font-size:.72rem;line-height:1.8;white-space:pre-wrap">'+H(r.risks||'None')+'</div></div>';
+var _rptSecData=[r.highlights||'',r.nextSteps||'',r.supportNeeded||'',r.risks||''];
+window._rptData=_rptSecData;
+h+='<div style="background:var(--gc);border-left:4px solid var(--g);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(\'section\',_rptData,0)" onmouseover="this.style.transform=\'scale(1.02)\';this.style.boxShadow=\'0 4px 20px rgba(45,138,50,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-weight:700;color:var(--g);margin-bottom:8px"><i class="fas fa-check-circle" style="margin-right:6px"></i>HIGHLIGHTS <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div><div style="font-size:.72rem;line-height:1.8;max-height:120px;overflow:hidden">'+(r.highlights||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
+h+='<div style="background:var(--blc);border-left:4px solid var(--bl);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(\'section\',_rptData,1)" onmouseover="this.style.transform=\'scale(1.02)\';this.style.boxShadow=\'0 4px 20px rgba(40,116,166,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-weight:700;color:var(--bl);margin-bottom:8px"><i class="fas fa-arrow-right" style="margin-right:6px"></i>NEXT STEPS <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div><div style="font-size:.72rem;line-height:1.8;max-height:120px;overflow:hidden">'+(r.nextSteps||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
+h+='<div style="background:var(--orc);border-left:4px solid var(--or);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(\'section\',_rptData,2)" onmouseover="this.style.transform=\'scale(1.02)\';this.style.boxShadow=\'0 4px 20px rgba(212,147,13,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-weight:700;color:var(--or);margin-bottom:8px"><i class="fas fa-hand-holding-heart" style="margin-right:6px"></i>SUPPORT NEEDED <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div><div style="font-size:.72rem;line-height:1.8;max-height:120px;overflow:hidden">'+(r.supportNeeded||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
+h+='<div style="background:var(--rdc);border-left:4px solid var(--rd);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(\'section\',_rptData,3)" onmouseover="this.style.transform=\'scale(1.02)\';this.style.boxShadow=\'0 4px 20px rgba(204,51,51,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-weight:700;color:var(--rd);margin-bottom:8px"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>RISKS <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div><div style="font-size:.72rem;line-height:1.8;max-height:120px;overflow:hidden">'+(r.risks||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
 h+='</div>';
 h+='<div style="padding:0 24px 20px"><div style="font-weight:600;margin-bottom:8px">Safety</div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">';
 h+='<div style="text-align:center;padding:10px;background:var(--gc);border-radius:var(--r)"><div style="font-size:.48rem;color:var(--g)">DAYS W/O LTI</div><div style="font-size:1.2rem;font-weight:700;color:var(--g)">'+dd((S.safety?S.safety.startDate:'')||'2026-04-13',r.date)+'</div></div>';
@@ -4176,7 +4178,40 @@ h+='<div style="font-size:.62rem;color:var(--t3)">By: '+H(r.preparedBy||'-')+' |
 h+='<div><button class="btn bs" onclick="rptEdit('+S.reports.indexOf(r)+')">Edit</button> <button class="btn bs bb" onclick="rptExport('+S.reports.indexOf(r)+')">PDF</button></div></div></div>';
 return h;
 }
+function rptExpand(section,dataArr,idx){
+  var titles=['HIGHLIGHTS','NEXT STEPS','SUPPORT NEEDED','RISKS'];
+  var colors=['var(--g)','var(--bl)','var(--or)','var(--rd)'];
+  var bgColors=['var(--gc)','var(--blc)','var(--orc)','var(--rdc)'];
+  var icons=['fas fa-check-circle','fas fa-arrow-right','fas fa-hand-holding-heart','fas fa-exclamation-triangle'];
 
+  var bd='<div id="rptExpandContent">';
+  bd+='<div style="position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 24px;background:var(--s1);border-bottom:3px solid '+colors[idx]+';z-index:10001">';
+  bd+='<div style="display:flex;align-items:center;gap:12px">';
+  bd+='<button class="btn bs" onclick="rptExpandNav('+idx+','+dataArr.length+',-1)"'+(idx===0?' disabled':'')+'><i class="fas fa-chevron-left"></i></button>';
+  bd+='<div style="font-family:JetBrains Mono;font-size:1rem;font-weight:700;color:'+colors[idx]+'"><i class="'+icons[idx]+'" style="margin-right:8px"></i>'+titles[idx]+'</div>';
+  bd+='<button class="btn bs" onclick="rptExpandNav('+idx+','+dataArr.length+',1)"'+(idx>=dataArr.length-1?' disabled':'')+'><i class="fas fa-chevron-right"></i></button>';
+  bd+='</div>';
+  bd+='<div style="display:flex;align-items:center;gap:10px">';
+  for(var si=0;si<dataArr.length;si++){
+    bd+='<button style="width:12px;height:12px;border-radius:50%;border:2px solid '+colors[si]+';background:'+(si===idx?colors[si]:'transparent')+';cursor:pointer" onclick="mC();rptExpand(\'section\',_rptData,'+si+')"></button>';
+  }
+  bd+='<button class="btn bs bd" onclick="mC()" style="margin-left:8px"><i class="fas fa-times"></i> Close</button>';
+  bd+='</div></div>';
+  bd+='<div style="padding:80px 40px 40px;max-width:900px;margin:0 auto">';
+  bd+='<div style="background:'+bgColors[idx]+';border-left:6px solid '+colors[idx]+';border-radius:0 var(--r) var(--r) 0;padding:30px 36px;min-height:300px">';
+  bd+='<div style="font-size:1.4rem;font-weight:700;color:'+colors[idx]+';margin-bottom:16px;font-family:JetBrains Mono">'+titles[idx]+'</div>';
+  bd+='<div style="font-size:1rem;line-height:2;color:var(--t2)">'+(dataArr[idx]||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div>';
+  bd+='</div></div></div>';
+  mO('',bd,'');
+  window._rptData=dataArr;
+}
+
+function rptExpandNav(cur,total,dir){
+  var next=cur+dir;
+  if(next<0||next>=total)return;
+  mC();
+  setTimeout(function(){rptExpand('section',window._rptData,next)},50);
+}
 function rptNew(){
 var latest=S.reports.length>0?S.reports[0]:null;
 var periodFrom='';
