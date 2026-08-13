@@ -1078,8 +1078,12 @@ setTimeout(function(){
 R.tasks=function(){
 var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
 h+='<span></span>';
+h+='<div style="display:flex;gap:6px">';
+h+='<button class="btn bs" onclick="impDownloadTpl()"><i class="fas fa-download"></i> Template</button>';
+h+='<button class="btn bs bb" onclick="$(\'impF\').click()"><i class="fas fa-upload"></i> Import</button>';
+h+='<input type="file" id="impF" accept=".xlsx,.xls,.csv" style="display:none" onchange="impTasks(this)">';
 h+='<button class="btn '+(showCost?'bs':'bp')+'" onclick="showCost=!showCost;doRender()"><i class="fas '+(showCost?'fa-eye':'fa-eye-slash')+'"></i> '+(showCost?'Hide Costs':'Show Costs')+'</button>';
-h+='</div>';
+h+='</div></div>';
 h+='<div class="fbar"><label>Project:</label><select onchange="tpSel=isNaN(+this.value)?this.value:+this.value;go(\'tasks\')" style="min-width:160px"><option value="site"'+(tpSel==='site'?' selected':'')+'>Site (Master)</option>';
 var sp=S.taskProjects.slice().sort(function(a,b){return(b.cost||0)-(a.cost||0)});
 for(var i=0;i<sp.length;i++)h+='<option value="'+sp[i].id+'"'+(tpSel==sp[i].id?' selected':'')+'>'+(showCost?fmtD(sp[i].cost)+' ':'')+H(sp[i].name)+'</option>';
@@ -1219,6 +1223,281 @@ for(var i=0;i<tasks.length;i++){
 }
 h+='</tbody></table></div></div>';
 return h;
+}
+
+/* === IMPORT/EXPORT FUNCTIONS === */
+
+function impDownloadTpl(){
+  if(typeof XLSX==='undefined')return notify('XLSX not loaded');
+  var wb=XLSX.utils.book_new();
+  var sd=[
+    ['WBS','Name','Category','Duration','Start','End','Progress','WT%','Predecessor','Assignee'],
+    ['1','Site Preparation','Earthwork',30,'2026-01-15','2026-02-14',0,10,'',''],
+    ['1.1','Site Clearing','Earthwork',14,'2026-01-15','2026-01-29',0,0,'',''],
+    ['1.2','Grading','Earthwork',16,'2026-01-29','2026-02-14',0,0,'','1.1'],
+    ['2','Foundation','Construction',45,'2026-02-15','2026-04-01',0,25,'',''],
+    ['2.1','Excavation','Construction',10,'2026-02-15','2026-02-25',0,0,'',''],
+    ['2.2','Footings','Construction',15,'2026-02-25','2026-03-12',0,0,'','2.1'],
+    ['2.3','Foundation Walls','Construction',20,'2026-03-12','2026-04-01',0,0,'','2.2'],
+    ['3','Structure','Construction',60,'2026-04-01','2026-05-31',0,35,'',''],
+    ['3.1','Columns','Construction',20,'2026-04-01','2026-04-21',0,0,'',''],
+    ['3.2','Beams & Slabs','Construction',25,'2026-04-21','2026-05-16',0,0,'','3.1'],
+    ['3.3','Roofing','Construction',15,'2026-05-16','2026-05-31',0,0,'','3.2'],
+    ['4','MEP Rough-in','MEP',30,'2026-05-01','2026-05-31',0,20,'',''],
+    ['5','Finishing','Construction',30,'2026-06-01','2026-06-30',0,10,'','']
+  ];
+  var ws=XLSX.utils.aoa_to_sheet(sd);
+  /* Set column widths */
+  ws['!cols']=[{wch:8},{wch:25},{wch:15},{wch:10},{wch:12},{wch:12},{wch:10},{wch:8},{wch:12},{wch:15}];
+  XLSX.utils.book_append_sheet(wb,ws,'Site Master');
+
+  /* Add instructions sheet */
+  var instr=[
+    ['INSTRUCTIONS FOR IMPORT'],
+    [''],
+    ['Column','Required','Description','Example'],
+    ['WBS','YES','Work Breakdown Structure number. Main tasks have no dot (1,2,3). Sub-tasks use dots (1.1, 1.2, 2.1)','1.1'],
+    ['Name','YES','Task name','Site Clearing'],
+    ['Category','YES','One of: Earthwork, Construction, MEP, Permits, Design, Closeout, Temp, Site, Infrastructure, Buildings, General','Earthwork'],
+    ['Duration','YES','Number of days (integer)','30'],
+    ['Start','YES','Start date in YYYY-MM-DD format','2026-01-15'],
+    ['End','YES','End date in YYYY-MM-DD format','2026-02-14'],
+    ['Progress','NO','Completion percentage 0-100. Default: 0','50'],
+    ['WT%','NO','Weight percentage for main tasks. Main tasks should total 100%. Sub-tasks are 0.','10'],
+    ['Predecessor','NO','WBS of predecessor task. Leave blank if none.','1.1'],
+    ['Assignee','NO','Person responsible','Juan'],
+    [''],
+    ['RULES:'],
+    ['- Main tasks: WBS has no dot (1, 2, 3, 4, 5)'],
+    ['- Sub-tasks: WBS has dots (1.1, 1.2, 2.1, 2.1.1)'],
+    ['- Duration is auto-calculated from Start and End dates'],
+    ['- WT% on main tasks should total 100%'],
+    ['- Sub-tasks WT% should be 0 (progress calculated from children)'],
+    ['- Dates must be in YYYY-MM-DD format'],
+    ['- Category must match one of the listed values exactly']
+  ];
+  var ws2=XLSX.utils.aoa_to_sheet(instr);
+  ws2['!cols']=[{wch:15},{wch:10},{wch:60},{wch:15}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Instructions');
+
+  XLSX.writeFile(wb,'Task_Import_Template.xlsx');
+  notify('Template downloaded');
+}
+
+function impTasks(input){
+  var f=input.files[0];
+  if(!f)return;
+  if(typeof XLSX==='undefined'){alert('XLSX library not loaded');return}
+
+  var rd=new FileReader();
+  rd.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var data=XLSX.utils.sheet_to_json(ws,{header:1});
+
+      if(data.length<2){alert('File is empty or has no data rows.');return}
+
+      /* Find header row */
+      var hdrRow=-1;
+      for(var r=0;r<Math.min(5,data.length);r++){
+        var row=data[r];
+        if(!row)continue;
+        for(var c=0;c<row.length;c++){
+          var cell=String(row[c]||'').toLowerCase().trim();
+          if(cell==='wbs'||cell==='wbs no'||cell==='wbs#'){hdrRow=r;break}
+        }
+        if(hdrRow>=0)break;
+      }
+      if(hdrRow<0){alert('Cannot find header row. Make sure column A header is "WBS".');return}
+
+      var hdr=data[hdrRow];
+      var colMap={};
+      for(var c=0;c<hdr.length;c++){
+        var h=String(hdr[c]||'').toLowerCase().trim();
+        if(h==='wbs'||h==='wbs no'||h==='wbs#')colMap.wbs=c;
+        else if(h==='name'||h==='task'||h==='task name'||h==='description')colMap.name=c;
+        else if(h==='category'||h==='cat')colMap.cat=c;
+        else if(h==='duration'||h==='dur'||h==='days')colMap.dur=c;
+        else if(h==='start'||h==='start date')colMap.s=c;
+        else if(h==='end'||h==='end date'||h==='finish')colMap.e=c;
+        else if(h==='progress'||h==='prog'||h==='%')colMap.prog=c;
+        else if(h==='wt%'||h==='wt'||h==='weight')colMap.wt=c;
+        else if(h==='predecessor'||h==='pred')colMap.pred=c;
+        else if(h==='assignee'||h==='assigned')colMap.assignee=c;
+      }
+
+      if(colMap.wbs===undefined){alert('Column "WBS" not found. Check header row.');return}
+      if(colMap.name===undefined){alert('Column "Name" not found. Check header row.');return}
+
+      /* Parse rows */
+      var newTasks=[];
+      var errors=[];
+      for(var r=hdrRow+1;r<data.length;r++){
+        var row=data[r];
+        if(!row||!row.length)continue;
+        var wbs=String(row[colMap.wbs]||'').trim();
+        var name=String(row[colMap.name]||'').trim();
+        if(!wbs||!name)continue;
+
+        var cat=colMap.cat!==undefined?String(row[colMap.cat]||'').trim():'General';
+        if(!cat)cat='General';
+
+        var s=colMap.s!==undefined?String(row[colMap.s]||'').trim():'';
+        var e=colMap.e!==undefined?String(row[colMap.e]||'').trim():'';
+
+        /* Fix date format - handle Excel serial dates */
+        s=impFixDate(s);
+        e=impFixDate(e);
+
+        var dur=0;
+        if(colMap.dur!==undefined){
+          dur=parseInt(row[colMap.dur])||0;
+        }
+        if(!dur&&s&&e){
+          dur=dd(s,e);
+        }
+        if(!dur)dur=14;
+
+        var prog=colMap.prog!==undefined?(parseInt(row[colMap.prog])||0):0;
+        var wt=colMap.wt!==undefined?(parseFloat(row[colMap.wt])||0):0;
+        var pred=colMap.pred!==undefined?String(row[colMap.pred]||'').trim():'';
+        var assignee=colMap.assignee!==undefined?String(row[colMap.assignee]||'').trim():'';
+
+        newTasks.push({
+          wbs:wbs,
+          name:name,
+          cat:cat,
+          dur:dur,
+          s:s,
+          e:e,
+          prog:prog,
+          st:aSt(prog),
+          wt:wt,
+          pred:pred,
+          assignee:assignee,
+          remarks:[]
+        });
+      }
+
+      if(newTasks.length===0){alert('No valid tasks found in file.');return}
+
+      /* Show preview */
+      impShowPreview(newTasks,errors);
+
+    }catch(err){
+      alert('Error reading file: '+err.message);
+    }
+  };
+  rd.readAsArrayBuffer(f);
+}
+
+function impFixDate(val){
+  if(!val)return '';
+  val=String(val).trim();
+  /* Already YYYY-MM-DD */
+  if(/^\d{4}-\d{2}-\d{2}$/.test(val))return val;
+  /* Excel serial number */
+  if(/^\d{5,}$/.test(val)){
+    var d=new Date((parseInt(val)-25569)*86400000);
+    return d.getFullYear()+'-'+LZ(d.getMonth()+1)+'-'+LZ(d.getDate());
+  }
+  /* MM/DD/YYYY or DD/MM/YYYY */
+  var parts=val.split(/[\/\-\.]/);
+  if(parts.length===3){
+    var p0=parseInt(parts[0]),p1=parseInt(parts[1]),p2=parseInt(parts[2]);
+    if(p2>1900){return p2+'-'+LZ(p0)+'-'+LZ(p1)}
+    else if(p0>1900){return p0+'-'+LZ(p1)+'-'+LZ(p2)}
+  }
+  return val;
+}
+
+function impShowPreview(newTasks,errors){
+  var mains=0,subs=0;
+  for(var i=0;i<newTasks.length;i++){
+    if(newTasks[i].wbs.indexOf('.')===-1)mains++;
+    else subs++;
+  }
+
+  var bd='<div style="font-size:.76rem;margin-bottom:10px">';
+  bd+='<b>'+newTasks.length+' tasks found</b> ('+mains+' main, '+subs+' sub-tasks)';
+  bd+='</div>';
+
+  if(errors.length>0){
+    bd+='<div style="padding:8px;background:var(--rdc);border-radius:var(--r);margin-bottom:10px;font-size:.68rem">';
+    for(var ei=0;ei<errors.length;ei++)bd+='<div style="color:var(--rd)">'+H(errors[ei])+'</div>';
+    bd+='</div>';
+  }
+
+  bd+='<div style="font-size:.72rem;margin-bottom:10px"><b>Preview (first 10 rows):</b></div>';
+  bd+='<div class="tw" style="max-height:300px;overflow-y:auto"><table><thead><tr><th>WBS</th><th>Name</th><th>Cat</th><th>Dur</th><th>Start</th><th>End</th><th>WT%</th></tr></thead><tbody>';
+  for(var i=0;i<Math.min(10,newTasks.length);i++){
+    var t=newTasks[i];
+    var isM=t.wbs.indexOf('.')===-1;
+    bd+='<tr'+(isM?' style="background:var(--s2);font-weight:600"':'')+'>';
+    bd+='<td>'+H(t.wbs)+'</td>';
+    bd+='<td>'+H(t.name)+'</td>';
+    bd+='<td>'+H(t.cat)+'</td>';
+    bd+='<td>'+t.dur+'</td>';
+    bd+='<td>'+H(t.s)+'</td>';
+    bd+='<td>'+H(t.e)+'</td>';
+    bd+='<td>'+(isM?t.wt+'%':'-')+'</td>';
+    bd+='</tr>';
+  }
+  if(newTasks.length>10)bd+='<tr><td colspan="7" style="text-align:center;color:var(--t3)">... and '+(newTasks.length-10)+' more</td></tr>';
+  bd+='</tbody></table></div>';
+
+  bd+='<div style="margin-top:12px;padding:10px;background:var(--rdc);border:1px solid rgba(204,51,51,.3);border-radius:var(--r);font-size:.72rem">';
+  bd+='<b style="color:var(--rd)">Warning:</b> This will <b>replace all current site master tasks</b>. ';
+  bd+='Make sure you have a backup or export first.';
+  bd+='</div>';
+
+  bd+='<div style="margin-top:10px;display:flex;gap:8px">';
+  bd+='<button class="btn bs" onclick="impAddMode()">Add to Existing (Merge)</button>';
+  bd+='<span style="font-size:.62rem;color:var(--t3);display:flex;align-items:center">Keeps current tasks, adds new ones</span>';
+  bd+='</div>';
+
+  window._impTasks=newTasks;
+  mO('Import Preview',bd,'<button class="btn" onclick="mC();window._impTasks=null">Cancel</button><button class="btn bp" onclick="impReplaceMode()">Replace All</button>');
+}
+
+function impReplaceMode(){
+  if(!window._impTasks)return;
+  if(!confirm('Replace all '+S.tasks.length+' current tasks with '+window._impTasks.length+' imported tasks?\n\nThis cannot be undone.'))return;
+
+  S.tasks=window._impTasks;
+  sortTasks(S.tasks);
+  save();
+  try{if(typeof db!=='undefined'&&db)db.ref('ss/tasks').set(S.tasks)}catch(e){}
+  mC();
+  window._impTasks=null;
+  notify('Imported '+S.tasks.length+' tasks');
+  doRender();
+}
+
+function impAddMode(){
+  if(!window._impTasks)return;
+  var newTasks=window._impTasks;
+  var existWbs={};
+  for(var i=0;i<S.tasks.length;i++)existWbs[S.tasks[i].wbs]=true;
+
+  var added=0,skipped=0;
+  for(var i=0;i<newTasks.length;i++){
+    if(existWbs[newTasks[i].wbs]){
+      skipped++;
+    }else{
+      S.tasks.push(newTasks[i]);
+      added++;
+    }
+  }
+
+  sortTasks(S.tasks);
+  save();
+  try{if(typeof db!=='undefined'&&db)db.ref('ss/tasks').set(S.tasks)}catch(e){}
+  mC();
+  window._impTasks=null;
+  notify('Added '+added+' tasks ('+skipped+' skipped)');
+  doRender();
 }
 
 function addT(){var p=$('ntW').value,n=$('ntN').value.trim();if(!n)return;var mx=0;for(var i=0;i<S.tasks.length;i++){if(S.tasks[i].wbs.indexOf(p+'.')===0){var num=parseInt(S.tasks[i].wbs.substring(p.length+1));if(!isNaN(num)&&num>mx)mx=num}}S.tasks.push({wbs:p+'.'+(mx+1),name:n,dur:dd($('ntS').value,$('ntE').value),s:$('ntS').value,e:$('ntE').value,prog:0,st:'pending',cat:$('ntC').value,remarks:[],wt:5,pred:$('ntP').value.trim(),assignee:$('ntA').value.trim()});sortTasks(S.tasks);save();notify('Added');doRender()}
