@@ -3,7 +3,7 @@
 <script>
 if(localStorage.getItem('app_ver')!=='3'){
   localStorage.setItem('app_ver','3');
-  location.reload(true);
+  location.reload(true);f
 }
 </script>
 <head> 
@@ -223,7 +223,7 @@ function syncUp(){
     }
   }catch(e){}
 }
-function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.originalPlan=lj('originalPlan',[]);S.reports=lj('reports',[]);S.reportConfig=lj('reportConfig',{projectName:'Vietnam Construction Project',company:'Stellar Seeds Corp',preparedBy:'',approvedBy:''})}catch(e){}}
+function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.originalPlan=lj('originalPlan',[]);S.reports=lj('reports',[]);S.reportConfig=lj('reportConfig',{projectName:'',company:'',preparedBy:'',approvedBy:''})}catch(e){}}
   
 /* Merge remote inspections if available */
 try{
