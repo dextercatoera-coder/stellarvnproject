@@ -560,8 +560,6 @@ function addVGT(){mO('Add Task','<div class="fg"><label class="fl">Name</label><
 function savVGT(){var name=vgSel.substring(3),n=$('vgtN').value.trim();if(!n)return;S.vgc[name].tasks.push({name:n,s:$('vgtS').value,e:$('vgtE').value,prog:0});save();mC();notify('Added');go('gantt')}
 function delVGT(i){S.vgc[vgSel.substring(3)].tasks.splice(i,1);save();notify('Deleted');go('gantt')}
 /* === S-CURVE ENHANCED === */
-var scMonthLabels=['Jan 26','Feb 26','Mar 26','Apr 26','May 26','Jun 26','Jul 26','Aug 26','Sep 26','Oct 26','Nov 26','Dec 26','Jan 27','Feb 27'];
-
 function calcCurve(months,m2,tDur,sc){
 var tasks=[];
 var outdoor=['Earthwork','Construction','Temp','Site','Infrastructure','Buildings','Closeout','MEP'];
@@ -642,24 +640,10 @@ if(tFrac>0&&tFrac<1){
   ctx.fillStyle='#cc3333';ctx.font='bold 9px JetBrains Mono';ctx.textAlign='center';
   ctx.fillText('TODAY',tx,pT-4);
 }
-/* Legend */
-var lx=pL+10,ly=pT-12;
-for(var li=0;li<lines.length;li++){
-  var ln=lines[li];
-  ctx.fillStyle=ln.color;ctx.font='bold 8px JetBrains Mono';ctx.textAlign='left';
-  ctx.beginPath();
-  if(ln.dash){ctx.setLineDash(ln.dash)}
-  else{ctx.setLineDash([])}
-  ctx.strokeStyle=ln.color;ctx.lineWidth=2;
-  ctx.moveTo(lx,ly);ctx.lineTo(lx+18,ly);ctx.stroke();ctx.setLineDash([]);
-  ctx.fillText(ln.label,lx+22,ly+3);
-  lx+=ctx.measureText(ln.label).width+38;
-}
 for(var li=0;li<lines.length;li++){
   var ln=lines[li];
   ctx.beginPath();ctx.strokeStyle=ln.color;ctx.lineWidth=ln.width||2;
-  if(ln.dash)ctx.setLineDash(ln.dash);
-  else ctx.setLineDash([]);
+  ctx.setLineDash(li===0?[6,4]:[]);
   var st=false;
   for(var i=0;i<n;i++){
     if(ln.data[i]==null){st=false;continue}
@@ -759,62 +743,6 @@ h+='</div>';
 $('simArea').innerHTML=h;
 }
 
-function scEditOriginal(){
-var op=S.originalPlan||[];
-var bd='<div style="max-height:70vh;overflow-y:auto;padding-right:8px">';
-bd+='<div style="font-size:.72rem;color:var(--t3);margin-bottom:12px">Enter the planned progress (%) for each month based on your contractual schedule or baseline plan.</div>';
-bd+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">';
-for(var i=0;i<14;i++){
-  var val=(op[i]!==undefined&&op[i]!==null)?op[i]:'';
-  bd+='<div class="fg"><label class="fl">'+scMonthLabels[i]+'</label><input type="number" id="opi_'+i+'" value="'+val+'" min="0" max="100" step="1" style="width:100%" placeholder="0"></div>';
-}
-bd+='</div>';
-bd+='<div style="margin-top:12px;padding:10px;background:var(--s2);border-radius:var(--r);font-size:.66rem">';
-bd+='<b>Quick Fill:</b> ';
-bd+='<button class="btn bs" onclick="scQuickFill(\'linear\')" style="font-size:.58rem;padding:2px 8px">Linear (0→100)</button> ';
-bd+='<button class="btn bs" onclick="scQuickFill(\'scurve\')" style="font-size:.58rem;padding:2px 8px">S-Curve</button> ';
-bd+='<button class="btn bs" onclick="scQuickFill(\'fast\')" style="font-size:.58rem;padding:2px 8px">Fast Start</button> ';
-bd+='<button class="btn bs" onclick="scQuickFill(\'slow\')" style="font-size:.58rem;padding:2px 8px">Slow Start</button> ';
-bd+='<button class="btn bs" onclick="scQuickFill(\'clear\')" style="font-size:.58rem;padding:2px 8px">Clear All</button>';
-bd+='<div style="margin-top:6px;color:var(--t3)">Or enter values manually from your project schedule.</div>';
-bd+='</div>';
-bd+='</div>';
-mO('Edit Original Plan',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="scSaveOriginal()">Save</button>');
-}
-
-function scQuickFill(type){
-var vals=[];
-if(type==='linear'){
-  for(var i=0;i<14;i++)vals.push(Math.round(i/13*100));
-}else if(type==='scurve'){
-  /* Typical S-curve: slow start, fast middle, slow end */
-  var raw=[0,3,8,18,32,50,65,78,87,93,96,98,99,100];
-  vals=raw;
-}else if(type==='fast'){
-  var raw=[5,15,30,50,70,85,92,96,98,99,100,100,100,100];
-  vals=raw;
-}else if(type==='slow'){
-  var raw=[0,1,2,5,10,18,30,45,60,75,85,92,97,100];
-  vals=raw;
-}else if(type==='clear'){
-  vals=[0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-}
-for(var i=0;i<14;i++){
-  var el=$('opi_'+i);
-  if(el)el.value=vals[i]||0;
-}
-}
-
-function scSaveOriginal(){
-var op=[];
-for(var i=0;i<14;i++){
-  var el=$('opi_'+i);
-  op.push(el?parseFloat(el.value)||0:0);
-}
-S.originalPlan=op;
-save();mC();notify('Saved');doRender();
-}
-
 R.scurve=function(){
 var m=mainT(),oa=ovProg(S.tasks),tDur=0;
 for(var i=0;i<m.length;i++)tDur+=m[i].dur;
@@ -827,13 +755,11 @@ for(var mi=0;mi<14;mi++){
 
 var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
 h+='<span class="ct" style="font-size:.92rem">S-Curve Analysis</span>';
-h+='<div style="display:flex;gap:6px">';
-h+='<button class="btn bs" onclick="scEditOriginal()">Original Plan</button>';
-h+='<button class="btn bs" onclick="go(\'scurve\')"><i class="fas fa-sync-alt"></i></button>';
-h+='</div></div>';
+h+='<button class="btn bs" onclick="go(\'scurve\')"><i class="fas fa-sync-alt"></i> Refresh</button>';
+h+='</div>';
 
 h+='<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">';
-var opts=[{k:'baseline',l:'Baseline',c:'#2874a6'},{k:'original',l:'Original Plan',c:'#e06030'},{k:'actual',l:'Current',c:'#2d8a32'},{k:'weather',l:'Weather',c:'#d4930d'},{k:'resource',l:'Resource',c:'#9b59b6'},{k:'permitDelay',l:'Permit',c:'#9b59b6'},{k:'combined',l:'All Risks',c:'#cc3333'}];
+var opts=[{k:'baseline',l:'Baseline',c:'#2874a6'},{k:'actual',l:'Current',c:'#2d8a32'},{k:'weather',l:'Weather',c:'#d4930d'},{k:'resource',l:'Resource',c:'#9b59b6'},{k:'permitDelay',l:'Permit',c:'#e06030'},{k:'combined',l:'All Risks',c:'#cc3333'}];
 for(var si=0;si<opts.length;si++){
   var so=opts[si];
   h+='<div class="sc-opt'+(scRisk[so.k]?' active':'')+'" style="border-color:'+(scRisk[so.k]?so.c:'var(--b2)')+';background:'+(scRisk[so.k]?so.c+'18':'var(--s1)')+'" onclick="scRisk.'+so.k+'=!scRisk.'+so.k+';go(\'scurve\')"><span class="sc-dot" style="background:'+so.c+'"></span>'+so.l+'</div>';
@@ -849,15 +775,6 @@ if(!tDur){
 var bl=calcCurve(months,m,tDur,'baseline');
 var act=calcAct(months,oa);
 var curves={baseline:bl,actual:act};
-
-/* Original Plan */
-var op=S.originalPlan||[];
-if(op.length===14){
-  var hasVal=false;
-  for(var i=0;i<14;i++){if(op[i]>0){hasVal=true;break}}
-  if(hasVal)curves.original=op;
-}
-
 ['weather','resource','permitDelay','combined'].forEach(function(k){
   if(scRisk[k])curves[k]=calcCurve(months,m,tDur,k);
 });
@@ -876,11 +793,6 @@ var evNow=oa;
 var svNow=evNow-pvNow;
 var spiNow=pvNow>0?(evNow/pvNow):0;
 var eacVal=spiNow>0?Math.round(100/spiNow):999;
-
-/* Original plan comparison */
-var opNow=0;
-if(curves.original)opNow=curves.original[curMoI]||0;
-var opVar=evNow-opNow;
 
 var critTasks=[],delayedTasks=[],atRiskTasks=[],completeTasks=[];
 var outdoor=['Earthwork','Construction','Temp','Site','Infrastructure','Buildings','Closeout','MEP'];
@@ -917,17 +829,12 @@ var riskLevel=totalRisk>25?'High':totalRisk>12?'Medium':'Low';
 var riskCol=totalRisk>25?'var(--rd)':totalRisk>12?'var(--or)':'var(--g)';
 
 h+='<div style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3);margin-bottom:8px">';
-h+='Tasks: '+m.length+' | Dur: '+tDur+'d | Actual: '+evNow.toFixed(1)+'% | Baseline: '+pvNow+'%';
-if(curves.original)h+=' | Original: '+opNow+'%';
-h+=' | Date: '+today+'</div>';
+h+='Tasks: '+m.length+' | Dur: '+tDur+'d | Actual: '+evNow.toFixed(1)+'% | Planned: '+pvNow+'% | Month: '+curMoI+' | Date: '+today+'</div>';
 
 h+='<div class="stats">';
 h+='<div class="si" style="border-left:4px solid var(--g)"><div class="sl">Actual</div><div class="sv" style="color:var(--g)">'+fmtP(evNow)+'</div></div>';
-h+='<div class="si" style="border-left:4px solid var(--bl)"><div class="sl">Baseline</div><div class="sv" style="color:var(--bl)">'+fmtP(pvNow)+'</div></div>';
-if(curves.original){
-  h+='<div class="si" style="border-left:4px solid var(--or)"><div class="sl">Original Plan</div><div class="sv" style="color:var(--or)">'+fmtP(opNow)+'</div></div>';
-  h+='<div class="si" style="border-left:4px solid '+(opVar>=0?'var(--g)':'var(--rd)')+'"><div class="sl">vs Original</div><div class="sv" style="color:'+(opVar>=0?'var(--g)':'var(--rd)')+'">'+(opVar>=0?'+':'')+fmtP(opVar)+'</div></div>';
-}
+h+='<div class="si" style="border-left:4px solid var(--bl)"><div class="sl">Planned</div><div class="sv" style="color:var(--bl)">'+fmtP(pvNow)+'</div></div>';
+h+='<div class="si" style="border-left:4px solid '+(svNow>=0?'var(--g)':'var(--rd)')+'"><div class="sl">Variance</div><div class="sv" style="color:'+(svNow>=0?'var(--g)':'var(--rd)')+'">'+(svNow>=0?'+':'')+fmtP(svNow)+'</div></div>';
 h+='<div class="si" style="border-left:4px solid '+(spiNow>=1?'var(--g)':'var(--rd)')+'"><div class="sl">SPI</div><div class="sv" style="color:'+(spiNow>=1?'var(--g)':'var(--rd)')+'">'+spiNow.toFixed(2)+'</div></div>';
 h+='<div class="si" style="border-left:4px solid var(--pu)"><div class="sl">EAC</div><div class="sv" style="color:var(--pu)">'+fmtP(eacVal)+'</div></div>';
 h+='<div class="si" style="border-left:4px solid '+riskCol+'"><div class="sl">Risk</div><div class="sv" style="color:'+riskCol+'">'+riskLevel+'</div></div>';
@@ -1000,9 +907,6 @@ h+='</div></div></div>';
 h+='<div class="card"><div class="ch"><span class="ct">Recommendations</span></div>';
 h+='<div style="margin-top:8px">';
 var recs=[];
-if(curves.original&&opVar<-10){
-  recs.push({pri:'high',icon:'fa-flag',text:'Behind Original Plan by '+Math.abs(opVar).toFixed(1)+'%. Recovery plan needed to meet contractual milestones.'});
-}
 if(spiNow<0.8){
   recs.push({pri:'high',icon:'fa-exclamation-triangle',text:'Critical: SPI = '+spiNow.toFixed(2)+'. Project significantly behind. Immediate acceleration required.'});
 }else if(spiNow<0.95){
@@ -1029,11 +933,7 @@ if(permitScore/tDur*100>10){
   recs.push({pri:'low',icon:'fa-file-alt',text:'Permit delays possible. Follow up with authorities.'});
 }
 if(spiNow>=1&&delayedTasks.length<=1&&totalRisk<15){
-  if(curves.original&&opVar>=0){
-    recs.push({pri:'good',icon:'fa-check-circle',text:'On track. Ahead of Original Plan by '+opVar.toFixed(1)+'%. Maintain pace.'});
-  }else{
-    recs.push({pri:'good',icon:'fa-check-circle',text:'Schedule on track with low risk. Maintain current pace.'});
-  }
+  recs.push({pri:'good',icon:'fa-check-circle',text:'Schedule on track with low risk. Maintain current pace.'});
 }else if(spiNow>=1){
   recs.push({pri:'good',icon:'fa-check-circle',text:'Schedule on or ahead of plan. Monitor emerging risks.'});
 }
@@ -1068,8 +968,8 @@ $('app').innerHTML=h;
 
 setTimeout(function(){
   var lines=[];
-  [{k:'baseline',c:'#2874a6',w:2.5,label:'Baseline',dash:[6,4]},{k:'original',c:'#e06030',w:2.5,label:'Original Plan',dash:[]},{k:'actual',c:'#2d8a32',w:3,label:'Actual',dash:[]},{k:'weather',c:'#d4930d',w:2,label:'Weather',dash:[]},{k:'resource',c:'#9b59b6',w:2,label:'Resource',dash:[]},{k:'permitDelay',c:'#9b59b6',w:2,label:'Permit',dash:[]},{k:'combined',c:'#cc3333',w:2.5,label:'All Risks',dash:[]}].forEach(function(d){
-    if(scRisk[d.k]&&curves[d.k])lines.push({data:curves[d.k],color:d.c,width:d.w,label:d.label,dash:d.dash});
+  [{k:'baseline',c:'#2874a6',w:2.5},{k:'actual',c:'#2d8a32',w:3},{k:'weather',c:'#d4930d',w:2},{k:'resource',c:'#9b59b6',w:2},{k:'permitDelay',c:'#e06030',w:2},{k:'combined',c:'#cc3333',w:2.5}].forEach(function(d){
+    if(scRisk[d.k]&&curves[d.k])lines.push({data:curves[d.k],color:d.c,width:d.w});
   });
   drawSC(months,lines,100,function(v){return v.toFixed(0)+'%'});
 },50);
