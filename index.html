@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Stellar Seeds Vietnam</title>
 <script>
-if(localStorage.getItem('app_ver')!=='4'){
+if(localStorage.getItem('app_ver')!=='4'){f
   localStorage.setItem('app_ver','4');
   location.reload(true);
 }
@@ -4212,8 +4212,16 @@ bd+='<div style="background:'+bgColors[idx]+';border-left:6px solid '+colors[idx
 bd+='<div style="font-size:1.4rem;font-weight:700;color:'+colors[idx]+';margin-bottom:16px;font-family:JetBrains Mono">'+titles[idx]+'</div>';
 bd+='<div class="rpt-content" style="font-size:1rem;line-height:2;color:var(--t2)">'+(data[idx]||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div>';
 bd+='</div></div>';
-mO('&nbsp;',bd,'<button class="btn" onclick="mC()" style="display:none"></button>');
-setTimeout(function(){var mh=document.querySelector('.modal-header');if(mh)mh.style.display='none';var mf=document.querySelector('.modal-footer');if(mf)mf.style.display='none'},10);
+mO(' ',bd,'<button class="btn" onclick="mC()" style="display:none"></button>');
+setTimeout(function(){
+  var mc=document.querySelector('.modal-content');
+  if(mc){
+    var kids=mc.children;
+    for(var ci=0;ci<kids.length;ci++){
+      if(kids[ci].classList.contains('modal-header')||kids[ci].style.borderBottom||kids[ci].querySelector('.modal-title'))kids[ci].style.display='none';
+    }
+  }
+},10);
 }
 function rte(id){
 var h='<div style="border:1px solid var(--bd);border-radius:var(--r);overflow:hidden">';
