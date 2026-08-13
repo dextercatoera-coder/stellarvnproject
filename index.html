@@ -4220,6 +4220,93 @@ h+='<button class="btn bs bb" onclick="rptExport(0)">Export PDF</button>';
 h+='</div></div></div>';
 return h;
 }
+  function rptNew(){
+var latest=S.reports.length>0?S.reports[0]:null;
+var periodFrom='';
+var periodTo=td();
+if(latest){
+  periodFrom=latest.date;
+}else{
+  var d=new Date();d.setDate(d.getDate()-14);
+  periodFrom=d.getFullYear()+'-'+LZ(d.getMonth()+1)+'-'+LZ(d.getDate());
+}
+var phase='Construction';
+var m=mainT();
+var maxProg=0,maxName='';
+for(var i=0;i<m.length;i++){
+  if(m[i].prog>maxProg&&m[i].prog<100){maxProg=m[i].prog;maxName=m[i].name}
+  if(m[i].prog>=100)phase=m[i].name+' (Complete)';
+}
+if(maxName&&maxProg>0)phase=maxName;
+var oa=ovProg(S.tasks);
+var safetyInps=S.safetyInspections||[];
+var bd='<div style="max-height:75vh;overflow-y:auto;padding-right:8px">';
+bd+='<div style="padding:10px;background:var(--blc);border-radius:var(--r);margin-bottom:14px;font-size:.66rem">';
+bd+='<div style="font-weight:700;color:var(--bl);margin-bottom:4px"><i class="fas fa-magic" style="margin-right:4px"></i>Auto-populated Data</div>';
+bd+='<div>Completion: <b>'+fmtP(oa)+'</b> | Tasks: <b>'+mainT().length+'</b> | Inspections: <b>'+safetyInps.length+'</b></div></div>';
+bd+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+bd+='<div class="fg"><label class="fl">Report Date</label><input type="date" id="rptDate" value="'+td()+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Report Number</label><input type="number" id="rptNum" value="'+(S.reports.length+1)+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Period From</label><input type="date" id="rptFrom" value="'+periodFrom+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Period To</label><input type="date" id="rptTo" value="'+periodTo+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Current Phase</label><input type="text" id="rptPhase" value="'+H(phase)+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">% Site Completion</label><input type="number" id="rptComp" value="'+Math.round(oa)+'" min="0" max="100" step="0.1" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Prepared By</label><input type="text" id="rptPrep" value="'+H(S.reportConfig.preparedBy)+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Approved By</label><input type="text" id="rptAppr" value="'+H(S.reportConfig.approvedBy)+'" style="width:100%"></div>';
+bd+='</div>';
+bd+='<div class="fg" style="margin-top:10px"><label class="fl" style="color:var(--g)">Highlights</label>';
+bd+='<textarea id="rptHigh" rows="4" style="width:100%" placeholder="Key achievements..."></textarea></div>';
+bd+='<div class="fg"><label class="fl" style="color:var(--bl)">Next Steps</label>';
+bd+='<textarea id="rptNext" rows="4" style="width:100%" placeholder="Planned activities..."></textarea></div>';
+bd+='<div class="fg"><label class="fl" style="color:var(--or)">Support Needed</label>';
+bd+='<textarea id="rptSupport" rows="3" style="width:100%" placeholder="Resources needed..."></textarea></div>';
+bd+='<div class="fg"><label class="fl" style="color:var(--rd)">Risks &amp; Mitigation</label>';
+bd+='<textarea id="rptRisks" rows="4" style="width:100%" placeholder="Risks and mitigation..."></textarea></div>';
+bd+='<div class="fg"><label class="fl">Safety Notes</label>';
+bd+='<textarea id="rptSafe" rows="2" style="width:100%" placeholder="Safety comments..."></textarea></div>';
+bd+='</div>';
+mO('New Progress Report',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="rptSave(-1)">Submit</button>');
+}
+
+function rptSave(idx){
+var m=mainT();
+var taskBD=[];
+for(var i=0;i<m.length;i++)taskBD.push({wbs:m[i].wbs,name:m[i].name,prog:m[i].prog});
+var nm=0,nu=0;
+for(var i=0;i<(S.safetyInspections||[]).length;i++){
+  var its=S.safetyInspections[i].items||[];
+  for(var j=0;j<its.length;j++){
+    if(its[j].type==='Near Miss'&&its[j].status!=='Satisfactory')nm++;
+    if(its[j].type==='Unsafe Act'&&its[j].status!=='Satisfactory')nu++;
+  }
+}
+var r={
+  id:idx>=0?S.reports[idx].id:Date.now(),
+  date:$('rptDate').value,
+  reportNum:parseInt($('rptNum').value)||1,
+  periodFrom:$('rptFrom').value,
+  periodTo:$('rptTo').value,
+  phase:$('rptPhase').value.trim(),
+  completion:parseFloat($('rptComp').value)||0,
+  preparedBy:$('rptPrep').value.trim(),
+  approvedBy:$('rptAppr').value.trim(),
+  highlights:$('rptHigh').value.trim(),
+  nextSteps:$('rptNext').value.trim(),
+  supportNeeded:$('rptSupport').value.trim(),
+  risks:$('rptRisks').value.trim(),
+  safetyNotes:$('rptSafe').value.trim(),
+  taskBreakdown:taskBD,
+  safetyInspCount:(S.safetyInspections||[]).length,
+  nearMisses:nm,
+  unsafeActs:nu,
+  safeHours:(S.safety?S.safety.safeHours:0)||0
+};
+if(idx>=0)S.reports[idx]=r;
+else S.reports.unshift(r);
+save();
+try{if(typeof db!=='undefined'&&db)db.ref('ss/reports').set(S.reports)}catch(e){}
+mC();notify(idx>=0?'Updated':'Report created');doRender();
+}
 </script>
 </body>
 </html>
