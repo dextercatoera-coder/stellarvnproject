@@ -180,7 +180,7 @@ var R={};
 function nav(){var h='';for(var i=0;i<tabs.length;i++){if(!tabs[i]){h+='<div class="nsep"></div>';continue}h+='<button class="'+(tab===tabs[i].id?'act':'')+'" onclick="go(\''+tabs[i].id+'\')">'+tabs[i].l+'</button>'}$('nbar').innerHTML=h}
 function go(id){tab=id;nav();doRender()}
 function doRender(){try{if(R[tab])R[tab]()}catch(e){$('app').innerHTML='<div class="card" style="color:var(--rd)"><b>Error:</b> '+H(e.message)+'</div>';console.error(e)}}
-function save(){try{['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos','phWebhookUrl','phSPFolder','phSPSite'].forEach(function(k){localStorage.setItem('ss_'+k,JSON.stringify(S[k]))});localStorage.setItem('ss_siteCost',String(siteCost));syncUp()}catch(e){}}
+function save(){try{['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos','phWebhookUrl','phSPFolder','phSPSite','viewer3d','wthApiKey','wthLocation','wthUnit'].forEach(function(k){localStorage.setItem('ss_'+k,JSON.stringify(S[k]))});localStorage.setItem('ss_siteCost',String(siteCost));syncUp()}catch(e){}}
 function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);
 /* Merge remote inspections if available */
 try{
@@ -222,18 +222,20 @@ function loadScr(src,cb){var s=document.createElement('script');s.src=src;s.onlo
 function tryCloud(){var c;try{c=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}if(!c||!c.apiKey||!c.databaseURL)return;$('loginScr').style.display='flex';if(typeof firebase!=='undefined'){initFB(c);return}loadScr('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js',function(){if(typeof firebase==='undefined')return;loadScr('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js',function(){loadScr('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js',function(){initFB(c)})})})}
 function initFB(c){try{if(!firebase.apps.length)firebase.initializeApp(c);db=firebase.database();fbAuth=firebase.auth();cOn=true;fbAuth.onAuthStateChanged(function(u){if(u){curUser=u;$('hUser').textContent=u.email||'';$('hUser').style.display='inline';$('hOut').style.display='inline';$('loginScr').style.display='none';$('mainApp').style.display='block';syncDown()}else{curUser=null;$('hUser').style.display='none';$('hOut').style.display='none'}})}catch(e){console.error(e)}}
 function syncDown(){if(!db)return;$('hDot').className='dot wr';$('hLbl').textContent='Syncing...';db.ref('ss').once('value').then(function(s){var v=s.val();if(v&&v.tasks){applyR(v);notify('Synced')}else{syncUp()}$('hDot').className='dot on';$('hLbl').textContent='Connected';db.ref('ss').on('value',function(s2){applyR(s2.val())});db.ref('.info/connected').on('value',function(s2){$('hDot').className=s2.val()?'dot on':'dot off';$('hLbl').textContent=s2.val()?'Connected':'Offline'})}).catch(function(){$('hDot').className='dot off';$('hLbl').textContent='Failed'})}
-function applyR(v){if(!v)return;['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos'].forEach(function(k){if(v[k]!==undefined){S[k]=v[k];localStorage.setItem('ss_'+k,JSON.stringify(v[k]))}});if(v.siteCost!==undefined){siteCost=v.siteCost;localStorage.setItem('ss_siteCost',String(siteCost))}doRender()}
-function syncUp(){
-  try{
-    if(typeof db!=='undefined'&&db&&curUser){
-      var uid=curUser.uid;
-      var data={};
-      ['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos','phWebhookUrl','phSPFolder','phSPSite','viewer3d','wthApiKey','wthLocation','wthUnit'].forEach(function(k){
-        if(S[k]!==undefined)data[k]=S[k];
-      });
-      db.ref('data/'+uid).set(data);
-    }
-  }catch(e){}
+function applyR(v){
+  if(!v)return;
+  ['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos'].forEach(function(k){
+    if(v[k]!==undefined){S[k]=v[k];localStorage.setItem('ss_'+k,JSON.stringify(v[k]))}
+  });
+  if(v.siteCost!==undefined){siteCost=v.siteCost;localStorage.setItem('ss_siteCost',String(siteCost))}
+  if(v.phWebhookUrl!==undefined){S.phWebhookUrl=v.phWebhookUrl;localStorage.setItem('ss_phWebhookUrl',v.phWebhookUrl)}
+  if(v.phSPFolder!==undefined){S.phSPFolder=v.phSPFolder;localStorage.setItem('ss_phSPFolder',v.phSPFolder)}
+  if(v.phSPSite!==undefined){S.phSPSite=v.phSPSite;localStorage.setItem('ss_phSPSite',v.phSPSite)}
+  if(v.viewer3d!==undefined){S.viewer3d=v.viewer3d;localStorage.setItem('ss_viewer3d',JSON.stringify(v.viewer3d))}
+  if(v.wthApiKey!==undefined){S.wthApiKey=v.wthApiKey;localStorage.setItem('ss_wthApiKey',v.wthApiKey)}
+  if(v.wthLocation!==undefined){S.wthLocation=v.wthLocation;localStorage.setItem('ss_wthLocation',v.wthLocation)}
+  if(v.wthUnit!==undefined){S.wthUnit=v.wthUnit;localStorage.setItem('ss_wthUnit',v.wthUnit)}
+  doRender();
 }
 function togAuth(){authMode=authMode==='login'?'signup':'login';$('lTitle').textContent=authMode==='signup'?'Create Account':'Sign In';$('lSub').textContent=authMode==='signup'?'Create an account':'Sign in';$('lBtn').textContent=authMode==='signup'?'Sign Up':'Sign In'}
 function doLogin(){var em=$('lEmail').value.trim(),pw=$('lPass').value;if(!em||!pw||!fbAuth)return;$('lBtn').textContent='...';var fn=authMode==='signup'?fbAuth.createUserWithEmailAndPassword:fbAuth.signInWithEmailAndPassword;fn.call(fbAuth,em,pw).catch(function(e){$('lBtn').textContent='Sign In';$('lErr').textContent=e.message;$('lErr').style.display='block'})}
@@ -3518,43 +3520,19 @@ notify('Deleted');doRender();
   r+='</div>';
   el.innerHTML=r;
 }
- function safeSync(){
-  notify('Syncing inspections...');
-  try{
-    if(typeof db!=='undefined'&&db){
-      var uid=curUser?curUser.uid:'default';
-      db.ref('data/'+uid+'/safetyInspections').once('value').then(function(snap){
-        var remote=snap.val();
-        if(!remote){notify('No remote data');return}
-        var rArr=Array.isArray(remote)?remote:Object.values(remote);
-        var existIds={};
-        for(var i=0;i<S.safetyInspections.length;i++){
-          if(S.safetyInspections[i].id)existIds[S.safetyInspections[i].id]=true;
-        }
-        var added=0;
-        for(var i=0;i<rArr.length;i++){
-          if(rArr[i]&&rArr[i].id&&!existIds[rArr[i].id]){
-            S.safetyInspections.push(rArr[i]);
-            added++;
-          }
-        }
-        if(added>0){
-          S.safetyInspections.sort(function(a,b){return(b.id||0)-(a.id||0)});
-          save();
-          notify('Merged '+added+' inspection(s)');
-        }else{
-          notify('Already up to date');
-        }
-        doRender();
-      }).catch(function(err){
-        notify('Sync error: '+err.message);
-      });
+function safeSync(){
+  notify('Syncing...');
+  db.ref('ss').once('value').then(function(snap){
+    var v=snap.val();
+    if(v){
+      applyR(v);
+      notify('Synced');
     }else{
-      notify('Firebase not connected');
+      notify('No data');
     }
-  }catch(e){
-    notify('Sync failed: '+e.message);
-  }
+  }).catch(function(err){
+    notify('Error: '+err.message);
+  });
 }
 </script>
 </body>
