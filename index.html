@@ -4111,23 +4111,51 @@ if(!S.reports)S.reports=[];
 if(!S.reportConfig)S.reportConfig={projectName:'Vietnam Construction Project',company:'Stellar Seeds Corp',preparedBy:'',approvedBy:''};
 
 R.report=function(){
+var cfg=S.reportConfig;
+var reports=S.reports;
+var latest=reports.length>0?reports[0]:null;
 var oa=ovProg(S.tasks);
 var m=mainT();
-var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
-h+='<div><h2>Progress Report</h2></div>';
+var nextDue='';
+if(latest){
+  var lastDate=new Date(latest.date+'T12:00');
+  var due=new Date(lastDate.getTime()+14*86400000);
+  nextDue=due.getFullYear()+'-'+LZ(due.getMonth()+1)+'-'+LZ(due.getDate());
+}
+var isOverdue=nextDue&&new Date()>new Date(nextDue+'T23:59');
+var h='';
+h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+h+='<div><h2>Progress Report</h2><p style="font-size:.72rem;color:var(--t3)">Bi-weekly stakeholder report</p></div>';
 h+='<div style="display:flex;gap:6px">';
-h+='<button class="btn bp" onclick="rptNew()">New Report</button>';
+h+='<button class="btn bs" onclick="rptConfig()">Settings</button>';
+h+='<button class="btn bp" onclick="rptNew()"><i class="fas fa-plus"></i> New Report</button>';
 h+='</div></div>';
-h+='<div style="padding:40px;text-align:center;color:var(--t3)">Reports loaded OK. '+S.reports.length+' reports.</div>';
+if(isOverdue){
+  h+='<div style="padding:10px 14px;background:var(--rdc);border:1px solid rgba(204,51,51,.3);border-radius:var(--r);margin-bottom:14px;display:flex;align-items:center;gap:8px">';
+  h+='<i class="fas fa-exclamation-circle" style="color:var(--rd)"></i>';
+  h+='<div><div style="font-size:.76rem;font-weight:700;color:var(--rd)">Report Overdue</div>';
+  h+='<div style="font-size:.66rem;color:var(--t3)">Last report: '+latest.date+' | Due: '+nextDue+'</div></div></div>';
+}
+var dLTI=dd((S.safety?S.safety.startDate:'')||'2026-04-13',td());
+h+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px">';
+h+='<div style="padding:14px;background:var(--blc);border:1px solid rgba(60,130,200,.2);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--bl);font-family:JetBrains Mono">SITE COMPLETION</div><div style="font-size:1.8rem;font-weight:700;color:var(--bl)">'+fmtP(oa)+'</div></div>';
+h+='<div style="padding:14px;background:var(--gc);border:1px solid rgba(45,138,50,.2);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--g);font-family:JetBrains Mono">TASKS DONE</div><div style="font-size:1.8rem;font-weight:700;color:var(--g)">'+(function(){var c=0;for(var i=0;i<m.length;i++)if(m[i].prog>=100)c++;return c})()+'/'+m.length+'</div></div>';
+h+='<div style="padding:14px;background:var(--gc);border:1px solid rgba(45,138,50,.2);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--g);font-family:JetBrains Mono">DAYS W/O LTI</div><div style="font-size:1.8rem;font-weight:700;color:var(--g)">'+dLTI+'</div></div>';
+h+='<div style="padding:14px;background:var(--orc);border:1px solid rgba(212,147,13,.2);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--or);font-family:JetBrains Mono">REPORTS</div><div style="font-size:1.8rem;font-weight:700;color:var(--t2)">'+reports.length+'</div></div>';
+h+='<div style="padding:14px;background:'+(isOverdue?'var(--rdc)':'var(--gc)')+';border:1px solid '+(isOverdue?'rgba(204,51,51,.2)':'rgba(45,138,50,.2)')+';border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:'+(isOverdue?'var(--rd)':'var(--g)')+';font-family:JetBrains Mono">NEXT DUE</div><div style="font-size:1rem;font-weight:700;color:'+(isOverdue?'var(--rd)':'var(--g)')+'">'+(nextDue||'N/A')+'</div></div>';
+h+='<div style="padding:14px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--t3);font-family:JetBrains Mono">TOTAL</div><div style="font-size:1.8rem;font-weight:700;color:var(--t2)">'+reports.length+'</div></div>';
+h+='</div>';
+if(latest)h+=rptRenderCard(latest);
+if(!latest){
+  h+='<div class="card" style="text-align:center;padding:50px">';
+  h+='<div style="font-size:3rem;color:var(--t3);margin-bottom:12px"><i class="fas fa-file-alt"></i></div>';
+  h+='<div style="font-size:.88rem;font-weight:600;margin-bottom:6px">No Reports Yet</div>';
+  h+='<div style="font-size:.72rem;color:var(--t3);margin-bottom:16px">Create your first bi-weekly progress report.</div>';
+  h+='<button class="btn bp" onclick="rptNew()"><i class="fas fa-plus"></i> Create First Report</button>';
+  h+='</div>';
+}
 $('app').innerHTML=h;
 };
-
-function rptNew(){
-S.reports.push({id:Date.now(),date:td(),phase:'Construction',completion:ovProg(S.tasks),highlights:'Test',nextSteps:'',supportNeeded:'',risks:'',taskBreakdown:[]});
-save();
-notify('Test report created');
-doRender();
-}
 </script>
 </body>
 </html>
