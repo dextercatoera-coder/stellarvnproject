@@ -1869,7 +1869,14 @@ h+='<button class="btn bs bd" onclick="clearAllSync()" title="Clear stuck Fireba
 h+='<span style="flex:1"></span>';
 h+='<button class="btn bs" onclick="exportInspData()">Export</button>';
 h+='</div>';
-
+  if(total>0){
+    h+='<div style="margin-top:6px;display:flex;gap:8px;align-items:center">';
+    h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">BULK:</span>';
+    h+='<button class="btn bs bd" onclick="clearAllInsp()">Delete All</button>';
+    h+='<button class="btn bs bd" onclick="delInspByDate()">Delete by Date</button>';
+    h+='<button class="btn bs" onclick="undoLastUpload()">Undo Last Upload</button>';
+    h+='</div>';
+  }
 var wasInspFocused=document.activeElement&&document.activeElement.id==='inspQ';
 var inspCurPos=wasInspFocused?document.activeElement.selectionStart:0;
 $('app').innerHTML=h;
@@ -2120,7 +2127,73 @@ for(var j=0;j<selectedInps.length;j++){
 try{localStorage.setItem('ss_del_insp',JSON.stringify(deletedInspIds))}catch(e){}
 selectedInps=[];save();notify('Deleted');doRender();
 }
-  
+function undoLastUpload(){
+  ensureInps();
+  /* Find the most recent batch by timestamp proximity */
+  if(!S.inspections.length)return notify('No inspections');
+  /* Sort by ID (timestamp) descending to find the latest batch */
+  var sorted=S.inspections.slice().sort(function(a,b){return (b.id||0)-(a.id||0)});
+  var latestId=sorted[0].id||0;
+  /* Group items added within 5 seconds of the latest */
+  var batch=[];
+  for(var i=0;i<sorted.length;i++){
+    if(Math.abs((sorted[i].id||0)-latestId)<5000)batch.push(sorted[i]);
+    else break;
+  }
+  if(batch.length===0)return notify('No recent batch found');
+  if(!confirm('Undo last upload? This will remove '+batch.length+' most recently added inspection(s).'))return;
+  var batchIds={};
+  for(var i=0;i<batch.length;i++)batchIds[batch[i].id]=true;
+  S.inspections=S.inspections.filter(function(ins){return !batchIds[ins.id]});
+  save();
+  try{if(typeof db!=='undefined'&&db)db.ref('ss/inspections').set(S.inspections)}catch(e){}
+  notify('Removed '+batch.length+' inspections');
+  doRender();
+}
+
+function delInspByDate(){
+  ensureInps();
+  var dates={};
+  for(var i=0;i<S.inspections.length;i++){
+    var d=S.inspections[i].date;if(d)dates[d]=(dates[d]||0)+1;
+  }
+  var dArr=[];for(var dk in dates)dArr.push({d:dk,c:dates[dk]});
+  dArr.sort(function(a,b){return b.d>a.d?1:-1});
+  var opts='';
+  for(var i=0;i<dArr.length;i++)opts+='<option value="'+H(dArr[i].d)+'">'+H(dArr[i].d)+' ('+dArr[i].c+')</option>';
+  var bd='<div class="fg"><label class="fl">Select Date</label><select id="delDateSel" style="width:100%">'+opts+'</select></div>';
+  bd+='<div style="font-size:.72rem;color:var(--rd);margin-top:8px"><i class="fas fa-exclamation-triangle"></i> This will delete ALL inspections from the selected date.</div>';
+  mO('Delete by Date',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bs bd" onclick="confirmDelByDate()">Delete All from This Date</button>');
+}
+
+function confirmDelByDate(){
+  var selDate=$('delDateSel').value;
+  var count=0;
+  for(var i=0;i<S.inspections.length;i++){if(S.inspections[i].date===selDate)count++}
+  if(!confirm('Delete '+count+' inspections from '+selDate+'?'))return;
+  S.inspections=S.inspections.filter(function(ins){return ins.date!==selDate});
+  save();
+  try{if(typeof db!=='undefined'&&db)db.ref('ss/inspections').set(S.inspections)}catch(e){}
+  mC();notify('Deleted '+count+' from '+selDate);doRender();
+}
+
+function clearAllInsp(){
+  ensureInps();
+  var total=S.inspections.length;
+  if(!total)return notify('No inspections');
+  if(!confirm('DELETE ALL '+total+' INSPECTIONS?\n\nThis cannot be undone.'))return;
+  if(!confirm('Are you absolutely sure? Type OK to confirm.'))return;
+  S.inspections=[];
+  inspReady=false;
+  selectedInps=[];
+  save();
+  try{if(typeof db!=='undefined'&&db){
+    db.ref('ss/inspections').set([]);
+    db.ref('ss/inspectionsSync').set(null);
+  }}catch(e){}
+  notify('All '+total+' inspections deleted');
+  doRender();
+}
 function toggleInp(i,checked){
   var idx=selectedInps.indexOf(i);
   if(checked&&idx<0)selectedInps.push(i);
@@ -2249,6 +2322,15 @@ for(var r=1;r<data.length;r++){
   if(typeof row[ci.date]==='number'){var dt=new Date((row[ci.date]-25569)*86400000);dateV=dt.getFullYear()+'-'+LZ(dt.getMonth()+1)+'-'+LZ(dt.getDate())}
   else if(dateV.indexOf('T')>0){dateV=dateV.substring(0,10)}
   function gc(field){return ci[field]!==undefined?String(row[ci[field]]||'').trim():''}
+    /* Duplicate check: skip if same date+inspector+area already exists */
+  var dup=false;
+  for(var di=0;di<S.inspections.length;di++){
+    var ex=S.inspections[di];
+    if(ex.date===dateV&&ex.inspector===gc('name')&&ex.area===gc('area')){
+      dup=true;break;
+    }
+  }
+  if(dup)continue;
   S.inspections.push({
     id:Date.now()+r,formName:'Daily Construction Validation',date:dateV,
     startTime:gc('startTime'),completionTime:gc('completionTime'),
