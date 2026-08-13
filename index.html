@@ -2322,15 +2322,6 @@ for(var r=1;r<data.length;r++){
   if(typeof row[ci.date]==='number'){var dt=new Date((row[ci.date]-25569)*86400000);dateV=dt.getFullYear()+'-'+LZ(dt.getMonth()+1)+'-'+LZ(dt.getDate())}
   else if(dateV.indexOf('T')>0){dateV=dateV.substring(0,10)}
   function gc(field){return ci[field]!==undefined?String(row[ci[field]]||'').trim():''}
-    /* Duplicate check: skip if same date+inspector+area already exists */
-  var dup=false;
-  for(var di=0;di<S.inspections.length;di++){
-    var ex=S.inspections[di];
-    if(ex.date===dateV&&ex.inspector===gc('name')&&ex.area===gc('area')){
-      dup=true;break;
-    }
-  }
-  if(dup)continue;
   S.inspections.push({
     id:Date.now()+r,formName:'Daily Construction Validation',date:dateV,
     startTime:gc('startTime'),completionTime:gc('completionTime'),
