@@ -4195,33 +4195,36 @@ var colors=['var(--g)','var(--bl)','var(--or)','var(--rd)'];
 var bgColors=['var(--gc)','var(--blc)','var(--orc)','var(--rdc)'];
 var icons=['fas fa-check-circle','fas fa-arrow-right','fas fa-hand-holding-heart','fas fa-exclamation-triangle'];
 if(idx<0||idx>=data.length)return;
-var bd='<style>.rpt-content blockquote{margin:6px 0 6px 30px;padding-left:16px;border-left:4px solid var(--bd)}.rpt-content ul,.rpt-content ol{margin:6px 0 6px 24px}.rpt-content li{margin:3px 0}.rpt-content h3{font-size:1.2rem;margin:10px 0 4px}.rpt-content p{margin:6px 0}.rpt-content [style*="margin-left"]{display:block;border-left:3px solid var(--bd);padding-left:12px;margin-left:24px}</style>';
+var bd='<style>';
+bd+='.rpt-content blockquote{margin:6px 0 6px 30px;padding-left:16px;border-left:4px solid var(--bd)}';
+bd+='.rpt-content ul,.rpt-content ol{margin:6px 0 6px 24px}';
+bd+='.rpt-content li{margin:3px 0}';
+bd+='.rpt-content h3{font-size:1.3rem;margin:10px 0 4px}';
+bd+='.rpt-content p{margin:6px 0}';
+bd+='.rpt-content [style*="margin-left"]{display:block;border-left:3px solid var(--bd);padding-left:12px;margin-left:24px}';
+bd+='.rpt-content *{max-width:100%;word-wrap:break-word;overflow-wrap:break-word}';
+bd+='</style>';
 bd+='<div style="position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 24px;background:var(--s1);border-bottom:3px solid '+colors[idx]+';z-index:10001">';
 bd+='<div style="display:flex;align-items:center;gap:12px">';
-if(idx>0)bd+='<button class="btn bs" onclick="rptExpand('+(idx-1)+')"><i class="fas fa-chevron-left"></i></button>';
+if(idx>0)bd+='<button class="btn bs" onclick="var ov=document.getElementById(\'rptOverlay\');if(ov)ov.remove();rptExpand('+(idx-1)+')"><i class="fas fa-chevron-left"></i></button>';
 bd+='<div style="font-family:JetBrains Mono;font-size:1rem;font-weight:700;color:'+colors[idx]+'"><i class="'+icons[idx]+'" style="margin-right:8px"></i>'+titles[idx]+'</div>';
-if(idx<data.length-1)bd+='<button class="btn bs" onclick="rptExpand('+(idx+1)+')"><i class="fas fa-chevron-right"></i></button>';
+if(idx<data.length-1)bd+='<button class="btn bs" onclick="var ov=document.getElementById(\'rptOverlay\');if(ov)ov.remove();rptExpand('+(idx+1)+')"><i class="fas fa-chevron-right"></i></button>';
 bd+='</div><div style="display:flex;align-items:center;gap:10px">';
 for(var si=0;si<data.length;si++){
-  bd+='<button style="width:12px;height:12px;border-radius:50%;border:2px solid '+colors[si]+';background:'+(si===idx?colors[si]:'transparent')+';cursor:pointer" onclick="rptExpand('+si+')"></button>';
+  bd+='<button style="width:12px;height:12px;border-radius:50%;border:2px solid '+colors[si]+';background:'+(si===idx?colors[si]:'transparent')+';cursor:pointer" onclick="var ov=document.getElementById(\'rptOverlay\');if(ov)ov.remove();rptExpand('+si+')"></button>';
 }
-bd+='<button class="btn bs bd" onclick="mC()" style="margin-left:8px"><i class="fas fa-times"></i> Close</button>';
+bd+='<button class="btn bs bd" onclick="var ov=document.getElementById(\'rptOverlay\');if(ov)ov.remove()" style="margin-left:8px"><i class="fas fa-times"></i> Close</button>';
 bd+='</div></div>';
-bd+='<div style="padding:80px 60px 40px;max-width:1200px;margin:0 auto">';
-bd+='<div style="background:'+bgColors[idx]+';border-left:6px solid '+colors[idx]+';border-radius:0 var(--r) var(--r) 0;padding:36px 48px;min-height:300px">';
-bd+='<div style="font-size:1.4rem;font-weight:700;color:'+colors[idx]+';margin-bottom:16px;font-family:JetBrains Mono">'+titles[idx]+'</div>';
-bd+='<div class="rpt-content" style="font-size:1.15rem;line-height:2.2;color:var(--t2);word-wrap:break-word;overflow-wrap:break-word">';+(data[idx]||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div>';
+bd+='<div style="padding:70px 20px 30px;display:flex;justify-content:center">';
+bd+='<div style="width:100%;max-width:1000px;background:'+bgColors[idx]+';border-left:6px solid '+colors[idx]+';border-radius:0 var(--r) var(--r) 0;padding:32px 40px;min-height:300px;box-sizing:border-box">';
+bd+='<div style="font-size:1.5rem;font-weight:700;color:'+colors[idx]+';margin-bottom:18px;font-family:JetBrains Mono">'+titles[idx]+'</div>';
+bd+='<div class="rpt-content" style="font-size:1.1rem;line-height:2;color:var(--t2);white-space:normal;word-wrap:break-word;overflow-wrap:break-word">'+(data[idx]||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div>';
 bd+='</div></div>';
-mO(' ',bd,'<button class="btn" onclick="mC()" style="display:none"></button>');
-setTimeout(function(){
-  var mc=document.querySelector('.modal-content');
-  if(mc){
-    var kids=mc.children;
-    for(var ci=0;ci<kids.length;ci++){
-      if(kids[ci].classList.contains('modal-header')||kids[ci].style.borderBottom||kids[ci].querySelector('.modal-title'))kids[ci].style.display='none';
-    }
-  }
-},10);
+var _overlay=document.createElement('div');
+_overlay.id='rptOverlay';
+_overlay.style.cssText='position:fixed;inset:0;z-index:10000;background:var(--bg);overflow-y:auto';
+_overlay.innerHTML=bd;
+document.body.appendChild(_overlay);
 }
 function rte(id){
 var h='<div style="border:1px solid var(--bd);border-radius:var(--r);overflow:hidden">';
