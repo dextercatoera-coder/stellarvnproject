@@ -4229,25 +4229,46 @@ h+='<div style="display:flex;gap:2px;padding:4px 6px;background:var(--s2);border
 h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'bold\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;font-weight:700;cursor:pointer;font-size:.72rem">B</button>';
 h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'italic\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;font-style:italic;cursor:pointer;font-size:.72rem">I</button>';
 h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'underline\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;text-decoration:underline;cursor:pointer;font-size:.72rem">U</button>';
+h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'strikeThrough\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;text-decoration:line-through;cursor:pointer;font-size:.72rem">S</button>';
 h+='<span style="width:1px;background:var(--bd);margin:2px 4px"></span>';
 h+='<button type="button" onmousedown="event.preventDefault()" onclick="rteFontSize(\''+id+'\',-1)" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.6rem;font-weight:700" title="Decrease font">A-</button>';
-h+='<select onmousedown="event.stopPropagation()" onchange="rteFontSize(\''+id+'\',0,this.value);this.blur()" style="border:1px solid var(--bd);border-radius:3px;padding:1px 4px;font-size:.62rem;background:var(--s1);cursor:pointer">';
-h+='<option value="">Size</option>';
-h+='<option value="1">10px</option>';
-h+='<option value="2">13px</option>';
-h+='<option value="3" selected>16px</option>';
-h+='<option value="4">18px</option>';
-h+='<option value="5">24px</option>';
-h+='<option value="6">32px</option>';
-h+='<option value="7">48px</option>';
-h+='</select>';
 h+='<button type="button" onmousedown="event.preventDefault()" onclick="rteFontSize(\''+id+'\',1)" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.82rem;font-weight:700" title="Increase font">A+</button>';
+h+='<span style="width:1px;background:var(--bd);margin:2px 4px"></span>';
+h+='<select onmousedown="event.stopPropagation()" onchange="document.getElementById(\''+id+'\').focus();document.execCommand(\'fontSize\',false,this.value);rteFixFontTags(document.getElementById(\''+id+'\'));this.selectedIndex=0" style="border:1px solid var(--bd);border-radius:3px;padding:1px 4px;font-size:.62rem;background:var(--s1);cursor:pointer">';
+h+='<option value="">Size</option>';
+h+='<option value="1">Small</option>';
+h+='<option value="2">Normal</option>';
+h+='<option value="3">Medium</option>';
+h+='<option value="4">Large</option>';
+h+='<option value="5">X-Large</option>';
+h+='<option value="6">XX-Large</option>';
+h+='<option value="7">Huge</option>';
+h+='</select>';
+h+='<select onmousedown="event.stopPropagation()" onchange="document.getElementById(\''+id+'\').focus();document.execCommand(\'fontName\',false,this.value);this.selectedIndex=0" style="border:1px solid var(--bd);border-radius:3px;padding:1px 4px;font-size:.62rem;background:var(--s1);cursor:pointer">';
+h+='<option value="">Font</option>';
+h+='<option value="Arial">Arial</option>';
+h+='<option value="Georgia">Georgia</option>';
+h+='<option value="Courier New">Courier</option>';
+h+='<option value="Verdana">Verdana</option>';
+h+='<option value="Times New Roman">Times</option>';
+h+='<option value="Trebuchet MS">Trebuchet</option>';
+h+='<option value="Segoe UI">Segoe UI</option>';
+h+='<option value="JetBrains Mono">JetBrains</option>';
+h+='</select>';
+h+='<span style="width:1px;background:var(--bd);margin:2px 4px"></span>';
+h+='<span style="font-size:.58rem;color:var(--t3)">Color:</span>';
+h+='<input type="color" value="#222222" onmousedown="event.stopPropagation()" onchange="document.getElementById(\''+id+'\').focus();document.execCommand(\'foreColor\',false,this.value)" style="width:22px;height:22px;border:1px solid var(--bd);border-radius:3px;cursor:pointer;padding:0" title="Text color">';
+h+='<input type="color" value="#ffff00" onmousedown="event.stopPropagation()" onchange="document.getElementById(\''+id+'\').focus();document.execCommand(\'hiliteColor\',false,this.value)" style="width:22px;height:22px;border:1px solid var(--bd);border-radius:3px;cursor:pointer;padding:0" title="Highlight color">';
 h+='<span style="width:1px;background:var(--bd);margin:2px 4px"></span>';
 h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'insertUnorderedList\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-list-ul"></i></button>';
 h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'insertOrderedList\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-list-ol"></i></button>';
 h+='<span style="width:1px;background:var(--bd);margin:2px 4px"></span>';
 h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'indent\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-indent"></i></button>';
 h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'outdent\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-outdent"></i></button>';
+h+='<span style="width:1px;background:var(--bd);margin:2px 4px"></span>';
+h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'justifyLeft\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-align-left"></i></button>';
+h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'justifyCenter\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-align-center"></i></button>';
+h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'justifyRight\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-align-right"></i></button>';
 h+='<span style="width:1px;background:var(--bd);margin:2px 4px"></span>';
 h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'formatBlock\',false,\'<H3>\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem;font-weight:700">H</button>';
 h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'removeFormat\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-eraser"></i></button>';
@@ -4257,52 +4278,44 @@ h+='</div>';
 return h;
 }
 
-function rteFontSize(id,dir,val){
+function rteFontSize(id,dir){
 var el=document.getElementById(id);
 if(!el)return;
 el.focus();
+var sel=window.getSelection();
+if(!sel.rangeCount)return;
 var sizes=[1,2,3,4,5,6,7];
 var pxMap={1:'10px',2:'13px',3:'16px',4:'18px',5:'24px',6:'32px',7:'48px'};
-if(val){
-  /* Direct selection from dropdown */
-  document.execCommand('fontSize',false,val);
-  rteFixFontTags(el,pxMap[parseInt(val)]||'16px');
-}else{
-  /* A+ or A- button: find current size, step up or down */
-  var sel=window.getSelection();
-  if(!sel.rangeCount)return;
-  var node=sel.anchorNode;
-  var curSize=3;
-  while(node&&node!==el){
-    if(node.nodeType===1){
-      var fs=node.style&&node.style.fontSize;
-      if(fs){
-        var px=parseInt(fs);
-        for(var k in pxMap){if(pxMap[k]===fs||pxMap[k]===px+'px'){curSize=parseInt(k);break}}
-        break;
-      }
-      var tag=node.tagName&&node.tagName.toLowerCase();
-      if(tag==='font'){
-        var sz=parseInt(node.getAttribute('size'));
-        if(sz){curSize=sz;break}
-      }
-    }
-    node=node.parentNode;
+var curSize=3;
+var node=sel.anchorNode;
+while(node&&node!==el){
+  if(node.nodeType===1&&node.style&&node.style.fontSize){
+    var px=parseInt(node.style.fontSize);
+    for(var k in pxMap){if(parseInt(pxMap[k])===px){curSize=parseInt(k);break}}
+    break;
   }
-  var idx=sizes.indexOf(curSize);
-  if(idx<0)idx=2;
-  idx+=dir;
-  if(idx<0)idx=0;
-  if(idx>=sizes.length)idx=sizes.length-1;
-  var newSize=sizes[idx];
-  document.execCommand('fontSize',false,String(newSize));
-  rteFixFontTags(el,pxMap[newSize]);
+  if(node.nodeType===1&&node.tagName==='FONT'){
+    var sz=parseInt(node.getAttribute('size'));
+    if(sz)curSize=sz;
+    break;
+  }
+  node=node.parentNode;
 }
+var idx=sizes.indexOf(curSize);
+if(idx<0)idx=2;
+idx+=dir;
+if(idx<0)idx=0;
+if(idx>=sizes.length)idx=sizes.length-1;
+document.execCommand('fontSize',false,String(sizes[idx]));
+rteFixFontTags(el);
 }
 
-function rteFixFontTags(el,px){
+function rteFixFontTags(el){
+var pxMap={1:'10px',2:'13px',3:'16px',4:'18px',5:'24px',6:'32px',7:'48px'};
 var fonts=el.querySelectorAll('font[size]');
 for(var i=0;i<fonts.length;i++){
+  var sz=parseInt(fonts[i].getAttribute('size'));
+  var px=pxMap[sz]||'16px';
   var span=document.createElement('span');
   span.style.fontSize=px;
   span.innerHTML=fonts[i].innerHTML;
