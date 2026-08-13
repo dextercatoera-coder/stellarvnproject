@@ -216,9 +216,14 @@ function syncUp(){
     }
   }catch(e){}
 }
-function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.originalPlan=lj('originalPlan',[])
-               
-/* Merge remote inspections if available */
+function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.originalPlan=lj('originalPlan',[])}catch(e){}}
+S.reports=[];
+try{var _r=localStorage.getItem('ss_reports');if(_r)S.reports=JSON.parse(_r)}catch(e){S.reports=[]}
+S.reportConfig={};
+try{var _c=localStorage.getItem('ss_reportConfig');if(_c)S.reportConfig=JSON.parse(_c)}catch(e){S.reportConfig={}}
+S.phWebhookUrl=lj('phWebhookUrl','');
+S.phSPFolder=lj('phSPFolder','Progress Photos');
+S.phSPSite=lj('phSPSite','https://stellarseedscorporg.sharepoint.com/sites/VietnamProjectTeam');
 try{
   var remote=localStorage.getItem('buildsync_safetyInspections_remote');
   if(remote){
@@ -242,7 +247,8 @@ try{
     }
     localStorage.removeItem('buildsync_safetyInspections_remote');
   }
-}catch(e){};S.photos=lj('photos',[]);S.phWebhookUrl=lj('phWebhookUrl','');S.phSPFolder=lj('phSPFolder','Progress Photos');S.phSPSite=lj('phSPSite','https://stellarseedscorporg.sharepoint.com/sites/VietnamProjectTeam');
+}catch(e){}
+  
 /* Merge Firebase teamMembers (no photos) with local (has photos) */
 try{
   var tmFb=S._fbTeamMembers||[];
