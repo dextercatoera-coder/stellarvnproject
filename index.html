@@ -4188,7 +4188,6 @@ h+='<div style="font-size:.62rem;color:var(--t3)">By: '+H(r.preparedBy||'-')+' |
 h+='<div><button class="btn bs" onclick="rptEdit('+S.reports.indexOf(r)+')">Edit</button> <button class="btn bs bb" onclick="rptExport('+S.reports.indexOf(r)+')">PDF</button></div></div></div>';
 return h;
 }
-
 function rptExpand(idx){
 var data=window._rptData||[];
 var titles=['HIGHLIGHTS','NEXT STEPS','SUPPORT NEEDED','RISKS'];
@@ -4196,7 +4195,8 @@ var colors=['var(--g)','var(--bl)','var(--or)','var(--rd)'];
 var bgColors=['var(--gc)','var(--blc)','var(--orc)','var(--rdc)'];
 var icons=['fas fa-check-circle','fas fa-arrow-right','fas fa-hand-holding-heart','fas fa-exclamation-triangle'];
 if(idx<0||idx>=data.length)return;
-var bd=bd+='<style>.rpt-content blockquote{margin:4px 0 4px 24px;padding-left:12px;border-left:3px solid var(--bd)}.rpt-content ul,.rpt-content ol{margin:4px 0 4px 20px}.rpt-content h3{font-size:1.2rem;margin:8px 0 4px}.rpt-content p{margin:4px 0}</style>';'<div style="position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 24px;background:var(--s1);border-bottom:3px solid '+colors[idx]+';z-index:10001">';
+var bd='<style>.rpt-content blockquote{margin:6px 0 6px 30px;padding-left:16px;border-left:4px solid var(--bd)}.rpt-content ul,.rpt-content ol{margin:6px 0 6px 24px}.rpt-content li{margin:3px 0}.rpt-content h3{font-size:1.2rem;margin:10px 0 4px}.rpt-content p{margin:6px 0}.rpt-content [style*="margin-left"]{display:block;border-left:3px solid var(--bd);padding-left:12px;margin-left:24px}</style>';
+bd+='<div style="position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 24px;background:var(--s1);border-bottom:3px solid '+colors[idx]+';z-index:10001">';
 bd+='<div style="display:flex;align-items:center;gap:12px">';
 if(idx>0)bd+='<button class="btn bs" onclick="rptExpand('+(idx-1)+')"><i class="fas fa-chevron-left"></i></button>';
 bd+='<div style="font-family:JetBrains Mono;font-size:1rem;font-weight:700;color:'+colors[idx]+'"><i class="'+icons[idx]+'" style="margin-right:8px"></i>'+titles[idx]+'</div>';
@@ -4212,9 +4212,9 @@ bd+='<div style="background:'+bgColors[idx]+';border-left:6px solid '+colors[idx
 bd+='<div style="font-size:1.4rem;font-weight:700;color:'+colors[idx]+';margin-bottom:16px;font-family:JetBrains Mono">'+titles[idx]+'</div>';
 bd+='<div class="rpt-content" style="font-size:1rem;line-height:2;color:var(--t2)">'+(data[idx]||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div>';
 bd+='</div></div>';
-mO('',bd,'');
+mO('&nbsp;',bd,'<button class="btn" onclick="mC()" style="display:none"></button>');
+setTimeout(function(){var mh=document.querySelector('.modal-header');if(mh)mh.style.display='none';var mf=document.querySelector('.modal-footer');if(mf)mf.style.display='none'},10);
 }
-
 function rte(id){
 var h='<div style="border:1px solid var(--bd);border-radius:var(--r);overflow:hidden">';
 h+='<div style="display:flex;gap:2px;padding:4px 6px;background:var(--s2);border-bottom:1px solid var(--bd);flex-wrap:wrap;align-items:center">';
