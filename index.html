@@ -1,5 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+<script>
+if(localStorage.getItem('app_ver')!=='3'){
+  localStorage.setItem('app_ver','3');
+  location.reload(true);
+}
+</script>
 <head> 
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
