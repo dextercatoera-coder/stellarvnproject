@@ -1,9 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head> 
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Stellar Seeds Vietnam</title>
+  <script>
+var APP_VERSION='2.1';
+if(localStorage.getItem('app_version')!==APP_VERSION){
+  localStorage.setItem('app_version',APP_VERSION);
+  location.reload(true);
+}
+</script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -3534,6 +3544,115 @@ function safeSync(){
   }).catch(function(err){
     notify('Error: '+err.message);
   });
+}
+  function safeExportData(){
+  var bd='<div id="safeExportOut" style="font-family:JetBrains Mono;font-size:.66rem;line-height:2">';
+  bd+='<div>Loading data...</div></div>';
+  mO('Export Data',bd,'<button class="btn" onclick="mC()">Close</button>');
+  var out=function(msg){var el=document.getElementById('safeExportOut');if(el)el.innerHTML+='<div style="padding:4px 0;border-bottom:1px solid var(--bd)">'+msg+'</div>'};
+
+  /* Export options */
+  setTimeout(function(){
+    var el=document.getElementById('safeExportOut');
+    if(!el)return;
+    var h='';
+    h+='<div style="margin-bottom:12px"><b style="font-size:.82rem">Export Safety Data</b></div>';
+
+    /* Local data summary */
+    var inps=S.safetyInspections||[];
+    h+='<div style="padding:10px;background:var(--s2);border-radius:var(--r);margin-bottom:10px">';
+    h+='<div style="font-size:.76rem;font-weight:700;margin-bottom:6px">Local Data</div>';
+    h+='<div>Inspections: <b>'+inps.length+'</b></div>';
+    var totalItems=0;
+    for(var i=0;i<inps.length;i++)totalItems+=(inps[i].items||[]).length;
+    h+='<div>Total items: <b>'+totalItems+'</b></div>';
+    h+='<div>Photos: <b>'+(S.photos?S.photos.length:0)+'</b></div>';
+    h+='<div>Tasks: <b>'+(S.tasks?S.tasks.length:0)+'</b></div>';
+    h+='<div>Team: <b>'+(S.teamMembers?S.teamMembers.length:0)+'</b></div>';
+    h+='</div>';
+
+    /* Export buttons */
+    h+='<div style="display:grid;gap:8px">';
+    h+='<button class="btn bp" onclick="expSafeInspections()" style="text-align:left"><i class="fas fa-file-excel"></i> Export Inspections to Excel</button>';
+    h+='<button class="btn bs" onclick="expSafeJSON()" style="text-align:left"><i class="fas fa-file-code"></i> Export All Safety Data (JSON)</button>';
+    h+='<button class="btn bs" onclick="expAllJSON()" style="text-align:left"><i class="fas fa-database"></i> Export Complete Database (JSON)</button>';
+    h+='<button class="btn bs" onclick="expFromFirebase()" style="text-align:left"><i class="fas fa-cloud-download"></i> Export from Firebase (All Users)</button>';
+    h+='</div>';
+
+    h+='<div id="expResult" style="margin-top:10px"></div>';
+    el.innerHTML=h;
+  },100);
+}
+
+function expSafeInspections(){
+  if(typeof XLSX==='undefined'){alert('XLSX not loaded');return}
+  var inps=S.safetyInspections||[];
+  if(!inps.length){alert('No inspections');return}
+  var wb=XLSX.utils.book_new();
+
+  /* Summary sheet */
+  var sd=[['#','Date','Area','Inspector','Contractor','Overall','SAT','NI','UNSAT','Categories','Remarks']];
+  for(var i=0;i<inps.length;i++){
+    var si=inps[i];
+    sd.push([i+1,si.date,si.area,si.inspector,si.contractor||'',si.overall,si.satCount||0,si.niCount||0,si.unsatCount||0,(si.categories||[]).join(', '),si.remarks||'']);
+  }
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),'Summary');
+
+  /* Details sheet */
+  var dd2=[['#','Date','Inspector','Category','Item','Status','Type','Note']];
+  for(var i=0;i<inps.length;i++){
+    var si=inps[i];
+    var items=si.items||[];
+    for(var j=0;j<items.length;j++){
+      var it=items[j];
+      dd2.push([i+1,si.date,si.inspector,it.category,it.item,it.status,it.type,it.note||'']);
+    }
+  }
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(dd2),'Details');
+
+  XLSX.writeFile(wb,'Safety_Inspections_'+td()+'.xlsx');
+  notify('Exported');
+}
+
+function expSafeJSON(){
+  var data={safety:S.safety||{},safetyInspections:S.safetyInspections||[]};
+  downloadJSON(data,'safety_data_'+td()+'.json');
+  notify('Exported');
+}
+
+function expAllJSON(){
+  var data={tasks:S.tasks||[],taskProjects:S.taskProjects||[],teamMembers:S.teamMembers||[],safety:S.safety||{},safetyInspections:S.safetyInspections||[],inspections:S.inspections||[],inspTemplates:S.inspTemplates||[],sitePayments:S.sitePayments||[],siteCost:siteCost||0,vgc:S.vgc||{},upds:S.upds||[]};
+  downloadJSON(data,'complete_database_'+td()+'.json');
+  notify('Exported');
+}
+
+function expFromFirebase(){
+  var el=document.getElementById('expResult');
+  if(el)el.innerHTML='<div><i class="fas fa-spinner fa-spin"></i> Loading from Firebase...</div>';
+  db.ref('ss').once('value').then(function(snap){
+    var v=snap.val();
+    if(!v){
+      if(el)el.innerHTML='<div style="color:var(--rd)">No data in Firebase</div>';
+      return;
+    }
+    downloadJSON(v,'firebase_export_'+td()+'.json');
+    var size=Math.round(JSON.stringify(v).length/1024);
+    if(el)el.innerHTML='<div style="color:var(--g)">✅ Exported '+size+'KB from Firebase</div>';
+    notify('Exported');
+  }).catch(function(err){
+    if(el)el.innerHTML='<div style="color:var(--rd)">Error: '+err.message+'</div>';
+  });
+}
+
+function downloadJSON(data,filename){
+  var json=JSON.stringify(data,null,2);
+  var blob=new Blob([json],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 </script>
 </body>
