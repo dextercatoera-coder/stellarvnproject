@@ -181,7 +181,32 @@ function nav(){var h='';for(var i=0;i<tabs.length;i++){if(!tabs[i]){h+='<div cla
 function go(id){tab=id;nav();doRender()}
 function doRender(){try{if(R[tab])R[tab]()}catch(e){$('app').innerHTML='<div class="card" style="color:var(--rd)"><b>Error:</b> '+H(e.message)+'</div>';console.error(e)}}
 function save(){try{['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos','phWebhookUrl','phSPFolder','phSPSite'].forEach(function(k){localStorage.setItem('ss_'+k,JSON.stringify(S[k]))});localStorage.setItem('ss_siteCost',String(siteCost));syncUp()}catch(e){}}
-function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.photos=lj('photos',[]);S.phWebhookUrl=lj('phWebhookUrl','');S.phSPFolder=lj('phSPFolder','Progress Photos');S.phSPSite=lj('phSPSite','https://stellarseedscorporg.sharepoint.com/sites/VietnamProjectTeam');
+function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);
+/* Merge remote inspections if available */
+try{
+  var remote=localStorage.getItem('buildsync_safetyInspections_remote');
+  if(remote){
+    var rArr=JSON.parse(remote);
+    if(Array.isArray(rArr)&&rArr.length>0){
+      var existIds={};
+      for(var i=0;i<S.safetyInspections.length;i++){
+        if(S.safetyInspections[i].id)existIds[S.safetyInspections[i].id]=true;
+      }
+      var added=0;
+      for(var i=0;i<rArr.length;i++){
+        if(rArr[i].id&&!existIds[rArr[i].id]){
+          S.safetyInspections.push(rArr[i]);
+          added++;
+        }
+      }
+      if(added>0){
+        S.safetyInspections.sort(function(a,b){return(b.id||0)-(a.id||0)});
+        localStorage.setItem('buildsync_safetyInspections',JSON.stringify(S.safetyInspections));
+      }
+    }
+    localStorage.removeItem('buildsync_safetyInspections_remote');
+  }
+}catch(e){};S.photos=lj('photos',[]);S.phWebhookUrl=lj('phWebhookUrl','');S.phSPFolder=lj('phSPFolder','Progress Photos');S.phSPSite=lj('phSPSite','https://stellarseedscorporg.sharepoint.com/sites/VietnamProjectTeam');
 /* Merge Firebase teamMembers (no photos) with local (has photos) */
 try{
   var tmFb=S._fbTeamMembers||[];
@@ -2951,6 +2976,7 @@ for(var i=0;i<inps.length;i++){
 var h='';
 h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
 h+='<div><h2>Safety Management</h2><p style="font-size:.72rem;color:var(--t3)">HSE Monitoring and Inspections</p></div>';
+h+='<button class="btn bs" onclick="safeSync()"><i class="fas fa-sync"></i> Sync</button> ';
 h+='<button class="btn bp" onclick="safeAddInsp()">+ Safety Inspection</button></div>';
 h+='<div class="stats">';
 h+='<div class="si" style="border-left:4px solid var(--g)"><div class="sl">Safe Hours</div><div class="sv" style="color:var(--g)">'+(s.safeHours||0).toLocaleString()+'</div></div>';
@@ -3211,8 +3237,11 @@ for(var ci=0;ci<safeChecklist.length;ci++){
   var cb2=document.getElementById('scc_'+ci);
   if(cb2&&cb2.checked)catsUsed.push(safeChecklist[ci].cat);
 }
-S.safetyInspections.unshift({id:Date.now(),date:$('siD').value,area:$('siA').value.trim(),inspector:$('siI').value.trim(),contractor:$('siCo').value.trim(),remarks:$('siR').value.trim(),items:items,overall:ov,satCount:sat,niCount:ni,unsatCount:uns,categories:catsUsed});
-save();mC();notify('Submitted');doRender();
+var newInsp={id:Date.now(),date:$('siD').value,area:$('siA').value.trim(),inspector:$('siI').value.trim(),contractor:$('siCo').value.trim(),remarks:$('siR').value.trim(),items:items,overall:ov,satCount:sat,niCount:ni,unsatCount:uns,categories:catsUsed,createdBy:navigator.userAgent.substring(0,30),createdOn:td()};
+S.safetyInspections.unshift(newInsp);
+save();
+try{syncUp()}catch(e){}
+mC();notify('Submitted');doRender();
 }
 
 function safeViewInsp(idx){
@@ -3467,13 +3496,18 @@ si.niCount=ni;
 si.unsatCount=uns;
 si.categories=catsUsed;
 
-save();mC();notify('Updated');doRender();
+si.updatedOn=td();
+save();
+try{syncUp()}catch(e){}
+mC();notify('Updated');doRender();
 }
 
 function safeDelInsp(idx){
 if(!confirm('Delete?'))return;
 S.safetyInspections.splice(idx,1);
-save();notify('Deleted');doRender();
+save();
+try{syncUp()}catch(e){}
+notify('Deleted');doRender();
 }
   function debugSafeSave(){
   var el=document.getElementById('debugResult');
@@ -3491,6 +3525,45 @@ save();notify('Deleted');doRender();
   r+='<div>Step 4: Cleaned up</div>';
   r+='</div>';
   el.innerHTML=r;
+}
+  function safeSync(){
+  notify('Syncing inspections...');
+  try{
+    /* Pull latest from Firebase */
+    if(typeof db!=='undefined'&&db){
+      var uid=typeof userId!=='undefined'?userId:'default';
+      db.ref('buildsync/'+uid+'/safetyInspections').once('value').then(function(snap){
+        var remote=snap.val();
+        if(Array.isArray(remote)){
+          var existIds={};
+          for(var i=0;i<S.safetyInspections.length;i++){
+            if(S.safetyInspections[i].id)existIds[S.safetyInspections[i].id]=true;
+          }
+          var added=0;
+          for(var i=0;i<remote.length;i++){
+            if(remote[i].id&&!existIds[remote[i].id]){
+              S.safetyInspections.push(remote[i]);
+              added++;
+            }
+          }
+          if(added>0){
+            S.safetyInspections.sort(function(a,b){return(b.id||0)-(a.id||0)});
+            save();
+            notify('Merged '+added+' inspection(s) from other devices');
+          }else{
+            notify('Already up to date');
+          }
+          doRender();
+        }
+      }).catch(function(err){
+        notify('Sync error: '+err.message);
+      });
+    }else{
+      notify('Firebase not connected');
+    }
+  }catch(e){
+    notify('Sync failed');
+  }
 }
 </script>
 </body>
