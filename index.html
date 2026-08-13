@@ -4101,7 +4101,7 @@ function downloadJSON(data,filename){
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-  /* === REPORT === */
+ /* === REPORT === */
 R.report=function(){
 var reports=S.reports||[];
 var latest=reports.length>0?reports[0]:null;
@@ -4129,8 +4129,10 @@ if(reports.length>1){
   h+='<div class="tw"><table><thead><tr><th>#</th><th>Date</th><th>Phase</th><th>%</th><th>Highlights</th><th>Actions</th></tr></thead><tbody>';
   for(var i=0;i<reports.length;i++){
     var r=reports[i];
+    var hlTxt=r.highlights||'';
+    hlTxt=hlTxt.replace(/<[^>]+>/g,'');
     h+='<tr><td>'+(reports.length-i)+'</td><td>'+H(r.date)+'</td><td>'+H(r.phase||'-')+'</td><td style="font-weight:700;color:var(--bl)">'+fmtP(r.completion||0)+'</td>';
-    h+='<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+H((r.highlights||'').substring(0,40))+'</td>';
+    h+='<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+H(hlTxt.substring(0,40))+'</td>';
     h+='<td><button class="btn bs" onclick="rptView('+i+')">View</button> <button class="btn bs bd" onclick="rptDel('+i+')">X</button></td></tr>';
   }
   h+='</tbody></table></div></div>';
@@ -4159,12 +4161,11 @@ h+='<div style="padding:10px;background:var(--s1);text-align:center"><div style=
 h+='</div>';
 h+='<div style="padding:16px 24px"><div style="height:12px;background:var(--s2);border-radius:6px;overflow:hidden"><div style="height:100%;width:'+(r.completion||0)+'%;background:linear-gradient(90deg,#2874a6,#3498db);border-radius:6px"></div></div></div>';
 h+='<div style="padding:0 24px 20px;display:grid;grid-template-columns:1fr 1fr;gap:16px">';
-var _rptSecData=[r.highlights||'',r.nextSteps||'',r.supportNeeded||'',r.risks||''];
-window._rptData=_rptSecData;
-h+='<div style="background:var(--gc);border-left:4px solid var(--g);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(\'section\',_rptData,0)" onmouseover="this.style.transform=\'scale(1.02)\';this.style.boxShadow=\'0 4px 20px rgba(45,138,50,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-weight:700;color:var(--g);margin-bottom:8px"><i class="fas fa-check-circle" style="margin-right:6px"></i>HIGHLIGHTS <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div><div style="font-size:.72rem;line-height:1.8;max-height:120px;overflow:hidden">'+(r.highlights||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
-h+='<div style="background:var(--blc);border-left:4px solid var(--bl);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(\'section\',_rptData,1)" onmouseover="this.style.transform=\'scale(1.02)\';this.style.boxShadow=\'0 4px 20px rgba(40,116,166,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-weight:700;color:var(--bl);margin-bottom:8px"><i class="fas fa-arrow-right" style="margin-right:6px"></i>NEXT STEPS <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div><div style="font-size:.72rem;line-height:1.8;max-height:120px;overflow:hidden">'+(r.nextSteps||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
-h+='<div style="background:var(--orc);border-left:4px solid var(--or);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(\'section\',_rptData,2)" onmouseover="this.style.transform=\'scale(1.02)\';this.style.boxShadow=\'0 4px 20px rgba(212,147,13,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-weight:700;color:var(--or);margin-bottom:8px"><i class="fas fa-hand-holding-heart" style="margin-right:6px"></i>SUPPORT NEEDED <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div><div style="font-size:.72rem;line-height:1.8;max-height:120px;overflow:hidden">'+(r.supportNeeded||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
-h+='<div style="background:var(--rdc);border-left:4px solid var(--rd);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(\'section\',_rptData,3)" onmouseover="this.style.transform=\'scale(1.02)\';this.style.boxShadow=\'0 4px 20px rgba(204,51,51,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-weight:700;color:var(--rd);margin-bottom:8px"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>RISKS <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div><div style="font-size:.72rem;line-height:1.8;max-height:120px;overflow:hidden">'+(r.risks||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
+window._rptData=[r.highlights||'',r.nextSteps||'',r.supportNeeded||'',r.risks||''];
+h+='<div style="background:var(--gc);border-left:4px solid var(--g);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(0)" onmouseover="this.style.transform=\'scale(1.02)\';this.style.boxShadow=\'0 4px 20px rgba(45,138,50,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-weight:700;color:var(--g);margin-bottom:8px"><i class="fas fa-check-circle" style="margin-right:6px"></i>HIGHLIGHTS <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div><div style="font-size:.72rem;line-height:1.8;max-height:120px;overflow:hidden">'+(r.highlights||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
+h+='<div style="background:var(--blc);border-left:4px solid var(--bl);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(1)" onmouseover="this.style.transform=\'scale(1.02)\';this.style.boxShadow=\'0 4px 20px rgba(40,116,166,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-weight:700;color:var(--bl);margin-bottom:8px"><i class="fas fa-arrow-right" style="margin-right:6px"></i>NEXT STEPS <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div><div style="font-size:.72rem;line-height:1.8;max-height:120px;overflow:hidden">'+(r.nextSteps||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
+h+='<div style="background:var(--orc);border-left:4px solid var(--or);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(2)" onmouseover="this.style.transform=\'scale(1.02)\';this.style.boxShadow=\'0 4px 20px rgba(212,147,13,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-weight:700;color:var(--or);margin-bottom:8px"><i class="fas fa-hand-holding-heart" style="margin-right:6px"></i>SUPPORT NEEDED <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div><div style="font-size:.72rem;line-height:1.8;max-height:120px;overflow:hidden">'+(r.supportNeeded||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
+h+='<div style="background:var(--rdc);border-left:4px solid var(--rd);padding:14px;border-radius:0 var(--r) var(--r) 0;cursor:pointer;transition:all .2s" onclick="rptExpand(3)" onmouseover="this.style.transform=\'scale(1.02)\';this.style.boxShadow=\'0 4px 20px rgba(204,51,51,.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><div style="font-weight:700;color:var(--rd);margin-bottom:8px"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>RISKS <i class="fas fa-expand-alt" style="font-size:.56rem;opacity:.5;margin-left:6px"></i></div><div style="font-size:.72rem;line-height:1.8;max-height:120px;overflow:hidden">'+(r.risks||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div></div>';
 h+='</div>';
 h+='<div style="padding:0 24px 20px"><div style="font-weight:600;margin-bottom:8px">Safety</div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">';
 h+='<div style="text-align:center;padding:10px;background:var(--gc);border-radius:var(--r)"><div style="font-size:.48rem;color:var(--g)">DAYS W/O LTI</div><div style="font-size:1.2rem;font-weight:700;color:var(--g)">'+dd((S.safety?S.safety.startDate:'')||'2026-04-13',r.date)+'</div></div>';
@@ -4178,104 +4179,67 @@ h+='<div style="font-size:.62rem;color:var(--t3)">By: '+H(r.preparedBy||'-')+' |
 h+='<div><button class="btn bs" onclick="rptEdit('+S.reports.indexOf(r)+')">Edit</button> <button class="btn bs bb" onclick="rptExport('+S.reports.indexOf(r)+')">PDF</button></div></div></div>';
 return h;
 }
-function rptExpand(section,dataArr,idx){
-  var titles=['HIGHLIGHTS','NEXT STEPS','SUPPORT NEEDED','RISKS'];
-  var colors=['var(--g)','var(--bl)','var(--or)','var(--rd)'];
-  var bgColors=['var(--gc)','var(--blc)','var(--orc)','var(--rdc)'];
-  var icons=['fas fa-check-circle','fas fa-arrow-right','fas fa-hand-holding-heart','fas fa-exclamation-triangle'];
 
-  var bd='<div id="rptExpandContent">';
-  bd+='<div style="position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 24px;background:var(--s1);border-bottom:3px solid '+colors[idx]+';z-index:10001">';
-  bd+='<div style="display:flex;align-items:center;gap:12px">';
-  bd+='<button class="btn bs" onclick="rptExpandNav('+idx+','+dataArr.length+',-1)"'+(idx===0?' disabled':'')+'><i class="fas fa-chevron-left"></i></button>';
-  bd+='<div style="font-family:JetBrains Mono;font-size:1rem;font-weight:700;color:'+colors[idx]+'"><i class="'+icons[idx]+'" style="margin-right:8px"></i>'+titles[idx]+'</div>';
-  bd+='<button class="btn bs" onclick="rptExpandNav('+idx+','+dataArr.length+',1)"'+(idx>=dataArr.length-1?' disabled':'')+'><i class="fas fa-chevron-right"></i></button>';
-  bd+='</div>';
-  bd+='<div style="display:flex;align-items:center;gap:10px">';
-  for(var si=0;si<dataArr.length;si++){
-    bd+='<button style="width:12px;height:12px;border-radius:50%;border:2px solid '+colors[si]+';background:'+(si===idx?colors[si]:'transparent')+';cursor:pointer" onclick="mC();rptExpand(\'section\',_rptData,'+si+')"></button>';
-  }
-  bd+='<button class="btn bs bd" onclick="mC()" style="margin-left:8px"><i class="fas fa-times"></i> Close</button>';
-  bd+='</div></div>';
-  bd+='<div style="padding:80px 40px 40px;max-width:900px;margin:0 auto">';
-  bd+='<div style="background:'+bgColors[idx]+';border-left:6px solid '+colors[idx]+';border-radius:0 var(--r) var(--r) 0;padding:30px 36px;min-height:300px">';
-  bd+='<div style="font-size:1.4rem;font-weight:700;color:'+colors[idx]+';margin-bottom:16px;font-family:JetBrains Mono">'+titles[idx]+'</div>';
-  bd+='<div style="font-size:1rem;line-height:2;color:var(--t2)">'+(dataArr[idx]||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div>';
-  bd+='</div></div></div>';
-  mO('',bd,'');
-  window._rptData=dataArr;
+function rptExpand(idx){
+var data=window._rptData||[];
+var titles=['HIGHLIGHTS','NEXT STEPS','SUPPORT NEEDED','RISKS'];
+var colors=['var(--g)','var(--bl)','var(--or)','var(--rd)'];
+var bgColors=['var(--gc)','var(--blc)','var(--orc)','var(--rdc)'];
+var icons=['fas fa-check-circle','fas fa-arrow-right','fas fa-hand-holding-heart','fas fa-exclamation-triangle'];
+if(idx<0||idx>=data.length)return;
+var bd='<div style="position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 24px;background:var(--s1);border-bottom:3px solid '+colors[idx]+';z-index:10001">';
+bd+='<div style="display:flex;align-items:center;gap:12px">';
+if(idx>0)bd+='<button class="btn bs" onclick="rptExpand('+(idx-1)+')"><i class="fas fa-chevron-left"></i></button>';
+bd+='<div style="font-family:JetBrains Mono;font-size:1rem;font-weight:700;color:'+colors[idx]+'"><i class="'+icons[idx]+'" style="margin-right:8px"></i>'+titles[idx]+'</div>';
+if(idx<data.length-1)bd+='<button class="btn bs" onclick="rptExpand('+(idx+1)+')"><i class="fas fa-chevron-right"></i></button>';
+bd+='</div><div style="display:flex;align-items:center;gap:10px">';
+for(var si=0;si<data.length;si++){
+  bd+='<button style="width:12px;height:12px;border-radius:50%;border:2px solid '+colors[si]+';background:'+(si===idx?colors[si]:'transparent')+';cursor:pointer" onclick="rptExpand('+si+')"></button>';
+}
+bd+='<button class="btn bs bd" onclick="mC()" style="margin-left:8px"><i class="fas fa-times"></i> Close</button>';
+bd+='</div></div>';
+bd+='<div style="padding:80px 40px 40px;max-width:900px;margin:0 auto">';
+bd+='<div style="background:'+bgColors[idx]+';border-left:6px solid '+colors[idx]+';border-radius:0 var(--r) var(--r) 0;padding:30px 36px;min-height:300px">';
+bd+='<div style="font-size:1.4rem;font-weight:700;color:'+colors[idx]+';margin-bottom:16px;font-family:JetBrains Mono">'+titles[idx]+'</div>';
+bd+='<div style="font-size:1rem;line-height:2;color:var(--t2)">'+(data[idx]||'<span style="color:var(--t3);font-style:italic">None</span>')+'</div>';
+bd+='</div></div>';
+mO('',bd,'');
 }
 
-function rptExpandNav(cur,total,dir){
-  var next=cur+dir;
-  if(next<0||next>=total)return;
-  mC();
-  setTimeout(function(){rptExpand('section',window._rptData,next)},50);
-}
-  function rte(id,placeholder){
-  var h='<div style="border:1px solid var(--bd);border-radius:var(--r);overflow:hidden">';
-  h+='<div style="display:flex;gap:2px;padding:4px 6px;background:var(--s2);border-bottom:1px solid var(--bd);flex-wrap:wrap">';
-  h+='<button type="button" onclick="rteCmd(\''+id+'\','+"'bold'"+')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;font-weight:700;cursor:pointer;font-size:.72rem">B</button>';
-  h+='<button type="button" onclick="rteCmd(\''+id+'\','+"'italic'"+')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;font-style:italic;cursor:pointer;font-size:.72rem">I</button>';
-  h+='<button type="button" onclick="rteCmd(\''+id+'\','+"'underline'"+')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;text-decoration:underline;cursor:pointer;font-size:.72rem">U</button>';
-  h+='<span style="width:1px;background:var(--bd);margin:2px 4px"></span>';
-  h+='<button type="button" onclick="rteCmd(\''+id+'\','+"'insertUnorderedList'"+')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-list-ul"></i></button>';
-  h+='<button type="button" onclick="rteCmd(\''+id+'\','+"'insertOrderedList'"+')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-list-ol"></i></button>';
-  h+='<span style="width:1px;background:var(--bd);margin:2px 4px"></span>';
-  h+='<button type="button" onclick="rteCmd(\''+id+'\','+"'indent'"+')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-indent"></i></button>';
-  h+='<button type="button" onclick="rteCmd(\''+id+'\','+"'outdent'"+')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-outdent"></i></button>';
-  h+='<span style="width:1px;background:var(--bd);margin:2px 4px"></span>';
-  h+='<button type="button" onclick="rteCmd(\''+id+'\','+"'formatBlock','H3'"+')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem;font-weight:700">H</button>';
-  h+='<button type="button" onclick="rteCmd(\''+id+'\','+"'removeFormat'"+')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-eraser"></i></button>';
-  h+='</div>';
-  h+='<div id="'+id+'" contenteditable="true" style="min-height:80px;max-height:200px;overflow-y:auto;padding:10px;font-size:.76rem;line-height:1.8;outline:none;white-space:pre-wrap;word-wrap:break-word" onkeydown="rteKey(event,\''+id+'\')"></div>';
-  h+='</div>';
-  return h;
-}
-
-function rteKey(e,id){
-  if(e.key==='Enter'&&!e.shiftKey){
-    e.preventDefault();
-    var el=document.getElementById(id);
-    if(!el)return;
-    var sel=window.getSelection();
-    if(!sel.rangeCount)return;
-    var range=sel.getRangeAt(0);
-    range.deleteContents();
-    var br=document.createElement('br');
-    range.insertNode(br);
-    var br2=document.createElement('br');
-    br.after(br2);
-    range.setStartAfter(br2);
-    range.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(range);
-    el.scrollTop=el.scrollHeight;
-  }
-}
-
-function rteCmd(id,cmd,val){
-  var el=document.getElementById(id);
-  if(el)el.focus();
-  if(cmd==='formatBlock'&&val){
-    document.execCommand('formatBlock',false,'<'+val+'>');
-  }else{
-    document.execCommand(cmd,false,val||null);
-  }
+function rte(id){
+var h='<div style="border:1px solid var(--bd);border-radius:var(--r);overflow:hidden">';
+h+='<div style="display:flex;gap:2px;padding:4px 6px;background:var(--s2);border-bottom:1px solid var(--bd);flex-wrap:wrap">';
+h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'bold\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;font-weight:700;cursor:pointer;font-size:.72rem">B</button>';
+h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'italic\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;font-style:italic;cursor:pointer;font-size:.72rem">I</button>';
+h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'underline\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;text-decoration:underline;cursor:pointer;font-size:.72rem">U</button>';
+h+='<span style="width:1px;background:var(--bd);margin:2px 4px"></span>';
+h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'insertUnorderedList\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-list-ul"></i></button>';
+h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'insertOrderedList\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-list-ol"></i></button>';
+h+='<span style="width:1px;background:var(--bd);margin:2px 4px"></span>';
+h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'indent\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-indent"></i></button>';
+h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'outdent\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-outdent"></i></button>';
+h+='<span style="width:1px;background:var(--bd);margin:2px 4px"></span>';
+h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'formatBlock\',false,\'<H3>\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem;font-weight:700">H</button>';
+h+='<button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById(\''+id+'\').focus();document.execCommand(\'removeFormat\')" style="background:var(--s1);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;cursor:pointer;font-size:.72rem"><i class="fas fa-eraser"></i></button>';
+h+='</div>';
+h+='<div id="'+id+'" contenteditable="true" style="min-height:100px;max-height:250px;overflow-y:auto;padding:10px;font-size:.76rem;line-height:1.8;outline:none;white-space:pre-wrap;word-wrap:break-word"></div>';
+h+='</div>';
+return h;
 }
 
 function rteGet(id){
-  var el=document.getElementById(id);
-  if(!el)return '';
-  var html=el.innerHTML.trim();
-  if(html==='<br>'||html==='<div><br></div>'||html===''||html==='<br><br>')return '';
-  return html;
+var el=document.getElementById(id);
+if(!el)return '';
+var html=el.innerHTML.trim();
+if(html==='<br>'||html==='<div><br></div>'||html===''||html==='<br><br>')return '';
+return html;
 }
 
 function rteSet(id,html){
-  var el=document.getElementById(id);
-  if(el)el.innerHTML=html||'';
+var el=document.getElementById(id);
+if(el)el.innerHTML=html||'';
 }
+
 function rptNew(){
 var latest=S.reports.length>0?S.reports[0]:null;
 var periodFrom='';
@@ -4297,11 +4261,11 @@ bd+='<div class="fg"><label class="fl">% Site Completion</label><input type="num
 bd+='<div class="fg"><label class="fl">Prepared By</label><input type="text" id="rptPrep" value="" style="width:100%"></div>';
 bd+='<div class="fg"><label class="fl">Approved By</label><input type="text" id="rptAppr" value="" style="width:100%"></div>';
 bd+='</div>';
-bd+='<div class="fg" style="margin-top:10px"><label class="fl" style="color:var(--g)">Highlights</label><textarea id="rptHigh" rows="4" style="width:100%"></textarea></div>';
-bd+='<div class="fg"><label class="fl" style="color:var(--bl)">Next Steps</label><textarea id="rptNext" rows="4" style="width:100%"></textarea></div>';
-bd+='<div class="fg"><label class="fl" style="color:var(--or)">Support Needed</label><textarea id="rptSupport" rows="3" style="width:100%"></textarea></div>';
-bd+='<div class="fg"><label class="fl" style="color:var(--rd)">Risks</label><textarea id="rptRisks" rows="4" style="width:100%"></textarea></div>';
-bd+='<div class="fg"><label class="fl">Safety Notes</label><textarea id="rptSafe" rows="2" style="width:100%"></textarea></div>';
+bd+='<div class="fg" style="margin-top:10px"><label class="fl" style="color:var(--g)">Highlights</label>'+rte('rptHigh')+'</div>';
+bd+='<div class="fg"><label class="fl" style="color:var(--bl)">Next Steps</label>'+rte('rptNext')+'</div>';
+bd+='<div class="fg"><label class="fl" style="color:var(--or)">Support Needed</label>'+rte('rptSupport')+'</div>';
+bd+='<div class="fg"><label class="fl" style="color:var(--rd)">Risks</label>'+rte('rptRisks')+'</div>';
+bd+='<div class="fg"><label class="fl">Safety Notes</label>'+rte('rptSafe')+'</div>';
 bd+='</div>';
 mO('New Report',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="rptSave(-1)">Submit</button>');
 }
@@ -4316,7 +4280,7 @@ for(var i=0;i<insps.length;i++){
     if(its[j].type==='Unsafe Act'&&its[j].status!=='Satisfactory')nu++;
   }
 }
-var r={id:idx>=0?S.reports[idx].id:Date.now(),date:$('rptDate').value,reportNum:parseInt($('rptNum').value)||1,periodFrom:$('rptFrom').value,periodTo:$('rptTo').value,phase:$('rptPhase').value.trim(),completion:parseFloat($('rptComp').value)||0,preparedBy:$('rptPrep').value.trim(),approvedBy:$('rptAppr').value.trim(),highlights:$('rptHigh').value.trim(),nextSteps:$('rptNext').value.trim(),supportNeeded:$('rptSupport').value.trim(),risks:$('rptRisks').value.trim(),safetyNotes:$('rptSafe').value.trim(),safetyInspCount:insps.length,nearMisses:nm,unsafeActs:nu,safeHours:(S.safety?S.safety.safeHours:0)||0};
+var r={id:idx>=0?S.reports[idx].id:Date.now(),date:$('rptDate').value,reportNum:parseInt($('rptNum').value)||1,periodFrom:$('rptFrom').value,periodTo:$('rptTo').value,phase:$('rptPhase').value.trim(),completion:parseFloat($('rptComp').value)||0,preparedBy:$('rptPrep').value.trim(),approvedBy:$('rptAppr').value.trim(),highlights:rteGet('rptHigh'),nextSteps:rteGet('rptNext'),supportNeeded:rteGet('rptSupport'),risks:rteGet('rptRisks'),safetyNotes:rteGet('rptSafe'),safetyInspCount:insps.length,nearMisses:nm,unsafeActs:nu,safeHours:(S.safety?S.safety.safeHours:0)||0};
 if(idx>=0)S.reports[idx]=r;else S.reports.unshift(r);
 save();try{if(typeof db!=='undefined'&&db)db.ref('ss/reports').set(S.reports)}catch(e){}
 mC();notify(idx>=0?'Updated':'Report created');doRender();
@@ -4334,13 +4298,20 @@ bd+='<div class="fg"><label class="fl">Completion %</label><input type="number" 
 bd+='<div class="fg"><label class="fl">Prepared By</label><input type="text" id="rptPrep" value="'+H(r.preparedBy||'')+'" style="width:100%"></div>';
 bd+='<div class="fg"><label class="fl">Approved By</label><input type="text" id="rptAppr" value="'+H(r.approvedBy||'')+'" style="width:100%"></div>';
 bd+='</div>';
-bd+='<div class="fg" style="margin-top:10px"><label class="fl">Highlights</label><textarea id="rptHigh" rows="4" style="width:100%">'+H(r.highlights||'')+'</textarea></div>';
-bd+='<div class="fg"><label class="fl">Next Steps</label><textarea id="rptNext" rows="4" style="width:100%">'+H(r.nextSteps||'')+'</textarea></div>';
-bd+='<div class="fg"><label class="fl">Support Needed</label><textarea id="rptSupport" rows="3" style="width:100%">'+H(r.supportNeeded||'')+'</textarea></div>';
-bd+='<div class="fg"><label class="fl">Risks</label><textarea id="rptRisks" rows="4" style="width:100%">'+H(r.risks||'')+'</textarea></div>';
-bd+='<div class="fg"><label class="fl">Safety Notes</label><textarea id="rptSafe" rows="2" style="width:100%">'+H(r.safetyNotes||'')+'</textarea></div>';
+bd+='<div class="fg" style="margin-top:10px"><label class="fl" style="color:var(--g)">Highlights</label>'+rte('rptHigh')+'</div>';
+bd+='<div class="fg"><label class="fl" style="color:var(--bl)">Next Steps</label>'+rte('rptNext')+'</div>';
+bd+='<div class="fg"><label class="fl" style="color:var(--or)">Support Needed</label>'+rte('rptSupport')+'</div>';
+bd+='<div class="fg"><label class="fl" style="color:var(--rd)">Risks</label>'+rte('rptRisks')+'</div>';
+bd+='<div class="fg"><label class="fl">Safety Notes</label>'+rte('rptSafe')+'</div>';
 bd+='</div>';
 mO('Edit Report',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="rptSave('+idx+')">Update</button>');
+setTimeout(function(){
+  rteSet('rptHigh',r.highlights||'');
+  rteSet('rptNext',r.nextSteps||'');
+  rteSet('rptSupport',r.supportNeeded||'');
+  rteSet('rptRisks',r.risks||'');
+  rteSet('rptSafe',r.safetyNotes||'');
+},100);
 }
 
 function rptView(idx){var r=S.reports[idx];if(!r)return;mO('Report #'+(r.reportNum||idx+1),rptCard(r),'<button class="btn" onclick="mC()">Close</button>');}
@@ -4353,10 +4324,10 @@ var w=window.open('','_blank');
 var oa=r.completion||0;
 var d=w.document;
 var st=d.createElement('style');
-st.textContent='*{margin:0;padding:0;box-sizing:border-box}body{font-family:Segoe UI,sans-serif;color:#1a1a1a;background:#fff;padding:40px;max-width:900px;margin:0 auto}.hd{background:linear-gradient(135deg,#1a3a5c,#2874a6);color:#fff;padding:30px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.hd h1{font-size:24px}.pt{font-size:36px;font-weight:700}.mt{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#ddd;margin-bottom:20px;border-radius:4px;overflow:hidden}.mt div{padding:12px;text-align:center;background:#f8f8f8}.lb{font-size:10px;color:#888;text-transform:uppercase}.vl{font-size:14px;font-weight:700;margin-top:2px}.pb{height:14px;background:#eee;border-radius:7px;overflow:hidden;margin:10px 0 20px}.pf{height:100%;background:linear-gradient(90deg,#2874a6,#3498db);border-radius:7px}.sc{padding:16px;margin-bottom:16px;border-radius:6px}.sc h3{font-size:13px;font-weight:700;margin-bottom:8px}.sc p{font-size:13px;line-height:1.8;white-space:pre-wrap}.sg{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;text-align:center}.sg div{padding:10px;border-radius:6px;background:#f5f5f5}.sv{font-size:20px;font-weight:700;display:block;margin-top:4px}.ft{margin-top:20px;padding-top:10px;border-top:1px solid #ddd;font-size:11px;color:#888;display:flex;justify-content:space-between}@media print{body{padding:20px}}';
+st.textContent='*{margin:0;padding:0;box-sizing:border-box}body{font-family:Segoe UI,sans-serif;color:#1a1a1a;background:#fff;padding:40px;max-width:900px;margin:0 auto}.hd{background:linear-gradient(135deg,#1a3a5c,#2874a6);color:#fff;padding:30px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.hd h1{font-size:24px}.pt{font-size:36px;font-weight:700}.mt{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#ddd;margin-bottom:20px;border-radius:4px;overflow:hidden}.mt div{padding:12px;text-align:center;background:#f8f8f8}.lb{font-size:10px;color:#888;text-transform:uppercase}.vl{font-size:14px;font-weight:700;margin-top:2px}.pb{height:14px;background:#eee;border-radius:7px;overflow:hidden;margin:10px 0 20px}.pf{height:100%;background:linear-gradient(90deg,#2874a6,#3498db);border-radius:7px}.sc{padding:16px;margin-bottom:16px;border-radius:6px}.sc h3{font-size:13px;font-weight:700;margin-bottom:8px}.sc div.content{font-size:13px;line-height:1.8}.sg{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;text-align:center}.sg div{padding:10px;border-radius:6px;background:#f5f5f5}.sv{font-size:20px;font-weight:700;display:block;margin-top:4px}.ft{margin-top:20px;padding-top:10px;border-top:1px solid #ddd;font-size:11px;color:#888;display:flex;justify-content:space-between}@media print{body{padding:20px}}';
 d.head.appendChild(st);
 d.title='Report '+r.date;
-d.body.innerHTML='<div class="hd"><div><h1>PROGRESS REPORT</h1><div style="opacity:.8;margin-top:4px">'+H(S.reportConfig.projectName||'')+'</div></div><div style="text-align:right"><div style="opacity:.8">'+H(S.reportConfig.company||'')+'</div><div class="pt">'+fmtP(oa)+'</div><div style="font-size:11px;opacity:.7">Completion</div></div></div><div class="mt"><div><div class="lb">Date</div><div class="vl">'+H(r.date)+'</div></div><div><div class="lb">Period</div><div class="vl">'+H(r.periodFrom||'')+' to '+H(r.periodTo||'')+'</div></div><div><div class="lb">Phase</div><div class="vl">'+H(r.phase)+'</div></div><div><div class="lb">Report #</div><div class="vl">'+(r.reportNum||'')+'</div></div></div><div class="pb"><div class="pf" style="width:'+oa+'%"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px"><div class="sc" style="background:#e8f5e9;border-left:4px solid #2d8a32"><h3 style="color:#2d8a32">HIGHLIGHTS</h3><p>'+H(r.highlights||'None')+'</p></div><div class="sc" style="background:#e3f2fd;border-left:4px solid #2874a6"><h3 style="color:#2874a6">NEXT STEPS</h3><p>'+H(r.nextSteps||'None')+'</p></div><div class="sc" style="background:#fff8e1;border-left:4px solid #d4930d"><h3 style="color:#d4930d">SUPPORT NEEDED</h3><p>'+H(r.supportNeeded||'None')+'</p></div><div class="sc" style="background:#ffebee;border-left:4px solid #cc3333"><h3 style="color:#cc3333">RISKS</h3><p>'+H(r.risks||'None')+'</p></div></div><div style="margin-bottom:16px"><div style="font-weight:600;margin-bottom:8px">Safety</div><div class="sg"><div><div class="lb">Days w/o LTI</div><span class="sv" style="color:#2d8a32">'+dd((S.safety?S.safety.startDate:'')||'2026-04-13',r.date)+'</span></div><div><div class="lb">Inspections</div><span class="sv" style="color:#2874a6">'+(r.safetyInspCount||0)+'</span></div><div><div class="lb">Near Misses</div><span class="sv" style="color:#d4930d">'+(r.nearMisses||0)+'</span></div><div><div class="lb">Unsafe Acts</div><span class="sv" style="color:#cc3333">'+(r.unsafeActs||0)+'</span></div><div><div class="lb">Safe Hours</div><span class="sv" style="color:#2874a6">'+((r.safeHours||0).toLocaleString())+'</span></div></div></div><div class="ft"><div>By: '+H(r.preparedBy||'-')+' | '+H(r.approvedBy||'-')+'</div><div>'+H(r.date)+'</div></div>';
+d.body.innerHTML='<div class="hd"><div><h1>PROGRESS REPORT</h1><div style="opacity:.8;margin-top:4px">'+H(S.reportConfig.projectName||'')+'</div></div><div style="text-align:right"><div style="opacity:.8">'+H(S.reportConfig.company||'')+'</div><div class="pt">'+fmtP(oa)+'</div><div style="font-size:11px;opacity:.7">Completion</div></div></div><div class="mt"><div><div class="lb">Date</div><div class="vl">'+H(r.date)+'</div></div><div><div class="lb">Period</div><div class="vl">'+H(r.periodFrom||'')+' to '+H(r.periodTo||'')+'</div></div><div><div class="lb">Phase</div><div class="vl">'+H(r.phase)+'</div></div><div><div class="lb">Report #</div><div class="vl">'+(r.reportNum||'')+'</div></div></div><div class="pb"><div class="pf" style="width:'+oa+'%"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px"><div class="sc" style="background:#e8f5e9;border-left:4px solid #2d8a32"><h3 style="color:#2d8a32">HIGHLIGHTS</h3><div class="content">'+(r.highlights||'None')+'</div></div><div class="sc" style="background:#e3f2fd;border-left:4px solid #2874a6"><h3 style="color:#2874a6">NEXT STEPS</h3><div class="content">'+(r.nextSteps||'None')+'</div></div><div class="sc" style="background:#fff8e1;border-left:4px solid #d4930d"><h3 style="color:#d4930d">SUPPORT NEEDED</h3><div class="content">'+(r.supportNeeded||'None')+'</div></div><div class="sc" style="background:#ffebee;border-left:4px solid #cc3333"><h3 style="color:#cc3333">RISKS</h3><div class="content">'+(r.risks||'None')+'</div></div></div><div style="margin-bottom:16px"><div style="font-weight:600;margin-bottom:8px">Safety</div><div class="sg"><div><div class="lb">Days w/o LTI</div><span class="sv" style="color:#2d8a32">'+dd((S.safety?S.safety.startDate:'')||'2026-04-13',r.date)+'</span></div><div><div class="lb">Inspections</div><span class="sv" style="color:#2874a6">'+(r.safetyInspCount||0)+'</span></div><div><div class="lb">Near Misses</div><span class="sv" style="color:#d4930d">'+(r.nearMisses||0)+'</span></div><div><div class="lb">Unsafe Acts</div><span class="sv" style="color:#cc3333">'+(r.unsafeActs||0)+'</span></div><div><div class="lb">Safe Hours</div><span class="sv" style="color:#2874a6">'+((r.safeHours||0).toLocaleString())+'</span></div></div></div><div class="ft"><div>By: '+H(r.preparedBy||'-')+' | '+H(r.approvedBy||'-')+'</div><div>'+H(r.date)+'</div></div>';
 setTimeout(function(){w.print()},500);
 }
 
