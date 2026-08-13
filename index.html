@@ -4107,7 +4107,7 @@ function downloadJSON(data,filename){
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-/* === REPORT === */
+  /* === REPORT === */
 if(!S.reports)S.reports=[];
 if(!S.reportConfig)S.reportConfig={projectName:'Vietnam Construction Project',company:'Stellar Seeds Corp',preparedBy:'',approvedBy:''};
 
@@ -4174,7 +4174,8 @@ if(!latest){
 }
 $('app').innerHTML=h;
 };
-  function rptRenderCard(r){
+
+function rptRenderCard(r){
 var h='';
 h+='<div style="background:var(--s1);border:2px solid var(--bl);border-radius:var(--r);overflow:hidden;margin-bottom:14px">';
 h+='<div style="background:linear-gradient(135deg,#1a3a5c,#2874a6);color:#fff;padding:20px 24px;display:flex;justify-content:space-between;align-items:center">';
@@ -4195,7 +4196,6 @@ h+='<span style="font-size:.72rem;font-weight:600">Overall Site Progress</span>'
 h+='<span style="font-family:JetBrains Mono;font-size:1rem;font-weight:700;color:var(--bl)">'+fmtP(r.completion||0)+'</span></div>';
 h+='<div style="height:12px;background:var(--s2);border-radius:6px;overflow:hidden">';
 h+='<div style="height:100%;width:'+(r.completion||0)+'%;background:linear-gradient(90deg,#2874a6,#3498db);border-radius:6px"></div></div></div>';
-
 h+='<div style="padding:0 24px 20px;display:grid;grid-template-columns:1fr 1fr;gap:16px">';
 h+='<div><div style="background:var(--gc);border-left:4px solid var(--g);border-radius:0 var(--r) var(--r) 0;padding:14px">';
 h+='<div style="font-size:.72rem;font-weight:700;color:var(--g);margin-bottom:8px"><i class="fas fa-star" style="margin-right:4px"></i>HIGHLIGHTS</div>';
@@ -4226,30 +4226,19 @@ h+='<button class="btn bs bb" onclick="rptExport(0)">Export PDF</button>';
 h+='</div></div></div>';
 return h;
 }
-  function rptNew(){
+
+function rptNew(){
 var latest=S.reports.length>0?S.reports[0]:null;
 var periodFrom='';
 var periodTo=td();
-if(latest){
-  periodFrom=latest.date;
-}else{
-  var d=new Date();d.setDate(d.getDate()-14);
-  periodFrom=d.getFullYear()+'-'+LZ(d.getMonth()+1)+'-'+LZ(d.getDate());
-}
+if(latest){periodFrom=latest.date}
+else{var d=new Date();d.setDate(d.getDate()-14);periodFrom=d.getFullYear()+'-'+LZ(d.getMonth()+1)+'-'+LZ(d.getDate())}
 var phase='Construction';
-var m=mainT();
-var maxProg=0,maxName='';
-for(var i=0;i<m.length;i++){
-  if(m[i].prog>maxProg&&m[i].prog<100){maxProg=m[i].prog;maxName=m[i].name}
-  if(m[i].prog>=100)phase=m[i].name+' (Complete)';
-}
-if(maxName&&maxProg>0)phase=maxName;
 var oa=ovProg(S.tasks);
-var safetyInps=S.safetyInspections||[];
 var bd='<div style="max-height:75vh;overflow-y:auto;padding-right:8px">';
 bd+='<div style="padding:10px;background:var(--blc);border-radius:var(--r);margin-bottom:14px;font-size:.66rem">';
 bd+='<div style="font-weight:700;color:var(--bl);margin-bottom:4px"><i class="fas fa-magic" style="margin-right:4px"></i>Auto-populated Data</div>';
-bd+='<div>Completion: <b>'+fmtP(oa)+'</b> | Tasks: <b>'+mainT().length+'</b> | Inspections: <b>'+safetyInps.length+'</b></div></div>';
+bd+='<div>Completion: <b>'+fmtP(oa)+'</b> | Tasks: <b>'+mainT().length+'</b> | Inspections: <b>'+(S.safetyInspections||[]).length+'</b></div></div>';
 bd+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
 bd+='<div class="fg"><label class="fl">Report Date</label><input type="date" id="rptDate" value="'+td()+'" style="width:100%"></div>';
 bd+='<div class="fg"><label class="fl">Report Number</label><input type="number" id="rptNum" value="'+(S.reports.length+1)+'" style="width:100%"></div>';
@@ -4298,7 +4287,6 @@ var r={
   supportNeeded:$('rptSupport').value.trim(),
   risks:$('rptRisks').value.trim(),
   safetyNotes:$('rptSafe').value.trim(),
-  taskBreakdown:taskBD,
   safetyInspCount:(S.safetyInspections||[]).length,
   nearMisses:nm,
   unsafeActs:nu,
@@ -4310,10 +4298,10 @@ save();
 try{if(typeof db!=='undefined'&&db)db.ref('ss/reports').set(S.reports)}catch(e){}
 mC();notify(idx>=0?'Updated':'Report created');doRender();
 }
-  function rptEdit(idx){
+
+function rptEdit(idx){
 var r=S.reports[idx];
 if(!r)return;
-var m=mainT();
 var bd='<div style="max-height:75vh;overflow-y:auto;padding-right:8px">';
 bd+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
 bd+='<div class="fg"><label class="fl">Report Date</label><input type="date" id="rptDate" value="'+H(r.date)+'" style="width:100%"></div>';
@@ -4353,23 +4341,7 @@ try{if(typeof db!=='undefined'&&db)db.ref('ss/reports').set(S.reports)}catch(e){
 notify('Deleted');doRender();
 }
 
-function rptConfig(){
-var cfg=S.reportConfig;
-var bd='<div class="fg"><label class="fl">Project Name</label><input type="text" id="rcPN" value="'+H(cfg.projectName)+'" style="width:100%"></div>';
-bd+='<div class="fg"><label class="fl">Company</label><input type="text" id="rcCo" value="'+H(cfg.company)+'" style="width:100%"></div>';
-bd+='<div class="fg"><label class="fl">Default Prepared By</label><input type="text" id="rcPrep" value="'+H(cfg.preparedBy)+'" style="width:100%"></div>';
-bd+='<div class="fg"><label class="fl">Default Approved By</label><input type="text" id="rcAppr" value="'+H(cfg.approvedBy)+'" style="width:100%"></div>';
-mO('Report Settings',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="rptSaveConfig()">Save</button>');
-}
-
-function rptSaveConfig(){
-S.reportConfig.projectName=$('rcPN').value.trim();
-S.reportConfig.company=$('rcCo').value.trim();
-S.reportConfig.preparedBy=$('rcPrep').value.trim();
-S.reportConfig.approvedBy=$('rcAppr').value.trim();
-save();mC();notify('Saved');doRender();
-}
-  function rptExport(idx){
+function rptExport(idx){
 var r=S.reports[idx];
 if(!r)return;
 var w=window.open('','_blank');
@@ -4393,11 +4365,6 @@ css+='.highlights{background:#e8f5e9;border-left:4px solid #2d8a32}';
 css+='.nextsteps{background:#e3f2fd;border-left:4px solid #2874a6}';
 css+='.support{background:#fff8e1;border-left:4px solid #d4930d}';
 css+='.risks{background:#ffebee;border-left:4px solid #cc3333}';
-css+='.task-row{display:flex;align-items:center;padding:4px 0;font-size:12px;border-bottom:1px solid #eee}';
-css+='.task-name{flex:1}';
-css+='.task-bar{width:120px;height:8px;background:#eee;border-radius:4px;overflow:hidden;margin:0 10px}';
-css+='.task-fill{height:100%;border-radius:4px}';
-css+='.task-pct{width:40px;text-align:right;font-weight:700;font-family:monospace}';
 css+='.safety-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;text-align:center}';
 css+='.safety-grid div{padding:10px;border-radius:6px;background:#f5f5f5}';
 css+='.safety-grid .sv{font-size:20px;font-weight:700;display:block;margin-top:4px}';
@@ -4435,6 +4402,23 @@ html+='<script>setTimeout(function(){window.print()},500)</script>';
 html+='</body></html>';
 w.document.write(html);
 w.document.close();
+}
+
+function rptConfig(){
+var cfg=S.reportConfig;
+var bd='<div class="fg"><label class="fl">Project Name</label><input type="text" id="rcPN" value="'+H(cfg.projectName)+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Company</label><input type="text" id="rcCo" value="'+H(cfg.company)+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Default Prepared By</label><input type="text" id="rcPrep" value="'+H(cfg.preparedBy)+'" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Default Approved By</label><input type="text" id="rcAppr" value="'+H(cfg.approvedBy)+'" style="width:100%"></div>';
+mO('Report Settings',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="rptSaveConfig()">Save</button>');
+}
+
+function rptSaveConfig(){
+S.reportConfig.projectName=$('rcPN').value.trim();
+S.reportConfig.company=$('rcCo').value.trim();
+S.reportConfig.preparedBy=$('rcPrep').value.trim();
+S.reportConfig.approvedBy=$('rcAppr').value.trim();
+save();mC();notify('Saved');doRender();
 }
 </script>
 </body>
