@@ -196,7 +196,7 @@ var R={};
 function nav(){var h='';for(var i=0;i<tabs.length;i++){if(!tabs[i]){h+='<div class="nsep"></div>';continue}h+='<button class="'+(tab===tabs[i].id?'act':'')+'" onclick="go(\''+tabs[i].id+'\')">'+tabs[i].l+'</button>'}$('nbar').innerHTML=h}
 function go(id){tab=id;nav();doRender()}
 function doRender(){try{if(R[tab])R[tab]()}catch(e){$('app').innerHTML='<div class="card" style="color:var(--rd)"><b>Error:</b> '+H(e.message)+'</div>';console.error(e)}}
-function save(){try{['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos','originalPlan','phWebhookUrl','phSPFolder','phSPSite','reports','reportConfig'].forEach(function(k){localStorage.setItem('ss_'+k,JSON.stringify(S[k]))});localStorage.setItem('ss_siteCost',String(siteCost));syncUp()}catch(e){}}
+function save(){try{['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos','originalPlan','phWebhookUrl','phSPFolder','phSPSite'].forEach(function(k){localStorage.setItem('ss_'+k,JSON.stringify(S[k]))});localStorage.setItem('ss_siteCost',String(siteCost));syncUp()}catch(e){}}
 function syncUp(){
   try{
     if(typeof db!=='undefined'&&db){
