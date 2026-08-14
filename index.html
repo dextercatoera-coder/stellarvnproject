@@ -189,7 +189,38 @@ var R={};
 function nav(){var h='';for(var i=0;i<tabs.length;i++){if(!tabs[i]){h+='<div class="nsep"></div>';continue}h+='<button class="'+(tab===tabs[i].id?'act':'')+'" onclick="go(\''+tabs[i].id+'\')">'+tabs[i].l+'</button>'}$('nbar').innerHTML=h}
 function go(id){tab=id;nav();doRender()}
 function doRender(){try{if(R[tab])R[tab]()}catch(e){$('app').innerHTML='<div class="card" style="color:var(--rd)"><b>Error:</b> '+H(e.message)+'</div>';console.error(e)}}
-function save(){try{['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos','originalPlan','phWebhookUrl','phSPFolder','phSPSite','reports','reportConfig'].forEach(function(k){localStorage.setItem('ss_'+k,JSON.stringify(S[k]))});localStorage.setItem('ss_siteCost',String(siteCost));syncUp()}catch(e){}}
+ost=parseFloat(localStorage.getItem('ss_siteCost'))||0}catch(e){siteCost=0}
+}
+function save(){
+/* Save each field independently — one failure won't block others */
+var fields=['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','originalPlan','phWebhookUrl','phSPFolder','phSPSite','reports','reportConfig'];
+for(var i=0;i<fields.length;i++){
+  try{localStorage.setItem('ss_'+fields[i],JSON.stringify(S[fields[i]]))}catch(e){}
+}
+/* Save photos last and separately — most likely to fail */
+try{
+  localStorage.setItem('ss_photos',JSON.stringify(S.photos||[]));
+}catch(e){
+  /* If photos too large, try without data URLs */
+  try{
+    var compressed=[];
+    for(var i=0;i<(S.photos||[]).length;i++){
+      var p=S.photos[i];
+      var entry={id:p.id,title:p.title,date:p.date,building:p.building,week:p.week,isVideo:p.isVideo};
+      if(p.isVideo){entry.duration=p.duration;entry.size=p.size}
+      /* Keep thumbnail only, drop full data */
+      if(p.thumb&&p.thumb.length<20000)entry.data=p.thumb;
+      else if(p.data&&p.data.length<20000)entry.data=p.data;
+      else entry.data='';
+      compressed.push(entry);
+    }
+    localStorage.setItem('ss_photos',JSON.stringify(compressed));
+    S.photos=compressed;
+  }catch(e2){}
+}
+try{localStorage.setItem('ss_siteCost',String(siteCost))}catch(e){}
+syncUp();
+}
 function syncUp(){
   try{
     if(typeof db!=='undefined'&&db){
