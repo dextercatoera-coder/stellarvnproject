@@ -3416,12 +3416,13 @@ h+='<div class="si" style="border-left:4px solid var(--pu)"><div class="sl">Unsa
 h+='<div class="si" style="border-left:4px solid var(--am)"><div class="sl">Inspections</div><div class="sv" style="color:var(--am)">'+inps.length+'</div></div>';
 h+='</div>';
 h+='<div class="card" style="border-left:4px solid var(--bl)"><div class="ch"><span class="ct" style="color:var(--bl)">Safety Metrics</span></div>';
-h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px">';
-h+='<div><label style="font-size:.6rem;color:var(--t3)">Start Date</label><input type="date" value="'+H(s.startDate||td())+'" style="width:100%" onchange="S.safety.startDate=this.value;save()"></div>';
-h+='<div><label style="font-size:.6rem;color:var(--t3)">Safe Hours</label><input type="number" value="'+(s.safeHours||0)+'" style="width:100%" onchange="S.safety.safeHours=parseInt(this.value)||0;save()"></div>';
-h+='<div><label style="font-size:.6rem;color:var(--t3)">Near Misses</label><input type="number" value="'+(s.nearMisses||0)+'" style="width:100%" onchange="S.safety.nearMisses=parseInt(this.value)||0;save()"></div>';
-h+='<div><label style="font-size:.6rem;color:var(--t3)">Incidents</label><input type="number" value="'+(s.incidents||0)+'" style="width:100%" onchange="S.safety.incidents=parseInt(this.value)||0;save()"></div>';
-h+='</div></div>';
+h+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:10px;align-items:end">';
+h+='<div><label style="font-size:.6rem;color:var(--t3)">Start Date</label><input type="date" id="safeStartDate" value="'+H(s.startDate||td())+'" style="width:100%" oninput="S.safety.startDate=this.value;safeDebouncedSave()"></div>';
+h+='<div><label style="font-size:.6rem;color:var(--t3)">Safe Hours</label><input type="number" id="safeHoursInp" value="'+(s.safeHours||0)+'" style="width:100%" oninput="S.safety.safeHours=parseInt(this.value)||0;safeDebouncedSave()"></div>';
+h+='<div><label style="font-size:.6rem;color:var(--t3)">Near Misses</label><input type="number" id="safeNearInp" value="'+(s.nearMisses||0)+'" style="width:100%" oninput="S.safety.nearMisses=parseInt(this.value)||0;safeDebouncedSave()"></div>';
+h+='<div><label style="font-size:.6rem;color:var(--t3)">Incidents</label><input type="number" id="safeIncInp" value="'+(s.incidents||0)+'" style="width:100%" oninput="S.safety.incidents=parseInt(this.value)||0;safeDebouncedSave()"></div>';
+h+='<div><button class="btn bp" onclick="safeSaveMetrics()" style="width:100%;height:32px"><i class="fas fa-save"></i> Save</button></div>';
+h+='</div><div id="safeSaveStatus" style="font-size:.56rem;color:var(--g);margin-top:6px;font-family:JetBrains Mono"></div></div>';
 h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">';
 h+='<div class="card"><div class="ch"><span class="ct" style="color:var(--bl)">Safety Triangle</span></div>';
 h+='<div style="padding:10px 0">';
@@ -3519,7 +3520,39 @@ if(inps.length>0){
 }
 $('app').innerHTML=h;
 };
+var _safeTimer=null;
+function safeDebouncedSave(){
+  if(_safeTimer)clearTimeout(_safeTimer);
+  _safeTimer=setTimeout(function(){
+    try{localStorage.setItem('ss_safety',JSON.stringify(S.safety))}catch(e){}
+    save();
+    safeShowSaved();
+  },500);
+}
 
+function safeSaveMetrics(){
+  var sh=document.getElementById('safeHoursInp');
+  var sn=document.getElementById('safeNearInp');
+  var si=document.getElementById('safeIncInp');
+  var sd=document.getElementById('safeStartDate');
+  if(sh)S.safety.safeHours=parseInt(sh.value)||0;
+  if(sn)S.safety.nearMisses=parseInt(sn.value)||0;
+  if(si)S.safety.incidents=parseInt(si.value)||0;
+  if(sd)S.safety.startDate=sd.value;
+  try{localStorage.setItem('ss_safety',JSON.stringify(S.safety))}catch(e){}
+  save();
+  try{if(typeof db!=='undefined'&&db)db.ref('ss/safety').set(S.safety)}catch(e){}
+  safeShowSaved();
+}
+
+function safeShowSaved(){
+  var el=document.getElementById('safeSaveStatus');
+  if(el){
+    el.innerHTML='<i class="fas fa-check-circle"></i> Saved at '+new Date().toLocaleTimeString();
+    el.style.color='var(--g)';
+    setTimeout(function(){if(el)el.innerHTML=''},3000);
+  }
+}
 function safeAddInsp(){
 var bd='<div style="max-height:70vh;overflow-y:auto;padding-right:8px">';
 bd+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
