@@ -216,7 +216,7 @@ function syncUp(){
     }
   }catch(e){}
 }
-function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.originalPlan=lj('originalPlan',[])
+function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());if(!Array.isArray(S.safety.manHoursLog))S.safety.manHoursLog=[];S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.originalPlan=lj('originalPlan',[])
 S.reports=[];
 try{var _r=localStorage.getItem('ss_reports');if(_r)S.reports=JSON.parse(_r)}catch(e){S.reports=[]}
 S.reportConfig={};
@@ -3380,11 +3380,54 @@ var safeChecklist=[
 var safeTypeList=['Observation','Unsafe Act','Unsafe Condition','Near Miss','First Aid','Recordable','LTI'];
 var safeTypeCol={'Observation':'#6a6560','Unsafe Act':'#2d8a32','Unsafe Condition':'#9b59b6','Near Miss':'#2874a6','First Aid':'#e8c547','Recordable':'#d4930d','LTI':'#cc3333'};
 
+function safeCalcTotalMH(){
+if(!S.safety)S.safety={};
+var log=S.safety.manHoursLog||[];
+var total=0;
+for(var i=0;i<log.length;i++)total+=(log[i].manHours||0);
+return total;
+}
+
+var _safeTimer=null;
+function safeDebouncedSave(){
+if(_safeTimer)clearTimeout(_safeTimer);
+_safeTimer=setTimeout(function(){
+  try{localStorage.setItem('ss_safety',JSON.stringify(S.safety))}catch(e){}
+  save();
+  safeShowSaved();
+},500);
+}
+
+function safeSaveMetrics(){
+var sn=document.getElementById('safeNearInp');
+var si=document.getElementById('safeIncInp');
+var sd=document.getElementById('safeStartDate');
+if(sn)S.safety.nearMisses=parseInt(sn.value)||0;
+if(si)S.safety.incidents=parseInt(si.value)||0;
+if(sd)S.safety.startDate=sd.value;
+S.safety.safeHours=safeCalcTotalMH();
+try{localStorage.setItem('ss_safety',JSON.stringify(S.safety))}catch(e){}
+save();
+try{if(typeof db!=='undefined'&&db)db.ref('ss/safety').set(S.safety)}catch(e){}
+safeShowSaved();
+}
+
+function safeShowSaved(){
+var el=document.getElementById('safeSaveStatus');
+if(el){
+  el.innerHTML='<i class="fas fa-check-circle"></i> Saved at '+new Date().toLocaleTimeString();
+  el.style.color='var(--g)';
+  setTimeout(function(){if(el)el.innerHTML=''},3000);
+}
+}
+
 R.safety=function(){
 if(!S.safety)S.safety={};
+if(!S.safety.manHoursLog)S.safety.manHoursLog=[];
 if(!Array.isArray(S.safetyInspections))S.safetyInspections=[];
 var s=S.safety;
 var inps=S.safetyInspections;
+var totalMH=safeCalcTotalMH();
 var dLTI=dd(s.startDate||'2026-04-13',td());
 var tc={};
 for(var t=0;t<safeTypeList.length;t++){tc[safeTypeList[t]]=0}
@@ -3405,24 +3448,68 @@ for(var i=0;i<inps.length;i++){
 var h='';
 h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
 h+='<div><h2>Safety Management</h2><p style="font-size:.72rem;color:var(--t3)">HSE Monitoring and Inspections</p></div>';
-h+='<button class="btn bs" onclick="safeSync()">Sync</button> ';
-h+='<button class="btn bp" onclick="safeAddInsp()">+ Safety Inspection</button></div>';
+h+='<div style="display:flex;gap:6px"><button class="btn bs" onclick="safeSync()">Sync</button>';
+h+='<button class="btn bp" onclick="safeAddInsp()">+ Safety Inspection</button></div></div>';
 h+='<div class="stats">';
-h+='<div class="si" style="border-left:4px solid var(--g)"><div class="sl">Safe Hours</div><div class="sv" style="color:var(--g)">'+(s.safeHours||0).toLocaleString()+'</div></div>';
+h+='<div class="si" style="border-left:4px solid var(--g)"><div class="sl">Safe Hours</div><div class="sv" style="color:var(--g)">'+totalMH.toLocaleString()+'</div></div>';
 h+='<div class="si" style="border-left:4px solid var(--bl)"><div class="sl">Days w/o LTI</div><div class="sv" style="color:var(--bl)">'+dLTI+'</div></div>';
 h+='<div class="si" style="border-left:4px solid var(--or)"><div class="sl">Near Misses</div><div class="sv" style="color:var(--or)">'+tc['Near Miss']+'</div></div>';
 h+='<div class="si" style="border-left:4px solid var(--rd)"><div class="sl">Unsafe Acts</div><div class="sv" style="color:var(--rd)">'+tc['Unsafe Act']+'</div></div>';
 h+='<div class="si" style="border-left:4px solid var(--pu)"><div class="sl">Unsafe Cond.</div><div class="sv" style="color:var(--pu)">'+tc['Unsafe Condition']+'</div></div>';
 h+='<div class="si" style="border-left:4px solid var(--am)"><div class="sl">Inspections</div><div class="sv" style="color:var(--am)">'+inps.length+'</div></div>';
 h+='</div>';
-h+='<div class="card" style="border-left:4px solid var(--bl)"><div class="ch"><span class="ct" style="color:var(--bl)">Safety Metrics</span></div>';
-h+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:10px;align-items:end">';
+
+/* Man-Hours Card */
+h+='<div class="card" style="border-left:4px solid var(--g)"><div class="ch"><span class="ct" style="color:var(--g)">Man-Hours Tracker</span><button class="btn bp" style="padding:3px 10px;font-size:.62rem" onclick="safeAddMH()"><i class="fas fa-plus" style="margin-right:3px"></i>Add Man-Hours</button></div>';
+h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">';
+h+='<div style="text-align:center;padding:12px;background:var(--gc);border-radius:var(--r)"><div style="font-size:.48rem;color:var(--g);font-family:JetBrains Mono">TOTAL SAFE MAN-HOURS</div><div style="font-size:1.6rem;font-weight:700;color:var(--g)">'+totalMH.toLocaleString()+'</div></div>';
 h+='<div><label style="font-size:.6rem;color:var(--t3)">Start Date</label><input type="date" id="safeStartDate" value="'+H(s.startDate||td())+'" style="width:100%" oninput="S.safety.startDate=this.value;safeDebouncedSave()"></div>';
-h+='<div><label style="font-size:.6rem;color:var(--t3)">Safe Hours</label><input type="number" id="safeHoursInp" value="'+(s.safeHours||0)+'" style="width:100%" oninput="S.safety.safeHours=parseInt(this.value)||0;safeDebouncedSave()"></div>';
-h+='<div><label style="font-size:.6rem;color:var(--t3)">Near Misses</label><input type="number" id="safeNearInp" value="'+(s.nearMisses||0)+'" style="width:100%" oninput="S.safety.nearMisses=parseInt(this.value)||0;safeDebouncedSave()"></div>';
 h+='<div><label style="font-size:.6rem;color:var(--t3)">Incidents</label><input type="number" id="safeIncInp" value="'+(s.incidents||0)+'" style="width:100%" oninput="S.safety.incidents=parseInt(this.value)||0;safeDebouncedSave()"></div>';
-h+='<div><button class="btn bp" onclick="safeSaveMetrics()" style="width:100%;height:32px"><i class="fas fa-save"></i> Save</button></div>';
-h+='</div><div id="safeSaveStatus" style="font-size:.56rem;color:var(--g);margin-top:6px;font-family:JetBrains Mono"></div></div>';
+h+='</div>';
+var mhLog=s.manHoursLog||[];
+if(mhLog.length>0){
+  h+='<div style="margin-top:12px;border-top:1px solid var(--bd);padding-top:10px">';
+  h+='<div style="font-size:.68rem;font-weight:600;color:var(--t2);margin-bottom:6px"><i class="fas fa-hard-hat" style="margin-right:4px"></i>Man-Hours Log <span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">('+mhLog.length+' entries)</span></div>';
+  h+='<div style="max-height:200px;overflow-y:auto">';
+  h+='<table style="width:100%;font-size:.66rem"><thead><tr>';
+  h+='<th style="text-align:left;padding:4px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono">Contractor</th>';
+  h+='<th style="text-align:left;padding:4px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono">Period</th>';
+  h+='<th style="text-align:right;padding:4px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono">Man-Hours</th>';
+  h+='<th style="text-align:left;padding:4px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono">Notes</th>';
+  h+='<th style="text-align:left;padding:4px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono">Recorded</th>';
+  h+='<th style="width:40px;padding:4px 6px;border-bottom:2px solid var(--bd)"></th>';
+  h+='</tr></thead><tbody>';
+  var mhSorted=mhLog.slice().sort(function(a,b){return(b.id||0)-(a.id||0)});
+  var conTotal={};
+  for(var mi=0;mi<mhSorted.length;mi++){
+    var m=mhSorted[mi];
+    conTotal[m.contractor||'Unknown']=(conTotal[m.contractor||'Unknown']||0)+(m.manHours||0);
+    h+='<tr>';
+    h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd)"><span style="font-weight:600">'+H(m.contractor||'-')+'</span></td>';
+    h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);font-family:JetBrains Mono;font-size:.58rem">'+H(m.dateFrom||'')+' to '+H(m.dateTo||'')+'</td>';
+    h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);text-align:right;font-weight:700;color:var(--bl);font-family:JetBrains Mono">'+(m.manHours||0).toLocaleString()+'</td>';
+    h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);font-size:.58rem;color:var(--t3)">'+H(m.notes||'-')+'</td>';
+    h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);font-family:JetBrains Mono;font-size:.54rem;color:var(--t3)">'+H(m.recordedOn||'')+'</td>';
+    h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);text-align:center"><button style="background:transparent;border:0;color:var(--rd);cursor:pointer;font-size:.72rem" onclick="safeDelMH('+mi+')">&times;</button></td>';
+    h+='</tr>';
+  }
+  h+='</tbody></table></div>';
+  h+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">';
+  for(var ck in conTotal){
+    h+='<div style="padding:4px 10px;background:var(--s2);border-radius:var(--r);font-size:.6rem;font-family:JetBrains Mono"><span style="color:var(--t3)">'+H(ck)+':</span> <span style="font-weight:700;color:var(--bl)">'+conTotal[ck].toLocaleString()+'</span></div>';
+  }
+  h+='</div></div>';
+}
+h+='<div id="safeSaveStatus" style="font-size:.56rem;color:var(--g);margin-top:6px;font-family:JetBrains Mono"></div>';
+h+='</div>';
+
+/* Safety Metrics */
+h+='<div class="card" style="border-left:4px solid var(--bl)"><div class="ch"><span class="ct" style="color:var(--bl)">Safety Metrics</span></div>';
+h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">';
+h+='<div><label style="font-size:.6rem;color:var(--t3)">Near Misses</label><input type="number" id="safeNearInp" value="'+(s.nearMisses||0)+'" style="width:100%" oninput="S.safety.nearMisses=parseInt(this.value)||0;safeDebouncedSave()"></div>';
+h+='<div><button class="btn bp" onclick="safeSaveMetrics()" style="width:100%;height:32px"><i class="fas fa-save" style="margin-right:4px"></i> Save Metrics</button></div>';
+h+='</div></div>';
+
 h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">';
 h+='<div class="card"><div class="ch"><span class="ct" style="color:var(--bl)">Safety Triangle</span></div>';
 h+='<div style="padding:10px 0">';
@@ -3472,16 +3559,16 @@ var catR={};
 for(var i=0;i<inps.length;i++){
   var its2=inps[i].items||[];
   for(var j=0;j<its2.length;j++){
-    var ck=its2[j].category||'Other';
-    if(!catR[ck]){catR[ck]={s:0,t:0}}
-    catR[ck].t++;
-    if(its2[j].status==='Satisfactory'){catR[ck].s++}
+    var ck2=its2[j].category||'Other';
+    if(!catR[ck2]){catR[ck2]={s:0,t:0}}
+    catR[ck2].t++;
+    if(its2[j].status==='Satisfactory'){catR[ck2].s++}
   }
 }
 h+='<div class="card"><div class="ch"><span class="ct">Category Scores</span></div>';
 if(inps.length===0){h+='<div style="font-size:.76rem;color:var(--t3);padding:20px 0;text-align:center">No inspections yet</div>'}
 var cArr=[];
-for(var ck2 in catR){cArr.push({c:ck2,d:catR[ck2]})}
+for(var ck3 in catR){cArr.push({c:ck3,d:catR[ck3]})}
 cArr.sort(function(a,b){return(b.d.s/b.d.t)-(a.d.s/a.d.t)});
 for(var ci=0;ci<cArr.length;ci++){
   var cd=cArr[ci].d;
@@ -3500,19 +3587,19 @@ if(inps.length>0){
   h+='<div class="card"><div class="ch"><span class="ct">Inspection Log</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+inps.length+'</span></div>';
   h+='<div class="tw"><table><thead><tr><th>Date</th><th>Area</th><th>Inspector</th><th>Contractor</th><th>Categories</th><th style="text-align:center">SAT</th><th style="text-align:center">NI</th><th style="text-align:center">UNSAT</th><th>Overall</th><th style="width:80px">Actions</th></tr></thead><tbody>';
   for(var li=0;li<inps.length;li++){
-    var si=inps[li];
-    var ob=si.overall==='Satisfactory'?'bg2':si.overall==='Needs Improvement'?'by2':'bd2';
-    var catStr=(si.categories||[]).join(', ');
+    var si2=inps[li];
+    var ob=si2.overall==='Satisfactory'?'bg2':si2.overall==='Needs Improvement'?'by2':'bd2';
+    var catStr=(si2.categories||[]).join(', ');
     h+='<tr>';
-    h+='<td style="font-family:JetBrains Mono;font-size:.64rem">'+H(si.date)+'</td>';
-    h+='<td>'+H(si.area)+'</td>';
-    h+='<td>'+H(si.inspector)+'</td>';
-    h+='<td>'+H(si.contractor||'-')+'</td>';
+    h+='<td style="font-family:JetBrains Mono;font-size:.64rem">'+H(si2.date)+'</td>';
+    h+='<td>'+H(si2.area)+'</td>';
+    h+='<td>'+H(si2.inspector)+'</td>';
+    h+='<td>'+H(si2.contractor||'-')+'</td>';
     h+='<td style="font-size:.58rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(catStr)+'">'+H(catStr||'-')+'</td>';
-    h+='<td style="text-align:center;color:var(--g);font-weight:700">'+(si.satCount||0)+'</td>';
-    h+='<td style="text-align:center;color:var(--or);font-weight:700">'+(si.niCount||0)+'</td>';
-    h+='<td style="text-align:center;color:var(--rd);font-weight:700">'+(si.unsatCount||0)+'</td>';
-    h+='<td><span class="badge '+ob+'">'+H(si.overall)+'</span></td>';
+    h+='<td style="text-align:center;color:var(--g);font-weight:700">'+(si2.satCount||0)+'</td>';
+    h+='<td style="text-align:center;color:var(--or);font-weight:700">'+(si2.niCount||0)+'</td>';
+    h+='<td style="text-align:center;color:var(--rd);font-weight:700">'+(si2.unsatCount||0)+'</td>';
+    h+='<td><span class="badge '+ob+'">'+H(si2.overall)+'</span></td>';
     h+='<td style="white-space:nowrap"><button class="btn bs" onclick="safeViewInsp('+li+')">View</button> <button class="btn bs bd" onclick="safeDelInsp('+li+')">&times;</button></td>';
     h+='</tr>';
   }
@@ -3520,39 +3607,100 @@ if(inps.length>0){
 }
 $('app').innerHTML=h;
 };
-var _safeTimer=null;
-function safeDebouncedSave(){
-  if(_safeTimer)clearTimeout(_safeTimer);
-  _safeTimer=setTimeout(function(){
-    try{localStorage.setItem('ss_safety',JSON.stringify(S.safety))}catch(e){}
-    save();
-    safeShowSaved();
-  },500);
+
+function safeAddMH(){
+var contractors={};
+var mhLog=(S.safety&&S.safety.manHoursLog)?S.safety.manHoursLog:[];
+for(var i=0;i<mhLog.length;i++){if(mhLog[i].contractor)contractors[mhLog[i].contractor]=true}
+for(var i=0;i<(S.safetyInspections||[]).length;i++){var co=S.safetyInspections[i].contractor;if(co)contractors[co]=true}
+for(var i=0;i<(S.teamMembers||[]).length;i++){var nm=S.teamMembers[i].name||S.teamMembers[i].company;if(nm)contractors[nm]=true}
+var cOpts='<option value="">-- Select --</option>';
+for(var ck in contractors)cOpts+='<option value="'+H(ck)+'">'+H(ck)+'</option>';
+cOpts+='<option value="__custom">+ Add New</option>';
+var bd='<div style="font-size:.72rem;color:var(--t2);margin-bottom:12px"><i class="fas fa-info-circle" style="margin-right:4px;color:var(--bl)"></i>Log man-hours worked by each contractor. These are added to the total safe man-hours.</div>';
+bd+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+bd+='<div class="fg"><label class="fl">Contractor</label>';
+bd+='<select id="mhCon" style="width:100%" onchange="if(this.value===\'__custom\')document.getElementById(\'mhConNew\').style.display=\'block\';else document.getElementById(\'mhConNew\').style.display=\'none\'">';
+bd+=cOpts+'</select>';
+bd+='<input type="text" id="mhConNew" placeholder="Enter contractor name..." style="display:none;width:100%;margin-top:4px;padding:5px;font-size:.72rem"></div>';
+bd+='<div class="fg"><label class="fl">Man-Hours</label><input type="number" id="mhVal" style="width:100%" min="0" step="100" placeholder="e.g. 4800"></div>';
+bd+='<div class="fg"><label class="fl">Period From</label><input type="date" id="mhFrom" style="width:100%"></div>';
+bd+='<div class="fg"><label class="fl">Period To</label><input type="date" id="mhTo" value="'+td()+'" style="width:100%"></div>';
+bd+='</div>';
+bd+='<div class="fg"><label class="fl">Notes (optional)</label><input type="text" id="mhNotes" style="width:100%" placeholder="e.g. Monthly report, weekly summary"></div>';
+bd+='<div style="margin-top:12px;padding:10px;background:var(--s2);border-radius:var(--r);border:1px solid var(--bd)">';
+bd+='<div style="font-size:.68rem;font-weight:600;margin-bottom:6px"><i class="fas fa-calculator" style="margin-right:4px"></i>Quick Calculator</div>';
+bd+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:end">';
+bd+='<div><label style="font-size:.56rem;color:var(--t3)">Workers</label><input type="number" id="mhCalcW" value="0" min="0" style="width:100%" oninput="mhDoCalc()"></div>';
+bd+='<div><label style="font-size:.56rem;color:var(--t3)">Hours/Day</label><input type="number" id="mhCalcH" value="8" min="0" style="width:100%" oninput="mhDoCalc()"></div>';
+bd+='<div><label style="font-size:.56rem;color:var(--t3)">Days</label><input type="number" id="mhCalcD" value="0" min="0" style="width:100%" oninput="mhDoCalc()"></div>';
+bd+='<button class="btn bs" onclick="mhDoCalc()" style="height:28px"><i class="fas fa-arrow-right"></i></button>';
+bd+='</div>';
+bd+='<div id="mhCalcResult" style="font-size:.62rem;color:var(--bl);margin-top:4px;font-family:JetBrains Mono"></div>';
+bd+='</div>';
+bd+='<div style="margin-top:10px;padding:8px;background:var(--blc);border-radius:var(--r);font-size:.62rem">';
+bd+='<b>Current Total:</b> <span style="font-family:JetBrains Mono;font-weight:700;color:var(--bl)">'+safeCalcTotalMH().toLocaleString()+'</span> man-hours';
+if(mhLog.length>0)bd+=' <span style="color:var(--t3)">('+mhLog.length+' entries)</span>';
+bd+='</div>';
+mO('Add Man-Hours',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="safeSaveMH()"><i class="fas fa-plus" style="margin-right:4px"></i>Add to Total</button>');
 }
 
-function safeSaveMetrics(){
-  var sh=document.getElementById('safeHoursInp');
-  var sn=document.getElementById('safeNearInp');
-  var si=document.getElementById('safeIncInp');
-  var sd=document.getElementById('safeStartDate');
-  if(sh)S.safety.safeHours=parseInt(sh.value)||0;
-  if(sn)S.safety.nearMisses=parseInt(sn.value)||0;
-  if(si)S.safety.incidents=parseInt(si.value)||0;
-  if(sd)S.safety.startDate=sd.value;
-  try{localStorage.setItem('ss_safety',JSON.stringify(S.safety))}catch(e){}
-  save();
-  try{if(typeof db!=='undefined'&&db)db.ref('ss/safety').set(S.safety)}catch(e){}
-  safeShowSaved();
-}
-
-function safeShowSaved(){
-  var el=document.getElementById('safeSaveStatus');
-  if(el){
-    el.innerHTML='<i class="fas fa-check-circle"></i> Saved at '+new Date().toLocaleTimeString();
-    el.style.color='var(--g)';
-    setTimeout(function(){if(el)el.innerHTML=''},3000);
+function mhDoCalc(){
+var w=parseInt(document.getElementById('mhCalcW').value)||0;
+var h2=parseInt(document.getElementById('mhCalcH').value)||8;
+var d=parseInt(document.getElementById('mhCalcD').value)||0;
+var total=w*h2*d;
+var el=document.getElementById('mhCalcResult');
+if(el){
+  if(total>0){
+    el.innerHTML=w+' workers x '+h2+' hrs/day x '+d+' days = <b>'+total.toLocaleString()+' man-hours</b>';
+    document.getElementById('mhVal').value=total;
+  }else{
+    el.innerHTML='Enter values above to calculate';
   }
 }
+}
+
+function safeSaveMH(){
+var con=document.getElementById('mhCon').value;
+if(con==='__custom'){
+  con=document.getElementById('mhConNew').value.trim();
+  if(!con){alert('Enter contractor name');return}
+}
+if(!con){alert('Select a contractor');return}
+var val=parseInt(document.getElementById('mhVal').value)||0;
+if(!val||val<=0){alert('Enter man-hours value');return}
+var from=document.getElementById('mhFrom').value||'';
+var to=document.getElementById('mhTo').value||td();
+var notes=document.getElementById('mhNotes').value.trim()||'';
+if(!S.safety)S.safety={};
+if(!Array.isArray(S.safety.manHoursLog))S.safety.manHoursLog=[];
+S.safety.manHoursLog.push({id:Date.now(),contractor:con,manHours:val,dateFrom:from,dateTo:to,notes:notes,recordedOn:td()});
+S.safety.safeHours=safeCalcTotalMH();
+try{localStorage.setItem('ss_safety',JSON.stringify(S.safety))}catch(e){}
+save();
+try{if(typeof db!=='undefined'&&db)db.ref('ss/safety').set(S.safety)}catch(e){}
+mC();
+notify(con+': +'+val.toLocaleString()+' hours (Total: '+S.safety.safeHours.toLocaleString()+')');
+doRender();
+}
+
+function safeDelMH(idx){
+var log=(S.safety&&S.safety.manHoursLog)?S.safety.manHoursLog:[];
+if(idx<0||idx>=log.length)return;
+var m=log[idx];
+if(!confirm('Delete '+m.contractor+' '+m.manHours.toLocaleString()+' hours?'))return;
+log.splice(idx,1);
+var total=0;
+for(var i=0;i<log.length;i++)total+=(log[i].manHours||0);
+S.safety.safeHours=total;
+try{localStorage.setItem('ss_safety',JSON.stringify(S.safety))}catch(e){}
+save();
+try{if(typeof db!=='undefined'&&db)db.ref('ss/safety').set(S.safety)}catch(e){}
+notify('Deleted. New total: '+total.toLocaleString());
+doRender();
+}
+
 function safeAddInsp(){
 var bd='<div style="max-height:70vh;overflow-y:auto;padding-right:8px">';
 bd+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
@@ -3593,6 +3741,7 @@ for(var c=0;c<safeChecklist.length;c++){
 var el=document.getElementById('safeCatCount');
 if(el)el.textContent=count+' selected';
 }
+
 function safeTogCat(c){
 var area=document.getElementById('safeCLA');
 if(!area)return;
@@ -3631,6 +3780,7 @@ if(cb.checked){
   if(el)el.remove();
 }
 }
+
 function safeTogItm(c,i){
 var se=document.getElementById('scs_'+c+'_'+i);
 if(!se)return;
@@ -3684,7 +3834,6 @@ var ov='Satisfactory';
 if(pct>=80)ov='Satisfactory';
 else if(pct>=50)ov='Needs Improvement';
 else ov='Unsatisfactory';
-
 var msg='Submit this inspection?\n\n';
 msg+='Items found: '+items.length+'\n';
 msg+='Satisfactory: '+sat+'\n';
@@ -3693,7 +3842,6 @@ msg+='Unsatisfactory: '+uns+'\n';
 msg+='Score: '+pct+'%\n';
 msg+='Overall: '+ov;
 if(!confirm(msg))return;
-
 var catsUsed=[];
 for(var ci=0;ci<safeChecklist.length;ci++){
   var cb2=document.getElementById('scc_'+ci);
@@ -3722,27 +3870,16 @@ if(si.categories&&si.categories.length)bd+='<div style="font-size:.72rem;margin-
 if(si.remarks)bd+='<div style="font-size:.76rem;margin-bottom:8px"><b>Remarks:</b> '+H(si.remarks)+'</div>';
 var itc={};
 var itms=si.items||[];
-for(var i=0;i<itms.length;i++){
-  var t2=itms[i].type||'Observation';
-  itc[t2]=(itc[t2]||0)+1;
-}
+for(var i=0;i<itms.length;i++){var t2=itms[i].type||'Observation';itc[t2]=(itc[t2]||0)+1}
 bd+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
 var tns2=['LTI','Recordable','First Aid','Near Miss','Unsafe Condition','Unsafe Act','Observation'];
 for(var ti2=0;ti2<tns2.length;ti2++){
-  var tn2=tns2[ti2];
-  var tv2=itc[tn2]||0;
-  if(tv2>0){
-    var tc2=safeTypeCol[tn2]||'#6a6560';
-    bd+='<span style="font-size:.62rem;padding:3px 8px;border-radius:3px;background:'+tc2+'22;color:'+tc2+';font-family:JetBrains Mono">'+H(tn2)+': '+tv2+'</span>';
-  }
+  var tn2=tns2[ti2];var tv2=itc[tn2]||0;
+  if(tv2>0){var tc2=safeTypeCol[tn2]||'#6a6560';bd+='<span style="font-size:.62rem;padding:3px 8px;border-radius:3px;background:'+tc2+'22;color:'+tc2+';font-family:JetBrains Mono">'+H(tn2)+': '+tv2+'</span>'}
 }
 bd+='</div>';
 var grp={};
-for(var i=0;i<itms.length;i++){
-  var cat=itms[i].category||'Other';
-  if(!grp[cat])grp[cat]=[];
-  grp[cat].push(itms[i]);
-}
+for(var i=0;i<itms.length;i++){var cat=itms[i].category||'Other';if(!grp[cat])grp[cat]=[];grp[cat].push(itms[i])}
 for(var cat in grp){
   bd+='<div style="margin-bottom:8px"><div style="font-weight:700;font-size:.72rem;color:var(--bl);margin-bottom:3px">'+H(cat)+'</div>';
   for(var i=0;i<grp[cat].length;i++){
@@ -3753,9 +3890,7 @@ for(var cat in grp){
     bd+='<span style="width:6px;height:6px;border-radius:50%;background:'+sc3+';flex-shrink:0;margin-top:5px"></span>';
     bd+='<div style="flex:1"><div style="display:flex;align-items:center;gap:6px">';
     bd+='<span style="flex:1">'+H(it.item)+'</span>';
-    if(it.status!=='Satisfactory'&&it.status!=='N/A'){
-      bd+='<span style="font-family:JetBrains Mono;font-size:.5rem;padding:1px 5px;border-radius:3px;background:'+tpC+'22;color:'+tpC+'">'+H(it.type)+'</span>';
-    }
+    if(it.status!=='Satisfactory'&&it.status!=='N/A')bd+='<span style="font-family:JetBrains Mono;font-size:.5rem;padding:1px 5px;border-radius:3px;background:'+tpC+'22;color:'+tpC+'">'+H(it.type)+'</span>';
     bd+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:'+sc3+';min-width:80px;text-align:right">'+H(it.status)+'</span>';
     bd+='</div>';
     if(it.note)bd+='<div style="font-size:.62rem;color:var(--t3);font-style:italic;margin-top:2px;padding-left:4px">Note: '+H(it.note)+'</div>';
@@ -3781,29 +3916,22 @@ bd+='</div>';
 bd+='<div class="fg"><label class="fl">Remarks</label><textarea id="eiR" rows="2" style="width:100%">'+H(si.remarks||'')+'</textarea></div>';
 bd+='<div style="font-weight:700;font-size:.82rem;margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--bd)">Edit Items</div>';
 bd+='<div style="font-size:.62rem;color:var(--t3);margin-bottom:10px">Modify status, type, or notes for each item below.</div>';
-
 for(var i=0;i<itms.length;i++){
   var it=itms[i];
-  var stBg=it.status==='Satisfactory'?'var(--g)':it.status==='Needs Improvement'?'var(--or)':it.status==='Unsatisfactory'?'var(--rd)':'var(--t3)';
   bd+='<div style="padding:8px 10px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:6px">';
   bd+='<div style="font-size:.62rem;color:var(--bl);margin-bottom:4px;font-family:JetBrains Mono">'+H(it.category)+'</div>';
   bd+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">';
   bd+='<div style="flex:1;font-size:.72rem">'+H(it.item)+'</div>';
   bd+='<select id="eis_'+i+'" style="padding:2px;font-size:.6rem;width:110px" onchange="safeEditTogItm('+i+')">';
   var sts=['Satisfactory','Needs Improvement','Unsatisfactory','N/A'];
-  for(var si2=0;si2<sts.length;si2++){
-    bd+='<option value="'+sts[si2]+'"'+(it.status===sts[si2]?' selected':'')+'>'+sts[si2]+'</option>';
-  }
+  for(var si2=0;si2<sts.length;si2++){bd+='<option value="'+sts[si2]+'"'+(it.status===sts[si2]?' selected':'')+'>'+sts[si2]+'</option>'}
   bd+='</select>';
-  bd+='<select id="eit_'+i+'" style="padding:2px;font-size:.6rem;width:110px'+(it.status==='Satisfactory'||it.status==='N/A'?'':'')+'">';
-  for(var ti=0;ti<safeTypeList.length;ti++){
-    bd+='<option'+(it.type===safeTypeList[ti]?' selected':'')+'>'+safeTypeList[ti]+'</option>';
-  }
+  bd+='<select id="eit_'+i+'" style="padding:2px;font-size:.6rem;width:110px">';
+  for(var ti=0;ti<safeTypeList.length;ti++){bd+='<option'+(it.type===safeTypeList[ti]?' selected':'')+'>'+safeTypeList[ti]+'</option>'}
   bd+='</select></div>';
   bd+='<input type="text" id="ein_'+i+'" placeholder="Add note..." value="'+H(it.note||'')+'" style="width:100%;padding:3px 6px;font-size:.64rem;border:1px solid var(--bd);background:var(--s1);border-radius:3px">';
   bd+='</div>';
 }
-
 bd+='<div style="font-weight:700;font-size:.82rem;margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--bd)">Add New Items</div>';
 bd+='<div style="font-size:.62rem;color:var(--t3);margin-bottom:8px">Select additional categories to add more items.</div>';
 bd+='<div id="eiNewArea"></div>';
@@ -3816,73 +3944,51 @@ for(var c=0;c<safeChecklist.length;c++){
   bd+='<span'+(alreadyHas?' style="color:var(--bl)"':'')+'>'+H(safeChecklist[c].cat)+(alreadyHas?' (existing)':'')+'</span>';
   bd+='</label>';
 }
-bd+='</div>';
-
-bd+='</div>';
+bd+='</div></div>';
 mO('Edit Inspection #'+(idx+1),bd,'<button class="btn" onclick="safeViewInsp('+idx+')">Cancel</button> <button class="btn bp" onclick="safeSaveEdit('+idx+')">Save Changes</button>');
 }
 
 function safeEditTogItm(i){
-var se=document.getElementById('eis_'+i);
-if(!se)return;
-var te=document.getElementById('eit_'+i);
-var v=se.value;
+var se=document.getElementById('eis_'+i);if(!se)return;
+var te=document.getElementById('eit_'+i);var v=se.value;
 if(v==='Satisfactory'||v==='N/A'){if(te)te.value='Observation'}
 else if(v==='Needs Improvement'){if(te)te.value='Unsafe Condition'}
 else if(v==='Unsatisfactory'){if(te)te.value='Unsafe Act'}
 }
 
 function safeEditTogNewCat(c){
-var area=document.getElementById('eiNewArea');
-if(!area)return;
-var cb=document.getElementById('eic_'+c);
-if(!cb)return;
+var area=document.getElementById('eiNewArea');if(!area)return;
+var cb=document.getElementById('eic_'+c);if(!cb)return;
 if(cb.checked){
-  var div=document.createElement('div');
-  div.id='einc_'+c;
+  var div=document.createElement('div');div.id='einc_'+c;
   div.style.cssText='margin-bottom:12px;padding:12px;background:var(--s2);border-radius:var(--r);border:1px solid var(--bl)';
   var html='<div style="font-weight:700;font-size:.76rem;color:var(--bl);margin-bottom:6px">'+H(safeChecklist[c].cat)+' (New)</div>';
   for(var i=0;i<safeChecklist[c].items.length;i++){
     var isOther=safeChecklist[c].items[i]==='Others';
     html+='<div style="padding:6px 0;border-bottom:1px solid rgba(42,45,38,.3)">';
     html+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">';
-    if(isOther){
-      html+='<input type="text" id="eino_'+c+'_'+i+'" placeholder="Specify other finding..." style="flex:1;padding:4px 8px;font-size:.72rem;border:1px solid var(--bd);background:var(--s1);border-radius:3px">';
-    }else{
-      html+='<div style="flex:1;font-size:.72rem">'+H(safeChecklist[c].items[i])+'</div>';
-    }
+    if(isOther)html+='<input type="text" id="eino_'+c+'_'+i+'" placeholder="Specify other finding..." style="flex:1;padding:4px 8px;font-size:.72rem;border:1px solid var(--bd);background:var(--s1);border-radius:3px">';
+    else html+='<div style="flex:1;font-size:.72rem">'+H(safeChecklist[c].items[i])+'</div>';
     html+='<select id="eins_'+c+'_'+i+'" style="padding:2px;font-size:.6rem;width:110px" onchange="safeEditTogNewItem('+c+','+i+')">';
-    html+='<option value="">-- Select --</option>';
-    html+='<option value="Satisfactory">Satisfactory</option>';
-    html+='<option value="Needs Improvement">Needs Improvement</option>';
-    html+='<option value="Unsatisfactory">Unsatisfactory</option>';
-    html+='<option value="N/A">N/A</option></select>';
+    html+='<option value="">-- Select --</option><option value="Satisfactory">Satisfactory</option><option value="Needs Improvement">Needs Improvement</option><option value="Unsatisfactory">Unsatisfactory</option><option value="N/A">N/A</option></select>';
     html+='<select id="eint_'+c+'_'+i+'" style="padding:2px;font-size:.6rem;width:110px;display:none">';
     for(var ti=0;ti<safeTypeList.length;ti++){html+='<option>'+safeTypeList[ti]+'</option>'}
     html+='</select></div>';
     html+='<input type="text" id="einn_'+c+'_'+i+'" placeholder="Add note..." style="display:none;width:100%;padding:3px 6px;font-size:.64rem;border:1px solid var(--bd);background:var(--s1);border-radius:3px">';
     html+='</div>';
   }
-  div.innerHTML=html;
-  area.appendChild(div);
-}else{
-  var el=document.getElementById('einc_'+c);
-  if(el)el.remove();
-}
+  div.innerHTML=html;area.appendChild(div);
+}else{var el=document.getElementById('einc_'+c);if(el)el.remove()}
 }
 
 function safeEditTogNewItem(c,i){
-var se=document.getElementById('eins_'+c+'_'+i);
-if(!se)return;
+var se=document.getElementById('eins_'+c+'_'+i);if(!se)return;
 var te=document.getElementById('eint_'+c+'_'+i);
 var ne=document.getElementById('einn_'+c+'_'+i);
 var v=se.value;
-if(v===''){
-  if(te)te.style.display='none';
-  if(ne)ne.style.display='none';
-}else{
-  if(te)te.style.display='inline-block';
-  if(ne)ne.style.display='block';
+if(v===''){if(te)te.style.display='none';if(ne)ne.style.display='none'}
+else{
+  if(te)te.style.display='inline-block';if(ne)ne.style.display='block';
   if(v==='Satisfactory'||v==='N/A'){if(te)te.value='Observation'}
   else if(v==='Needs Improvement'){if(te)te.value='Unsafe Condition'}
   else if(v==='Unsatisfactory'){if(te)te.value='Unsafe Act'}
@@ -3890,249 +3996,125 @@ if(v===''){
 }
 
 function safeSaveEdit(idx){
-var si=S.safetyInspections[idx];
-if(!si)return;
+var si=S.safetyInspections[idx];if(!si)return;
 var oldItems=si.items||[];
 var items=[],sat=0,ni=0,uns=0;
-
-/* Update existing items */
 for(var i=0;i<oldItems.length;i++){
-  var se=document.getElementById('eis_'+i);
-  var te=document.getElementById('eit_'+i);
-  var ne=document.getElementById('ein_'+i);
+  var se=document.getElementById('eis_'+i);var te=document.getElementById('eit_'+i);var ne=document.getElementById('ein_'+i);
   if(!se)continue;
-  var st=se.value;
-  var tp=te?te.value:oldItems[i].type;
-  var nt=ne?ne.value.trim():(oldItems[i].note||'');
+  var st=se.value;var tp=te?te.value:oldItems[i].type;var nt=ne?ne.value.trim():(oldItems[i].note||'');
   items.push({category:oldItems[i].category,item:oldItems[i].item,status:st,type:tp,note:nt});
-  if(st==='Satisfactory')sat++;
-  else if(st==='Needs Improvement')ni++;
-  else if(st==='Unsatisfactory')uns++;
+  if(st==='Satisfactory')sat++;else if(st==='Needs Improvement')ni++;else if(st==='Unsatisfactory')uns++;
 }
-
-/* Add new items */
 for(var c=0;c<safeChecklist.length;c++){
-  var cb=document.getElementById('eic_'+c);
-  if(!cb||!cb.checked)continue;
+  var cb=document.getElementById('eic_'+c);if(!cb||!cb.checked)continue;
   for(var i=0;i<safeChecklist[c].items.length;i++){
-    var se=document.getElementById('eins_'+c+'_'+i);
-    if(!se)continue;
-    var st=se.value;
-    if(st==='')continue;
-    var te=document.getElementById('eint_'+c+'_'+i);
-    var ne=document.getElementById('einn_'+c+'_'+i);
+    var se=document.getElementById('eins_'+c+'_'+i);if(!se)continue;
+    var st=se.value;if(st==='')continue;
+    var te=document.getElementById('eint_'+c+'_'+i);var ne=document.getElementById('einn_'+c+'_'+i);
     var itemName=safeChecklist[c].items[i];
-    if(itemName==='Others'){
-      var oe=document.getElementById('eino_'+c+'_'+i);
-      var otherText=oe?oe.value.trim():'';
-      if(!otherText){alert('Please specify the other finding in '+safeChecklist[c].cat);return}
-      itemName='Other: '+otherText;
-    }
+    if(itemName==='Others'){var oe=document.getElementById('eino_'+c+'_'+i);var otherText=oe?oe.value.trim():'';if(!otherText){alert('Please specify');return}itemName='Other: '+otherText}
     items.push({category:safeChecklist[c].cat,item:itemName,status:st,type:te?te.value:'Observation',note:ne?ne.value.trim():''});
-    if(st==='Satisfactory')sat++;
-    else if(st==='Needs Improvement')ni++;
-    else if(st==='Unsatisfactory')uns++;
+    if(st==='Satisfactory')sat++;else if(st==='Needs Improvement')ni++;else if(st==='Unsatisfactory')uns++;
   }
 }
-
-var tot=sat+ni+uns;
-var pct=tot>0?Math.round(sat/tot*100):0;
+var tot=sat+ni+uns;var pct=tot>0?Math.round(sat/tot*100):0;
 var ov=pct>=80?'Satisfactory':pct>=50?'Needs Improvement':'Unsatisfactory';
-
 var catsUsed=[];
-for(var ci=0;ci<safeChecklist.length;ci++){
-  var has=false;
-  for(var ii=0;ii<items.length;ii++){if(items[ii].category===safeChecklist[ci].cat){has=true;break}}
-  if(has)catsUsed.push(safeChecklist[ci].cat);
-}
-
-si.date=$('eiD').value;
-si.area=$('eiA').value.trim();
-si.inspector=$('eiI').value.trim();
-si.contractor=$('eiCo').value.trim();
-si.remarks=$('eiR').value.trim();
-si.items=items;
-si.overall=ov;
-si.satCount=sat;
-si.niCount=ni;
-si.unsatCount=uns;
-si.categories=catsUsed;
-
-si.updatedOn=td();
-save();
-try{if(typeof db!=='undefined'&&db)db.ref('ss/safetyInspections').set(S.safetyInspections)}catch(e){}
+for(var ci=0;ci<safeChecklist.length;ci++){var has=false;for(var ii=0;ii<items.length;ii++){if(items[ii].category===safeChecklist[ci].cat){has=true;break}}if(has)catsUsed.push(safeChecklist[ci].cat)}
+si.date=$('eiD').value;si.area=$('eiA').value.trim();si.inspector=$('eiI').value.trim();si.contractor=$('eiCo').value.trim();
+si.remarks=$('eiR').value.trim();si.items=items;si.overall=ov;si.satCount=sat;si.niCount=ni;si.unsatCount=uns;si.categories=catsUsed;si.updatedOn=td();
+save();try{if(typeof db!=='undefined'&&db)db.ref('ss/safetyInspections').set(S.safetyInspections)}catch(e){}
 mC();notify('Updated');doRender();
 }
 
 function safeDelInsp(idx){
 if(!confirm('Delete?'))return;
 S.safetyInspections.splice(idx,1);
-save();
-try{if(typeof db!=='undefined'&&db)db.ref('ss/safetyInspections').set(S.safetyInspections)}catch(e){}
+save();try{if(typeof db!=='undefined'&&db)db.ref('ss/safetyInspections').set(S.safetyInspections)}catch(e){}
 notify('Deleted');doRender();
 }
-  function debugSafeSave(){
-  var el=document.getElementById('debugResult');
-  if(!el)return;
-  var r='<div style="margin-top:6px;padding:6px;background:var(--s1);border-radius:4px">';
-  S.safetyInspections=[{id:999,test:true,date:'2026-01-01'}];
-  save();
-  r+='<div>Step 1: Saved test data to memory</div>';
-  var raw=localStorage.getItem('buildsync_safetyInspections');
-  r+='<div>Step 2: localStorage value: '+(raw||'NULL')+'</div>';
-  S.safetyInspections=lj('safetyInspections',[]);
-  r+='<div>Step 3: After reload from storage: '+JSON.stringify(S.safetyInspections)+'</div>';
-  S.safetyInspections=[];
-  save();
-  r+='<div>Step 4: Cleaned up</div>';
-  r+='</div>';
-  el.innerHTML=r;
-}
+
 function safeSync(){
-  notify('Syncing...');
-  try{
-    if(typeof db!=='undefined'&&db){
-      db.ref('ss/safetyInspections').once('value').then(function(snap){
-        var remote=snap.val();
-        if(!remote){notify('No remote inspections');return}
-        var rArr=Array.isArray(remote)?remote:Object.values(remote);
-        var existIds={};
-        for(var i=0;i<S.safetyInspections.length;i++){
-          if(S.safetyInspections[i].id)existIds[S.safetyInspections[i].id]=true;
-        }
-        var added=0;
-        for(var i=0;i<rArr.length;i++){
-          if(rArr[i]&&rArr[i].id&&!existIds[rArr[i].id]){
-            S.safetyInspections.push(rArr[i]);
-            added++;
-          }
-        }
-        if(added>0){
-          S.safetyInspections.sort(function(a,b){return(b.id||0)-(a.id||0)});
-          save();
-          notify('Merged '+added+' inspection(s)');
-        }else{
-          notify('Already up to date');
-        }
-        doRender();
-      }).catch(function(err){
-        notify('Error: '+err.message);
-      });
-    }else{
-      notify('Firebase not connected');
-    }
-  }catch(e){
-    notify('Sync failed');
-  }
+notify('Syncing...');
+try{
+  if(typeof db!=='undefined'&&db){
+    db.ref('ss/safetyInspections').once('value').then(function(snap){
+      var remote=snap.val();
+      if(!remote){notify('No remote inspections');return}
+      var rArr=Array.isArray(remote)?remote:Object.values(remote);
+      var existIds={};
+      for(var i=0;i<S.safetyInspections.length;i++){if(S.safetyInspections[i].id)existIds[S.safetyInspections[i].id]=true}
+      var added=0;
+      for(var i=0;i<rArr.length;i++){if(rArr[i]&&rArr[i].id&&!existIds[rArr[i].id]){S.safetyInspections.push(rArr[i]);added++}}
+      if(added>0){S.safetyInspections.sort(function(a,b){return(b.id||0)-(a.id||0)});save();notify('Merged '+added+' inspection(s)')}
+      else notify('Already up to date');
+      doRender();
+    }).catch(function(err){notify('Error: '+err.message)});
+  }else notify('Firebase not connected');
+}catch(e){notify('Sync failed')}
 }
-  function safeExportData(){
-  var bd='<div id="safeExportOut" style="font-family:JetBrains Mono;font-size:.66rem;line-height:2">';
-  bd+='<div>Loading data...</div></div>';
-  mO('Export Data',bd,'<button class="btn" onclick="mC()">Close</button>');
-  var out=function(msg){var el=document.getElementById('safeExportOut');if(el)el.innerHTML+='<div style="padding:4px 0;border-bottom:1px solid var(--bd)">'+msg+'</div>'};
 
-  /* Export options */
-  setTimeout(function(){
-    var el=document.getElementById('safeExportOut');
-    if(!el)return;
-    var h='';
-    h+='<div style="margin-bottom:12px"><b style="font-size:.82rem">Export Safety Data</b></div>';
-
-    /* Local data summary */
-    var inps=S.safetyInspections||[];
-    h+='<div style="padding:10px;background:var(--s2);border-radius:var(--r);margin-bottom:10px">';
-    h+='<div style="font-size:.76rem;font-weight:700;margin-bottom:6px">Local Data</div>';
-    h+='<div>Inspections: <b>'+inps.length+'</b></div>';
-    var totalItems=0;
-    for(var i=0;i<inps.length;i++)totalItems+=(inps[i].items||[]).length;
-    h+='<div>Total items: <b>'+totalItems+'</b></div>';
-    h+='<div>Photos: <b>'+(S.photos?S.photos.length:0)+'</b></div>';
-    h+='<div>Tasks: <b>'+(S.tasks?S.tasks.length:0)+'</b></div>';
-    h+='<div>Team: <b>'+(S.teamMembers?S.teamMembers.length:0)+'</b></div>';
-    h+='</div>';
-
-    /* Export buttons */
-    h+='<div style="display:grid;gap:8px">';
-    h+='<button class="btn bp" onclick="expSafeInspections()" style="text-align:left"><i class="fas fa-file-excel"></i> Export Inspections to Excel</button>';
-    h+='<button class="btn bs" onclick="expSafeJSON()" style="text-align:left"><i class="fas fa-file-code"></i> Export All Safety Data (JSON)</button>';
-    h+='<button class="btn bs" onclick="expAllJSON()" style="text-align:left"><i class="fas fa-database"></i> Export Complete Database (JSON)</button>';
-    h+='<button class="btn bs" onclick="expFromFirebase()" style="text-align:left"><i class="fas fa-cloud-download"></i> Export from Firebase (All Users)</button>';
-    h+='</div>';
-
-    h+='<div id="expResult" style="margin-top:10px"></div>';
-    el.innerHTML=h;
-  },100);
+function safeExportData(){
+var bd='<div id="safeExportOut" style="font-family:JetBrains Mono;font-size:.66rem;line-height:2">';
+bd+='<div>Loading data...</div></div>';
+mO('Export Data',bd,'<button class="btn" onclick="mC()">Close</button>');
+setTimeout(function(){
+  var el=document.getElementById('safeExportOut');if(!el)return;
+  var h='';
+  h+='<div style="margin-bottom:12px"><b style="font-size:.82rem">Export Safety Data</b></div>';
+  var inps=S.safetyInspections||[];
+  h+='<div style="padding:10px;background:var(--s2);border-radius:var(--r);margin-bottom:10px">';
+  h+='<div style="font-size:.76rem;font-weight:700;margin-bottom:6px">Local Data</div>';
+  h+='<div>Inspections: <b>'+inps.length+'</b></div>';
+  var totalItems=0;for(var i=0;i<inps.length;i++)totalItems+=(inps[i].items||[]).length;
+  h+='<div>Total items: <b>'+totalItems+'</b></div>';
+  h+='<div>Photos: <b>'+(S.photos?S.photos.length:0)+'</b></div>';
+  h+='<div>Tasks: <b>'+(S.tasks?S.tasks.length:0)+'</b></div>';
+  h+='<div>Team: <b>'+(S.teamMembers?S.teamMembers.length:0)+'</b></div>';
+  h+='</div>';
+  h+='<div style="display:grid;gap:8px">';
+  h+='<button class="btn bp" onclick="expSafeInspections()" style="text-align:left"><i class="fas fa-file-excel"></i> Export Inspections to Excel</button>';
+  h+='<button class="btn bs" onclick="expSafeJSON()" style="text-align:left"><i class="fas fa-file-code"></i> Export All Safety Data (JSON)</button>';
+  h+='<button class="btn bs" onclick="expAllJSON()" style="text-align:left"><i class="fas fa-database"></i> Export Complete Database (JSON)</button>';
+  h+='<button class="btn bs" onclick="expFromFirebase()" style="text-align:left"><i class="fas fa-cloud-download"></i> Export from Firebase (All Users)</button>';
+  h+='</div>';
+  h+='<div id="expResult" style="margin-top:10px"></div>';
+  el.innerHTML=h;
+},100);
 }
 
 function expSafeInspections(){
-  if(typeof XLSX==='undefined'){alert('XLSX not loaded');return}
-  var inps=S.safetyInspections||[];
-  if(!inps.length){alert('No inspections');return}
-  var wb=XLSX.utils.book_new();
-
-  /* Summary sheet */
-  var sd=[['#','Date','Area','Inspector','Contractor','Overall','SAT','NI','UNSAT','Categories','Remarks']];
-  for(var i=0;i<inps.length;i++){
-    var si=inps[i];
-    sd.push([i+1,si.date,si.area,si.inspector,si.contractor||'',si.overall,si.satCount||0,si.niCount||0,si.unsatCount||0,(si.categories||[]).join(', '),si.remarks||'']);
-  }
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),'Summary');
-
-  /* Details sheet */
-  var dd2=[['#','Date','Inspector','Category','Item','Status','Type','Note']];
-  for(var i=0;i<inps.length;i++){
-    var si=inps[i];
-    var items=si.items||[];
-    for(var j=0;j<items.length;j++){
-      var it=items[j];
-      dd2.push([i+1,si.date,si.inspector,it.category,it.item,it.status,it.type,it.note||'']);
-    }
-  }
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(dd2),'Details');
-
-  XLSX.writeFile(wb,'Safety_Inspections_'+td()+'.xlsx');
-  notify('Exported');
+if(typeof XLSX==='undefined'){alert('XLSX not loaded');return}
+var inps=S.safetyInspections||[];
+if(!inps.length){alert('No inspections');return}
+var wb=XLSX.utils.book_new();
+var sd=[['#','Date','Area','Inspector','Contractor','Overall','SAT','NI','UNSAT','Categories','Remarks']];
+for(var i=0;i<inps.length;i++){var si=inps[i];sd.push([i+1,si.date,si.area,si.inspector,si.contractor||'',si.overall,si.satCount||0,si.niCount||0,si.unsatCount||0,(si.categories||[]).join(', '),si.remarks||''])}
+XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),'Summary');
+var dd2=[['#','Date','Inspector','Category','Item','Status','Type','Note']];
+for(var i=0;i<inps.length;i++){var si=inps[i];var items=si.items||[];for(var j=0;j<items.length;j++){var it=items[j];dd2.push([i+1,si.date,si.inspector,it.category,it.item,it.status,it.type,it.note||''])}}
+XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(dd2),'Details');
+XLSX.writeFile(wb,'Safety_Inspections_'+td()+'.xlsx');notify('Exported');
 }
 
-function expSafeJSON(){
-  var data={safety:S.safety||{},safetyInspections:S.safetyInspections||[]};
-  downloadJSON(data,'safety_data_'+td()+'.json');
-  notify('Exported');
-}
-
-function expAllJSON(){
-  var data={tasks:S.tasks||[],taskProjects:S.taskProjects||[],teamMembers:S.teamMembers||[],safety:S.safety||{},safetyInspections:S.safetyInspections||[],inspections:S.inspections||[],inspTemplates:S.inspTemplates||[],sitePayments:S.sitePayments||[],siteCost:siteCost||0,vgc:S.vgc||{},upds:S.upds||[]};
-  downloadJSON(data,'complete_database_'+td()+'.json');
-  notify('Exported');
-}
+function expSafeJSON(){var data={safety:S.safety||{},safetyInspections:S.safetyInspections||[]};downloadJSON(data,'safety_data_'+td()+'.json');notify('Exported')}
+function expAllJSON(){var data={tasks:S.tasks||[],taskProjects:S.taskProjects||[],teamMembers:S.teamMembers||[],safety:S.safety||{},safetyInspections:S.safetyInspections||[],inspections:S.inspections||[],inspTemplates:S.inspTemplates||[],sitePayments:S.sitePayments||[],siteCost:siteCost||0,vgc:S.vgc||{},upds:S.upds||[]};downloadJSON(data,'complete_database_'+td()+'.json');notify('Exported')}
 
 function expFromFirebase(){
-  var el=document.getElementById('expResult');
-  if(el)el.innerHTML='<div><i class="fas fa-spinner fa-spin"></i> Loading from Firebase...</div>';
-  db.ref('ss').once('value').then(function(snap){
-    var v=snap.val();
-    if(!v){
-      if(el)el.innerHTML='<div style="color:var(--rd)">No data in Firebase</div>';
-      return;
-    }
-    downloadJSON(v,'firebase_export_'+td()+'.json');
-    var size=Math.round(JSON.stringify(v).length/1024);
-    if(el)el.innerHTML='<div style="color:var(--g)">✅ Exported '+size+'KB from Firebase</div>';
-    notify('Exported');
-  }).catch(function(err){
-    if(el)el.innerHTML='<div style="color:var(--rd)">Error: '+err.message+'</div>';
-  });
+var el=document.getElementById('expResult');if(el)el.innerHTML='<div><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+db.ref('ss').once('value').then(function(snap){
+  var v=snap.val();
+  if(!v){if(el)el.innerHTML='<div style="color:var(--rd)">No data in Firebase</div>';return}
+  downloadJSON(v,'firebase_export_'+td()+'.json');
+  var size=Math.round(JSON.stringify(v).length/1024);
+  if(el)el.innerHTML='<div style="color:var(--g)">Exported '+size+'KB from Firebase</div>';notify('Exported');
+}).catch(function(err){if(el)el.innerHTML='<div style="color:var(--rd)">Error: '+err.message+'</div>'});
 }
 
 function downloadJSON(data,filename){
-  var json=JSON.stringify(data,null,2);
-  var blob=new Blob([json],{type:'application/json'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;a.download=filename;
-  document.body.appendChild(a);a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+var json=JSON.stringify(data,null,2);var blob=new Blob([json],{type:'application/json'});var url=URL.createObjectURL(blob);
+var a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 }
  /* === REPORT === */
 R.report=function(){
