@@ -327,7 +327,6 @@ for(var p=0;p<S.taskProjects.length;p++){
     }
   }
   doRender();
-}
 function togAuth(){authMode=authMode==='login'?'signup':'login';$('lTitle').textContent=authMode==='signup'?'Create Account':'Sign In';$('lSub').textContent=authMode==='signup'?'Create an account':'Sign in';$('lBtn').textContent=authMode==='signup'?'Sign Up':'Sign In'}
 function doLogin(){var em=$('lEmail').value.trim(),pw=$('lPass').value;if(!em||!pw||!fbAuth)return;$('lBtn').textContent='...';var fn=authMode==='signup'?fbAuth.createUserWithEmailAndPassword:fbAuth.signInWithEmailAndPassword;fn.call(fbAuth,em,pw).catch(function(e){$('lBtn').textContent='Sign In';$('lErr').textContent=e.message;$('lErr').style.display='block'})}
 function doLogout(){if(fbAuth)fbAuth.signOut();$('loginScr').style.display='none'}
