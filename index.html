@@ -267,6 +267,16 @@ try{
     localStorage.removeItem('buildsync_safetyInspections_remote');
   }
 }catch(e){}
+try{
+  var tmFb=S._fbTeamMembers||[];
+  for(var ti=0;ti<tmFb.length;ti++){
+    var found=false;
+    for(var tj=0;tj<S.teamMembers.length;tj++){
+      if(S.teamMembers[tj].id===tmFb[ti].id){found=true;break}
+    }
+    if(!found)S.teamMembers.push(tmFb[ti]);
+  }
+}catch(e){}
 var sc=localStorage.getItem('ss_siteCost');
 siteCost=sc?parseFloat(sc):0;
 for(var i=0;i<S.tasks.length;i++){
