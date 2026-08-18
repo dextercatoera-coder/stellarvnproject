@@ -1104,7 +1104,7 @@ setTimeout(function(){
 },50);
 };
 /* === FIREBASE SYNC HELPERS === */
-function fbTasks();auditLog('Task','Modified','Task data changed'){try{if(typeof db!=='undefined'&&db)db.ref('ss/tasks').set(S.tasks||[])}catch(e){}}
+function fbTasks()auditLog('Task','Modified','Task data changed'){try{if(typeof db!=='undefined'&&db)db.ref('ss/tasks').set(S.tasks||[])}catch(e){}}
 function fbProjects(){try{if(typeof db!=='undefined'&&db)db.ref('ss/taskProjects').set(S.taskProjects||[])}catch(e){}}
 function fbSiteCost(){try{if(typeof db!=='undefined'&&db)db.ref('ss/siteCost').set(siteCost||0)}catch(e){}}
 function fbSitePay(){try{if(typeof db!=='undefined'&&db)db.ref('ss/sitePayments').set(S.sitePayments||[])}catch(e){}}
