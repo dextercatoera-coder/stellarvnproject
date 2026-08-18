@@ -222,7 +222,7 @@ S.tasks=lj('tasks',defTasks());
 S.upds=lj('upds',[]);
 S.photos=lj('photos',[]);
 S.safety=lj('safety',defSafe());
-try{if(!Array.isArray(S.safety.manHoursLog))S.safety.manHoursLog=[]}catch(e){S.safety={manHoursLog:[]}}
+if(!Array.isArray(S.safety.manHoursLog))S.safety.manHoursLog=[];
 S.vgc=lj('vgc',{});
 S.taskProjects=lj('taskProjects',[]);
 S.sitePayments=lj('sitePayments',[]);
@@ -2823,59 +2823,6 @@ save();notify('Deleted');doRender();
 var auditMaxEntries=500;
 var auditFilterType='all';
 var auditFilterSearch='';
-
-function auditPush(entry){
-  if(!Array.isArray(S.auditLog))S.auditLog=[];
-  entry.id=Date.now()+'_'+Math.random().toString(36).substr(2,4);
-  entry.ts=new Date().toISOString();
-  entry.user=currentUserEmail||currentUser||'Unknown';
-  S.auditLog.unshift(entry);
-  if(S.auditLog.length>auditMaxEntries)S.auditLog=S.auditLog.slice(0,auditMaxEntries);
-  try{localStorage.setItem('ss_auditLog',JSON.stringify(S.auditLog))}catch(e){}
-  try{if(typeof db!=='undefined'&&db)db.ref('ss/auditLog').set(S.auditLog.slice(0,200))}catch(e){}
-}
-
-function auditLog(type,action,details,oldVal,newVal){
-  auditPush({
-    type:type,
-    action:action,
-    details:details||'',
-    oldVal:oldVal!==undefined?truncateStr(String(oldVal),200):'',
-    newVal:newVal!==undefined?truncateStr(String(newVal),200):'',
-    tab:tab||''
-  });
-}
-
-function truncateStr(s,max){
-  if(!s)return'';
-  return s.length>max?s.substring(0,max)+'...':s;
-}
-
-function auditLogTaskChange(field,idx,oldV,newV){
-  var t=S.tasks[idx];
-  var name=t?t.name:'Task #'+idx;
-  auditLog('Task','Modified',field+' of "'+name+'" (WBS: '+(t?t.wbs:'?')+')',oldV,newV);
-}
-
-function auditLogProjectChange(projName,field,oldV,newV){
-  auditLog('Project','Modified',field+' of "'+projName+'"',oldV,newV);
-}
-
-function auditLogCostChange(field,oldV,newV){
-  auditLog('Cost','Modified','Site '+field,oldV,newV);
-}
-
-function auditLogInspChange(action,details){
-  auditLog('Inspection',action,details);
-}
-
-function auditLogSafetyChange(action,details){
-  auditLog('Safety',action,details);
-}
-
-function auditLogDataAction(action,details){
-  auditLog('Data',action,details);
-}
 
 /* === CLOUD SETTINGS === */
 R.cloud=function(){
