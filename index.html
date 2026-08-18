@@ -307,34 +307,6 @@ for(var p=0;p<S.taskProjects.length;p++){
 }
 }catch(e){console.error('Load:',e)}
 }
-/* Merge Firebase teamMembers (no photos) with local (has photos) */
-try{
-  var tmFb=S._fbTeamMembers||[];
-  for(var ti=0;ti<tmFb.length;ti++){
-    var found=false;
-    for(var tj=0;tj<S.teamMembers.length;tj++){
-      if(S.teamMembers[tj].id===tmFb[ti].id){found=true;break}
-    }
-    if(!found)S.teamMembers.push(tmFb[ti]);
-  }
-}catch(e){}var sc=localStorage.getItem('ss_siteCost');siteCost=sc?parseFloat(sc):0;for(var i=0;i<S.tasks.length;i++){if(!S.tasks[i].remarks)S.tasks[i].remarks=[];if(!S.tasks[i].pred)S.tasks[i].pred='';if(!S.tasks[i].assignee)S.tasks[i].assignee=''}var nw=false;for(var i=0;i<S.tasks.length;i++)if(S.tasks[i].wbs.indexOf('.')===-1&&!S.tasks[i].wt)nw=true;if(nw)calcWt(S.tasks);sortTasks(S.tasks);if(!localStorage.getItem('ss_v3')){S.inspections=[];localStorage.setItem('ss_v3','1')}for(var p=0;p<S.taskProjects.length;p++){var pts=S.taskProjects[p].tasks||[];for(var i=0;i<pts.length;i++){if(!pts[i].remarks)pts[i].remarks=[];if(!pts[i].pred)pts[i].pred='';if(!pts[i].assignee)pts[i].assignee='';if(pts[i].wt===undefined)pts[i].wt=(pts[i].wbs.indexOf('.')===-1)?5:0}var needsWt=false;for(var i=0;i<pts.length;i++){if(pts[i].wbs.indexOf('.')===-1&&!pts[i].wt)needsWt=true}if(needsWt)calcWt(pts);sortTasks(pts)}}catch(e){console.error('Load:',e)}}
-function loadScr(src,cb){var s=document.createElement('script');s.src=src;s.onload=cb;s.onerror=cb;document.head.appendChild(s)}
-function tryCloud(){var c;try{c=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}if(!c||!c.apiKey||!c.databaseURL)return;$('loginScr').style.display='flex';if(typeof firebase!=='undefined'){initFB(c);return}loadScr('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js',function(){if(typeof firebase==='undefined')return;loadScr('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js',function(){loadScr('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js',function(){initFB(c)})})})}
-function initFB(c){try{if(!firebase.apps.length)firebase.initializeApp(c);db=firebase.database();fbAuth=firebase.auth();cOn=true;if(location.search.indexOf('logout=1')>=0){fbAuth.signOut();localStorage.clear();}fbAuth.onAuthStateChanged(function(u){if(u){curUser=u;$('hUser').textContent=u.email||'';$('hUser').style.display='inline';$('hOut').style.display='inline';$('loginScr').style.display='none';$('mainApp').style.display='block';syncDown()}else{curUser=null;$('hUser').style.display='none';$('hOut').style.display='none'}})}catch(e){console.error(e)}}
-function syncDown(){if(!db)return;$('hDot').className='dot wr';$('hLbl').textContent='Syncing...';db.ref('ss').once('value').then(function(s){var v=s.val();if(v&&v.tasks){applyR(v);notify('Synced')}else{syncUp()}$('hDot').className='dot on';$('hLbl').textContent='Connected';db.ref('ss').on('value',function(s2){applyR(s2.val())});db.ref('.info/connected').on('value',function(s2){$('hDot').className=s2.val()?'dot on':'dot off';$('hLbl').textContent=s2.val()?'Connected':'Offline'})}).catch(function(){$('hDot').className='dot off';$('hLbl').textContent='Failed'})}
-function applyR(v){
-  if(!v)return;
-  ['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','photos'].forEach(function(k){
-    if(v[k]!==undefined){S[k]=v[k];localStorage.setItem('ss_'+k,JSON.stringify(v[k]))}
-  });
-  if(v.siteCost!==undefined){siteCost=v.siteCost;localStorage.setItem('ss_siteCost',String(siteCost))}
-  if(v.phWebhookUrl!==undefined){S.phWebhookUrl=v.phWebhookUrl;localStorage.setItem('ss_phWebhookUrl',v.phWebhookUrl)}
-  if(v.phSPFolder!==undefined){S.phSPFolder=v.phSPFolder;localStorage.setItem('ss_phSPFolder',v.phSPFolder)}
-  if(v.phSPSite!==undefined){S.phSPSite=v.phSPSite;localStorage.setItem('ss_phSPSite',v.phSPSite)}
-  if(v.wthApiKey!==undefined){S.wthApiKey=v.wthApiKey;localStorage.setItem('ss_wthApiKey',v.wthApiKey)}
-  if(v.wthLocation!==undefined){S.wthLocation=v.wthLocation;localStorage.setItem('ss_wthLocation',v.wthLocation)}
-  if(v.wthUnit!==undefined){S.wthUnit=v.wthUnit;localStorage.setItem('ss_wthUnit',v.wthUnit)}
-  if(v.viewer3d!==undefined){S.viewer3d=v.viewer3d;localStorage.setItem('ss_viewer3d',JSON.stringify(v.viewer3d))}
   /* Merge safetyInspections by ID — never overwrite */
   if(v.safetyInspections!==undefined){
     var remoteArr=Array.isArray(v.safetyInspections)?v.safetyInspections:[];
