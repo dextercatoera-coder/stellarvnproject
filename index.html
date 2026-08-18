@@ -216,7 +216,7 @@ function syncUp(){
     }
   }catch(e){}
 }
-function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());if(!Array.isArray(S.safety.manHoursLog))S.safety.manHoursLog=[];S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.originalPlan=lj('originalPlan',[])
+function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());if(!Array.isArray(S.safety.manHoursLog))S.safety.manHoursLog=[];S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);siteCost=lj('siteCost',0);S.auditLog=lj('auditLog',[]);if(!Array.isArray(S.auditLog))S.auditLog=[];S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.originalPlan=lj('originalPlan',[])
 S.reports=[];
 try{var _r=localStorage.getItem('ss_reports');if(_r)S.reports=JSON.parse(_r)}catch(e){S.reports=[]}
 S.reportConfig={};
@@ -1075,7 +1075,7 @@ setTimeout(function(){
 },50);
 };
 /* === FIREBASE SYNC HELPERS === */
-function fbTasks(){try{if(typeof db!=='undefined'&&db)db.ref('ss/tasks').set(S.tasks||[])}catch(e){}}
+function fbTasks();auditLog('Task','Modified','Task data changed'){try{if(typeof db!=='undefined'&&db)db.ref('ss/tasks').set(S.tasks||[])}catch(e){}}
 function fbProjects(){try{if(typeof db!=='undefined'&&db)db.ref('ss/taskProjects').set(S.taskProjects||[])}catch(e){}}
 function fbSiteCost(){try{if(typeof db!=='undefined'&&db)db.ref('ss/siteCost').set(siteCost||0)}catch(e){}}
 function fbSitePay(){try{if(typeof db!=='undefined'&&db)db.ref('ss/sitePayments').set(S.sitePayments||[])}catch(e){}}
@@ -1115,7 +1115,7 @@ for(var i=0;i<m.length;i++){
 h+='</div>';
 
 var tw=totLW(S.tasks),wtOk=Math.abs(tw-100)<0.5;
-h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:6px 10px;background:'+(wtOk?'var(--gc)':'var(--rdc)')+';border:1px solid '+(wtOk?'rgba(45,138,50,.3)':'rgba(204,51,51,.3)')+';border-radius:var(--r)"><span style="font-family:JetBrains Mono;font-size:.66rem;font-weight:700;color:'+(wtOk?'var(--g)':'var(--rd)')+'">Main WT: '+tw.toFixed(2)+'%</span>'+(wtOk?'':' <span style="font-size:.62rem;color:var(--rd)">Should=100%</span>')+'<span style="flex:1"></span><button class="btn bs" onclick="calcWt(S.tasks);save();fbTasks();doRender()">Reset</button><button class="btn bs'+(wtOk?'':' bp')+'" onclick="normWt(S.tasks);save();fbTasks();doRender()">Normalize</button></div>';
+h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:6px 10px;background:'+(wtOk?'var(--gc)':'var(--rdc)')+';border:1px solid '+(wtOk?'rgba(45,138,50,.3)':'rgba(204,51,51,.3)')+';border-radius:var(--r)"><span style="font-family:JetBrains Mono;font-size:.66rem;font-weight:700;color:'+(wtOk?'var(--g)':'var(--rd)')+'">Main WT: '+tw.toFixed(2)+'%</span>'+(wtOk?'':' <span style="font-size:.62rem;color:var(--rd)">Should=100%</span>')+'<span style="flex:1"></span><button class="btn bs" onclick="calcWt(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()">Reset</button><button class="btn bs'+(wtOk?'':' bp')+'" onclick="normWt(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()">Normalize</button></div>';
 
 var sP=sPaid(),sR=(siteCost||0)-sP;
 h+='<div class="card"><div class="ch"><span class="ct">Cost</span>';
@@ -1137,27 +1137,27 @@ h+='</div>';
 var po='';
 for(var i=0;i<m.length;i++)po+='<option value="'+m[i].wbs+'">'+m[i].wbs+' '+H(m[i].name)+'</option>';
 
-h+='<div class="card"><div class="ch"><span class="ct">Tasks</span><span style="display:flex;align-items:center;gap:8px"><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+S.tasks.length+'</span><button class="btn bs" onclick="sortTasks(S.tasks);save();fbTasks();doRender()">Sort</button></span></div>';
+h+='<div class="card"><div class="ch"><span class="ct">Tasks</span><span style="display:flex;align-items:center;gap:8px"><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+S.tasks.length+'</span><button class="btn bs" onclick="sortTasks(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()">Sort</button></span></div>';
 h+='<div class="tw"><table><thead><tr><th style="width:30px">WBS</th><th>Task</th><th>Pred</th><th>Assigned</th><th>Cat</th><th style="text-align:right">WT%</th><th>Dur</th><th>Start</th><th>End</th><th>%</th><th>N</th><th style="text-align:center;width:90px">Actions</th></tr></thead><tbody>';
 for(var i=0;i<S.tasks.length;i++){
   var t=S.tasks[i],isM=t.wbs.indexOf('.')===-1;
-  h+='<tr'+(isM?' style="background:var(--s2);font-weight:600;border-left:3px solid var(--bl)"':' style="border-left:3px solid transparent"')+'><td'+(isM?'':' style="padding-left:22px"')+'><div class="wbs-ed" contenteditable onclick="event.stopPropagation()" onblur="if(this.textContent.trim()&&this.textContent.trim()!==S.tasks['+i+'].wbs){S.tasks['+i+'].wbs=this.textContent.trim();sortTasks(S.tasks);save();fbTasks();doRender()}">'+H(t.wbs)+'</div></td>';
-  h+='<td><div class="name-ed" contenteditable onclick="event.stopPropagation()" onblur="S.tasks['+i+'].name=this.textContent.trim();save();fbTasks()">'+H(t.name)+'</div>'+rmP(t)+'</td>';
-  h+='<td><input type="text" value="'+H(t.pred||'')+'" style="padding:2px;font-size:.68rem;width:44px;text-align:center;font-family:JetBrains Mono;border:1px solid var(--b2);border-radius:3px" onchange="S.tasks['+i+'].pred=this.value.trim();save();fbTasks()" placeholder="-"></td>';
-  h+='<td><input type="text" value="'+H(t.assignee||'')+'" style="padding:2px;font-size:.68rem;width:80px;border:1px solid var(--b2);border-radius:3px" onchange="S.tasks['+i+'].assignee=this.value.trim();save();fbTasks()" placeholder="Name"></td>';
-  h+='<td><select onchange="S.tasks['+i+'].cat=this.value;save();fbTasks()" style="padding:1px;font-size:.7rem;border:0;background:transparent">'+catOpts(t.cat)+'</select></td>';
+  h+='<tr'+(isM?' style="background:var(--s2);font-weight:600;border-left:3px solid var(--bl)"':' style="border-left:3px solid transparent"')+'><td'+(isM?'':' style="padding-left:22px"')+'><div class="wbs-ed" contenteditable onclick="event.stopPropagation()" onblur="if(this.textContent.trim()&&this.textContent.trim()!==S.tasks['+i+'].wbs){S.tasks['+i+'].wbs=this.textContent.trim();sortTasks(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()}">'+H(t.wbs)+'</div></td>';
+  h+='<td><div class="name-ed" contenteditable onclick="event.stopPropagation()" onblur="S.tasks['+i+'].name=this.textContent.trim();save();fbTasks();auditLog('Task','Modified','Task data changed')">'+H(t.name)+'</div>'+rmP(t)+'</td>';
+  h+='<td><input type="text" value="'+H(t.pred||'')+'" style="padding:2px;font-size:.68rem;width:44px;text-align:center;font-family:JetBrains Mono;border:1px solid var(--b2);border-radius:3px" onchange="S.tasks['+i+'].pred=this.value.trim();save();fbTasks();auditLog('Task','Modified','Task data changed')" placeholder="-"></td>';
+  h+='<td><input type="text" value="'+H(t.assignee||'')+'" style="padding:2px;font-size:.68rem;width:80px;border:1px solid var(--b2);border-radius:3px" onchange="S.tasks['+i+'].assignee=this.value.trim();save();fbTasks();auditLog('Task','Modified','Task data changed')" placeholder="Name"></td>';
+  h+='<td><select onchange="S.tasks['+i+'].cat=this.value;save();fbTasks();auditLog('Task','Modified','Task data changed')" style="padding:1px;font-size:.7rem;border:0;background:transparent">'+catOpts(t.cat)+'</select></td>';
   if(!isM)h+='<td style="text-align:center;font-family:JetBrains Mono;font-size:.6rem;color:var(--t3)">-</td>';
-  else h+='<td><input type="number" value="'+(t.wt||0).toFixed(2)+'" step="0.01" style="padding:2px;font-size:.7rem;width:54px;text-align:right;font-family:JetBrains Mono" onchange="S.tasks['+i+'].wt=parseFloat(this.value)||0;save();fbTasks()"></td>';
+  else h+='<td><input type="number" value="'+(t.wt||0).toFixed(2)+'" step="0.01" style="padding:2px;font-size:.7rem;width:54px;text-align:right;font-family:JetBrains Mono" onchange="S.tasks['+i+'].wt=parseFloat(this.value)||0;save();fbTasks();auditLog('Task','Modified','Task data changed')"></td>';
   h+='<td>'+t.dur+'</td>';
-  h+='<td><input type="date" value="'+t.s+'" style="padding:2px;font-size:.7rem;width:110px" onchange="S.tasks['+i+'].s=this.value;S.tasks['+i+'].dur=dd(S.tasks['+i+'].s,S.tasks['+i+'].e);save();fbTasks()"></td>';
-  h+='<td><input type="date" value="'+t.e+'" style="padding:2px;font-size:.7rem;width:110px" onchange="S.tasks['+i+'].e=this.value;S.tasks['+i+'].dur=dd(S.tasks['+i+'].s,S.tasks['+i+'].e);save();fbTasks()"></td>';
-  h+='<td><input type="number" value="'+t.prog+'" min="0" max="100" style="padding:2px;font-size:.7rem;width:46px;text-align:right" onchange="S.tasks['+i+'].prog=parseInt(this.value)||0;S.tasks['+i+'].st=aSt(S.tasks['+i+'].prog);save();fbTasks();doRender()"></td>';
+  h+='<td><input type="date" value="'+t.s+'" style="padding:2px;font-size:.7rem;width:110px" onchange="S.tasks['+i+'].s=this.value;S.tasks['+i+'].dur=dd(S.tasks['+i+'].s,S.tasks['+i+'].e);save();fbTasks();auditLog('Task','Modified','Task data changed')"></td>';
+  h+='<td><input type="date" value="'+t.e+'" style="padding:2px;font-size:.7rem;width:110px" onchange="S.tasks['+i+'].e=this.value;S.tasks['+i+'].dur=dd(S.tasks['+i+'].s,S.tasks['+i+'].e);save();fbTasks();auditLog('Task','Modified','Task data changed')"></td>';
+  h+='<td><input type="number" value="'+t.prog+'" min="0" max="100" style="padding:2px;font-size:.7rem;width:46px;text-align:right" onchange="S.tasks['+i+'].prog=parseInt(this.value)||0;S.tasks['+i+'].st=aSt(S.tasks['+i+'].prog);save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()"></td>';
   h+='<td>'+rmB(t,i,0)+'</td>';
   h+='<td style="text-align:center;white-space:nowrap">';
   if(isM)h+='<button class="btn bs bp" onclick="addSubToWbs(\''+t.wbs+'\')" style="font-size:.56rem;padding:2px 5px">+Sub</button> ';
-  h+='<button class="mv-btn"'+(canMv(S.tasks,i,-1)?'':' disabled')+' onclick="if(canMv(S.tasks,'+i+',-1)){doMv(S.tasks,'+i+',-1);save();fbTasks();doRender()}">&#9650;</button>';
-  h+='<button class="mv-btn"'+(canMv(S.tasks,i,1)?'':' disabled')+' onclick="if(canMv(S.tasks,'+i+',1)){doMv(S.tasks,'+i+',1);save();fbTasks();doRender()}">&#9660;</button> ';
-  h+='<button class="btn bs bd" onclick="if(confirm(\'Delete\')){delTask(S.tasks,'+i+');save();fbTasks();doRender()}" style="padding:2px 5px">&times;</button></td></tr>';
+  h+='<button class="mv-btn"'+(canMv(S.tasks,i,-1)?'':' disabled')+' onclick="if(canMv(S.tasks,'+i+',-1)){doMv(S.tasks,'+i+',-1);save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()}">&#9650;</button>';
+  h+='<button class="mv-btn"'+(canMv(S.tasks,i,1)?'':' disabled')+' onclick="if(canMv(S.tasks,'+i+',1)){doMv(S.tasks,'+i+',1);save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()}">&#9660;</button> ';
+  h+='<button class="btn bs bd" onclick="if(confirm(\'Delete\')){delTask(S.tasks,'+i+');save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()}" style="padding:2px 5px">&times;</button></td></tr>';
 }
 h+='<tr class="iar"><td><select id="ntW" style="width:56px">'+po+'</select></td>';
 h+='<td><input type="text" id="ntN" placeholder="New task..."></td>';
@@ -1369,7 +1369,7 @@ function impShowPreview(newTasks,errors){
 function impReplaceMode(){
   if(!window._impTasks)return;
   if(!confirm('Replace all '+S.tasks.length+' current tasks with '+window._impTasks.length+' imported tasks?'))return;
-  S.tasks=window._impTasks;sortTasks(S.tasks);save();fbTasks();mC();window._impTasks=null;notify('Imported '+S.tasks.length+' tasks');doRender();
+  S.tasks=window._impTasks;sortTasks(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');mC();window._impTasks=null;notify('Imported '+S.tasks.length+' tasks');doRender();
 }
 
 function impAddMode(){
@@ -1377,22 +1377,22 @@ function impAddMode(){
   var newTasks=window._impTasks;var existWbs={};for(var i=0;i<S.tasks.length;i++)existWbs[S.tasks[i].wbs]=true;
   var added=0,skipped=0;
   for(var i=0;i<newTasks.length;i++){if(existWbs[newTasks[i].wbs])skipped++;else{S.tasks.push(newTasks[i]);added++}}
-  sortTasks(S.tasks);save();fbTasks();mC();window._impTasks=null;notify('Added '+added+' tasks ('+skipped+' skipped)');doRender();
+  sortTasks(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');mC();window._impTasks=null;notify('Added '+added+' tasks ('+skipped+' skipped)');doRender();
 }
 
-function addT(){var p=$('ntW').value,n=$('ntN').value.trim();if(!n)return;var mx=0;for(var i=0;i<S.tasks.length;i++){if(S.tasks[i].wbs.indexOf(p+'.')===0){var num=parseInt(S.tasks[i].wbs.substring(p.length+1));if(!isNaN(num)&&num>mx)mx=num}}S.tasks.push({wbs:p+'.'+(mx+1),name:n,dur:dd($('ntS').value,$('ntE').value),s:$('ntS').value,e:$('ntE').value,prog:0,st:'pending',cat:$('ntC').value,remarks:[],wt:5,pred:$('ntP').value.trim(),assignee:$('ntA').value.trim()});sortTasks(S.tasks);save();fbTasks();notify('Added');doRender()}
+function addT(){var p=$('ntW').value,n=$('ntN').value.trim();if(!n)return;var mx=0;for(var i=0;i<S.tasks.length;i++){if(S.tasks[i].wbs.indexOf(p+'.')===0){var num=parseInt(S.tasks[i].wbs.substring(p.length+1));if(!isNaN(num)&&num>mx)mx=num}}S.tasks.push({wbs:p+'.'+(mx+1),name:n,dur:dd($('ntS').value,$('ntE').value),s:$('ntS').value,e:$('ntE').value,prog:0,st:'pending',cat:$('ntC').value,remarks:[],wt:5,pred:$('ntP').value.trim(),assignee:$('ntA').value.trim()});sortTasks(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');notify('Added');doRender()}
 
 function addSubToWbs(parentWbs){var parentCat='General';for(var i=0;i<S.tasks.length;i++)if(S.tasks[i].wbs===parentWbs){parentCat=S.tasks[i].cat||'General';break}mO('Add Sub-Task under '+parentWbs,'<div style="font-size:.72rem;color:var(--t3);margin-bottom:10px">Adding under <b>'+H(parentWbs)+'</b></div><div class="fg"><label class="fl">Task Name</label><input type="text" id="asubN" style="width:100%" autofocus></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">Start</label><input type="date" id="asubS" value="'+td()+'" style="width:100%"></div><div class="fg"><label class="fl">End</label><input type="date" id="asubE" value="'+addD(td(),14)+'" style="width:100%"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">Category</label><select id="asubC" style="width:100%">'+catOpts(parentCat)+'</select></div><div class="fg"><label class="fl">Predecessor</label><input type="text" id="asubP" style="width:100%" placeholder="e.g. '+parentWbs+'.1"></div></div><div class="fg"><label class="fl">Assignee</label><input type="text" id="asubA" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savSubToWbs(\''+parentWbs+'\')">Add Sub-Task</button>');setTimeout(function(){var el=$('asubN');if(el)el.focus()},100)}
 
-function savSubToWbs(parentWbs){var n=$('asubN').value.trim();if(!n)return;var mx=0;for(var i=0;i<S.tasks.length;i++){if(S.tasks[i].wbs.indexOf(parentWbs+'.')===0){var num=parseInt(S.tasks[i].wbs.substring(parentWbs.length+1));if(!isNaN(num)&&num>mx)mx=num}}S.tasks.push({wbs:parentWbs+'.'+(mx+1),name:n,dur:dd($('asubS').value,$('asubE').value),s:$('asubS').value,e:$('asubE').value,prog:0,st:'pending',cat:$('asubC').value||'General',remarks:[],wt:0,pred:$('asubP').value.trim(),assignee:$('asubA').value.trim()});sortTasks(S.tasks);save();fbTasks();mC();notify('Added sub-task');doRender()}
+function savSubToWbs(parentWbs){var n=$('asubN').value.trim();if(!n)return;var mx=0;for(var i=0;i<S.tasks.length;i++){if(S.tasks[i].wbs.indexOf(parentWbs+'.')===0){var num=parseInt(S.tasks[i].wbs.substring(parentWbs.length+1));if(!isNaN(num)&&num>mx)mx=num}}S.tasks.push({wbs:parentWbs+'.'+(mx+1),name:n,dur:dd($('asubS').value,$('asubE').value),s:$('asubS').value,e:$('asubE').value,prog:0,st:'pending',cat:$('asubC').value||'General',remarks:[],wt:0,pred:$('asubP').value.trim(),assignee:$('asubA').value.trim()});sortTasks(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');mC();notify('Added sub-task');doRender()}
 
 function newTP(){mO('New Project','<div class="fg"><label class="fl">Name</label><input type="text" id="ntpN" style="width:100%"></div><div class="fg"><label class="fl">Cost</label><input type="number" id="ntpC" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savTP()">Create</button>')}
 
-function savTP(){var n=$('ntpN').value.trim();if(!n)return;var id=Date.now();S.taskProjects.push({id:id,name:n,cost:parseFloat($('ntpC').value)||0,payments:[],tasks:[]});tpSel=id;save();fbProjects();mC();notify('Created');doRender()}
+function savTP(){var n=$('ntpN').value.trim();if(!n)return;var id=Date.now();S.taskProjects.push({id:id,name:n,cost:parseFloat($('ntpC').value)||0,payments:[],tasks:[]});tpSel=id;auditLog('Project','Created','New project: '+n);save();fbProjects();mC();notify('Created');doRender()}
 
-function delTP(){var p=getProj();if(!p||!confirm('Delete?'))return;S.taskProjects=S.taskProjects.filter(function(x){return x.id!=tpSel});tpSel='site';save();fbProjects();notify('Deleted');doRender()}
+function delTP(){var p=getProj();if(!p||!confirm('Delete?'))return;S.taskProjects=S.taskProjects.filter(function(x){return x.id!=tpSel});tpSel='site';auditLog('Project','Deleted','Deleted project: '+(p?p.name:'unknown'));save();fbProjects();notify('Deleted');doRender()}
 
-function updPCost(id,val){for(var i=0;i<S.taskProjects.length;i++)if(S.taskProjects[i].id==id){S.taskProjects[i].cost=val;save();fbProjects();doRender();return}}
+function updPCost(id,val){for(var i=0;i<S.taskProjects.length;i++)if(S.taskProjects[i].id==id){S.taskProjects[i].cost=val;auditLogProjectChange(proj.name,'Contract Cost',proj.cost,val);save();fbProjects();doRender();return}}
 
 function addPS(mi){var p=getProj();if(!p)return;var m2=p.tasks[mi];mO('Add Sub','<div class="fg"><label class="fl">Name</label><input type="text" id="psN" style="width:100%"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">Start</label><input type="date" id="psS" value="'+td()+'" style="width:100%"></div><div class="fg"><label class="fl">End</label><input type="date" id="psE" value="'+addD(td(),14)+'" style="width:100%"></div></div><div class="fg"><label class="fl">Pred</label><input type="text" id="psP" style="width:100%"></div><div class="fg"><label class="fl">Assignee</label><input type="text" id="psA" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savPS('+mi+')">Add</button>')}
 
@@ -1410,7 +1410,7 @@ function savPay(id){var a=parseFloat($('payA').value)||0;if(!a)return;for(var i=
 
 function addSP(){mO('Site Payment','<div class="fg"><label class="fl">Date</label><input type="date" id="spD" value="'+td()+'" style="width:100%"></div><div class="fg"><label class="fl">Amount</label><input type="number" id="spA" style="width:100%"></div><div class="fg"><label class="fl">Desc</label><input type="text" id="spDe" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savSP()">Add</button>')}
 
-function savSP(){var a=parseFloat($('spA').value)||0;if(!a)return;S.sitePayments.push({id:Date.now(),date:$('spD').value,amount:a,desc:$('spDe').value.trim()});save();fbSitePay();mC();notify('Added');doRender()}
+function savSP(){var a=parseFloat($('spA').value)||0;if(!a)return;S.sitePayments.push({id:Date.now(),date:$('spD').value,amount:a,desc:$('spDe').value.trim()});auditLogCostChange('Payment added',$('spA').value,$('spDe').value.trim());save();fbSitePay();mC();notify('Added');doRender()}
 
 function expProj(){if(typeof XLSX==='undefined')return notify('XLSX not loaded');var p=getProj();if(!p)return;var wb=XLSX.utils.book_new(),sd=[['WBS','Name','Cat','Dur','Start','End','Prog','WT%','Pred','Assignee']];for(var i=0;i<p.tasks.length;i++){var t=p.tasks[i];sd.push([t.wbs,t.name,t.cat,t.dur,t.s,t.e,t.prog,t.wt||0,t.pred||'',t.assignee||''])}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),'Tasks');XLSX.writeFile(wb,p.name.replace(/[^a-z0-9]/gi,'_')+'.xlsx');notify('Exported')}
   /* === INSPECTION === */
@@ -2797,12 +2797,321 @@ if(!confirm('Delete?'))return;
 S.photos=S.photos.filter(function(p){return p.id!==id});
 save();notify('Deleted');doRender();
 }
+/* === AUDIT LOG SYSTEM === */
+if(!Array.isArray(S.auditLog))S.auditLog=[];
+var auditMaxEntries=500;
+var auditFilterType='all';
+var auditFilterSearch='';
+
+function auditPush(entry){
+  if(!Array.isArray(S.auditLog))S.auditLog=[];
+  entry.id=Date.now()+'_'+Math.random().toString(36).substr(2,4);
+  entry.ts=new Date().toISOString();
+  entry.user=currentUserEmail||currentUser||'Unknown';
+  S.auditLog.unshift(entry);
+  if(S.auditLog.length>auditMaxEntries)S.auditLog=S.auditLog.slice(0,auditMaxEntries);
+  try{localStorage.setItem('ss_auditLog',JSON.stringify(S.auditLog))}catch(e){}
+  try{if(typeof db!=='undefined'&&db)db.ref('ss/auditLog').set(S.auditLog.slice(0,200))}catch(e){}
+}
+
+function auditLog(type,action,details,oldVal,newVal){
+  auditPush({
+    type:type,
+    action:action,
+    details:details||'',
+    oldVal:oldVal!==undefined?truncateStr(String(oldVal),200):'',
+    newVal:newVal!==undefined?truncateStr(String(newVal),200):'',
+    tab:tab||''
+  });
+}
+
+function truncateStr(s,max){
+  if(!s)return'';
+  return s.length>max?s.substring(0,max)+'...':s;
+}
+
+function auditLogTaskChange(field,idx,oldV,newV){
+  var t=S.tasks[idx];
+  var name=t?t.name:'Task #'+idx;
+  auditLog('Task','Modified',field+' of "'+name+'" (WBS: '+(t?t.wbs:'?')+')',oldV,newV);
+}
+
+function auditLogProjectChange(projName,field,oldV,newV){
+  auditLog('Project','Modified',field+' of "'+projName+'"',oldV,newV);
+}
+
+function auditLogCostChange(field,oldV,newV){
+  auditLog('Cost','Modified','Site '+field,oldV,newV);
+}
+
+function auditLogInspChange(action,details){
+  auditLog('Inspection',action,details);
+}
+
+function auditLogSafetyChange(action,details){
+  auditLog('Safety',action,details);
+}
+
+function auditLogDataAction(action,details){
+  auditLog('Data',action,details);
+}
+
 /* === CLOUD SETTINGS === */
-R.cloud=function(){var c;try{c=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}var h='<div style="margin-bottom:10px"><span class="ct" style="font-size:.92rem">Cloud Sync</span></div><div class="card" style="border-left:4px solid var(--or);background:var(--orc)"><div style="font-size:.76rem;font-weight:700;color:var(--or);margin-bottom:6px">Setup</div><div style="font-size:.72rem;line-height:1.8">1. Create Firebase project<br>2. Enable Realtime DB + Email Auth<br>3. Enter config below</div></div><div class="card"><div class="ch"><span class="ct">Config</span></div><div class="fg"><label class="fl">API Key</label><input type="text" id="cKey" value="'+H((c&&c.apiKey)||'')+'" style="width:100%"></div><div class="fg"><label class="fl">Database URL</label><input type="text" id="cURL" value="'+H((c&&c.databaseURL)||'')+'" style="width:100%"></div><div class="fg"><label class="fl">Project ID</label><input type="text" id="cPid" value="'+H((c&&c.projectId)||'')+'" style="width:100%"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn" onclick="if(confirm(\'Clear?\')){localStorage.removeItem(\'ss_cloud\');location.reload()}">Clear</button><button class="btn bp" onclick="saveCloud()">Save &amp; Connect</button></div></div><div class="card"><div class="ch"><span class="ct">Data</span></div><button class="btn" onclick="expAll()">Export</button> <button class="btn bb" onclick="impAll()">Import</button> <button class="btn bd" onclick="if(confirm(\'Reset ALL?\')){localStorage.clear();location.reload()}">Reset</button></div>';$('app').innerHTML=h};
-function saveCloud(){var cfg={apiKey:$('cKey').value.trim(),databaseURL:$('cURL').value.trim(),projectId:$('cPid').value.trim(),authDomain:($('cPid').value.trim()||'')+'.firebaseapp.com'};if(!cfg.apiKey||!cfg.databaseURL)return;localStorage.setItem('ss_cloud',JSON.stringify(cfg));notify('Connecting...');setTimeout(function(){location.reload()},600)}
-function expAll(){if(typeof XLSX==='undefined')return notify('XLSX not loaded');var wb=XLSX.utils.book_new(),sd=[['WBS','Name','Cat','Dur','Start','End','Prog','WT%','Pred','Assignee']];for(var i=0;i<S.tasks.length;i++){var t=S.tasks[i];sd.push([t.wbs,t.name,t.cat,t.dur,t.s,t.e,t.prog,t.wt||0,t.pred||'',t.assignee||''])}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),'Tasks');XLSX.writeFile(wb,'StellarSeeds_'+td()+'.xlsx');notify('Exported')}
-function impAll(){mO('Import','<div class="dropzone" onclick="$(\'impF\').click()"><div>Upload Excel</div><input type="file" id="impF" accept=".xlsx" style="display:none" onchange="if(this.files[0])doImp(this.files[0])"></div>','<button class="btn" onclick="mC()">Cancel</button>')}
-function doImp(f){var rd=new FileReader();rd.onload=function(e){try{if(typeof XLSX==='undefined')return alert('XLSX not loaded');var wb=XLSX.read(e.target.result,{type:'array'});if(wb.Sheets['Tasks']){var d=XLSX.utils.sheet_to_json(wb.Sheets['Tasks'],{header:1});if(d.length>1){var n2=[];for(var i=1;i<d.length;i++){var r=d[i];if(!r||!r[0])continue;n2.push({wbs:String(r[0]),name:String(r[1]||''),cat:String(r[2]||'General'),dur:parseInt(r[3])||0,s:String(r[4]||''),e:String(r[5]||''),prog:parseInt(r[6])||0,st:String(r[7]||'pending'),remarks:[],wt:parseFloat(r[8])||0,pred:String(r[9]||''),assignee:String(r[10]||'')})}if(n2.length){S.tasks=n2;save();mC();notify('Imported '+n2.length);doRender();return}}}alert('No data found')}catch(err){alert(err.message)}};rd.readAsArrayBuffer(f)}
+R.cloud=function(){
+var c;try{c=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}
+if(!Array.isArray(S.auditLog))S.auditLog=[];
+
+var h='<div style="margin-bottom:10px"><span class="ct" style="font-size:.92rem">Cloud Sync & Audit</span></div>';
+
+h+='<div class="card" style="border-left:4px solid var(--or);background:var(--orc)"><div style="font-size:.76rem;font-weight:700;color:var(--or);margin-bottom:6px">Setup</div><div style="font-size:.72rem;line-height:1.8">1. Create Firebase project<br>2. Enable Realtime DB + Email Auth<br>3. Enter config below</div></div>';
+
+h+='<div class="card"><div class="ch"><span class="ct">Config</span></div>';
+h+='<div class="fg"><label class="fl">API Key</label><input type="text" id="cKey" value="'+H((c&&c.apiKey)||'')+'" style="width:100%"></div>';
+h+='<div class="fg"><label class="fl">Database URL</label><input type="text" id="cURL" value="'+H((c&&c.databaseURL)||'')+'" style="width:100%"></div>';
+h+='<div class="fg"><label class="fl">Project ID</label><input type="text" id="cPid" value="'+H((c&&c.projectId)||'')+'" style="width:100%"></div>';
+h+='<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn" onclick="if(confirm(\'Clear?\')){localStorage.removeItem(\'ss_cloud\');location.reload()}">Clear</button><button class="btn bp" onclick="saveCloud()">Save &amp; Connect</button></div></div>';
+
+h+='<div class="card"><div class="ch"><span class="ct">Data</span></div>';
+h+='<div style="display:flex;gap:8px;flex-wrap:wrap">';
+h+='<button class="btn" onclick="expAll()"><i class="fas fa-download"></i> Export</button>';
+h+='<button class="btn bb" onclick="impAll()"><i class="fas fa-upload"></i> Import</button>';
+h+='<button class="btn bd" onclick="if(confirm(\'Reset ALL?\')){auditLogDataAction(\'Reset\',\'Full system reset\');localStorage.clear();location.reload()}"><i class="fas fa-trash"></i> Reset</button>';
+h+='<button class="btn" onclick="expAuditCSV()" style="border-color:var(--pu);color:var(--pu)"><i class="fas fa-file-csv"></i> Export Audit Log</button>';
+h+='<button class="btn" onclick="clearAuditLog()" style="border-color:var(--rd);color:var(--rd)"><i class="fas fa-broom"></i> Clear Audit Log</button>';
+h+='</div></div>';
+
+/* === AUDIT LOG SECTION === */
+h+='<div class="card" style="border-left:4px solid var(--pu)">';
+h+='<div class="ch"><span class="ct" style="color:var(--pu)">Edit History / Audit Log</span>';
+h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+S.auditLog.length+' entries</span></div>';
+
+/* Summary stats */
+var typeCount={};
+var actionCount={};
+var userCount={};
+var todayCount=0;
+var todayStr=td();
+for(var ai=0;ai<S.auditLog.length;ai++){
+  var ae=S.auditLog[ai];
+  typeCount[ae.type]=(typeCount[ae.type]||0)+1;
+  actionCount[ae.action]=(actionCount[ae.action]||0)+1;
+  var u=ae.user||'Unknown';
+  userCount[u]=(userCount[u]||0)+1;
+  if(ae.ts&&ae.ts.indexOf(todayStr)>=0)todayCount++;
+}
+
+h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:14px">';
+h+='<div style="padding:8px;background:var(--pu);background:rgba(155,89,182,.12);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--pu);font-family:JetBrains Mono">TOTAL</div><div style="font-size:1.2rem;font-weight:700;color:var(--pu)">'+S.auditLog.length+'</div></div>';
+h+='<div style="padding:8px;background:rgba(40,116,166,.12);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--bl);font-family:JetBrains Mono">TODAY</div><div style="font-size:1.2rem;font-weight:700;color:var(--bl)">'+todayCount+'</div></div>';
+h+='<div style="padding:8px;background:rgba(212,147,13,.12);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--or);font-family:JetBrains Mono">TYPES</div><div style="font-size:1.2rem;font-weight:700;color:var(--or)">'+Object.keys(typeCount).length+'</div></div>';
+h+='<div style="padding:8px;background:rgba(45,138,50,.12);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--g);font-family:JetBrains Mono">USERS</div><div style="font-size:1.2rem;font-weight:700;color:var(--g)">'+Object.keys(userCount).length+'</div></div>';
+h+='</div>';
+
+/* Type breakdown */
+if(S.auditLog.length>0){
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
+  var typeColors={'Task':'#2874a6','Project':'#2d8a32','Cost':'#d4930d','Inspection':'#9b59b6','Safety':'#cc3333','Data':'#6a6560','System':'#b89630'};
+  for(var tk in typeCount){
+    var tc=typeColors[tk]||'#6a6560';
+    h+='<span style="font-size:.58rem;padding:3px 8px;border-radius:3px;background:'+tc+'22;color:'+tc+';font-family:JetBrains Mono">'+H(tk)+': '+typeCount[tk]+'</span>';
+  }
+  h+='</div>';
+}
+
+/* Filters */
+h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">';
+h+='<input type="text" id="auditQ" placeholder="Search history..." value="'+H(auditFilterSearch)+'" style="width:220px;padding:5px 10px;font-size:.72rem" oninput="auditFilterSearch=this.value;doRender()">';
+h+='<select id="auditFT" style="padding:5px;font-size:.72rem" onchange="auditFilterType=this.value;doRender()">';
+h+='<option value="all"'+(auditFilterType==='all'?' selected':'')+'>All Types</option>';
+var atk=['Task','Project','Cost','Inspection','Safety','Data','System'];
+for(var ati=0;ati<atk.length;ati++){
+  if(typeCount[atk[ati]])h+='<option value="'+atk[ati]+'"'+(auditFilterType===atk[ati]?' selected':'')+'>'+atk[ati]+' ('+typeCount[atk[ati]]+')</option>';
+}
+h+='</select>';
+h+='<button class="btn bs" onclick="auditFilterType=\'all\';auditFilterSearch=\'\';doRender()">Clear</button>';
+h+='</div>';
+
+/* Log entries */
+var filtered=[];
+for(var fi=0;fi<S.auditLog.length;fi++){
+  var fe=S.auditLog[fi];
+  if(auditFilterType!=='all'&&fe.type!==auditFilterType)continue;
+  if(auditFilterSearch){
+    var q=auditFilterSearch.toLowerCase();
+    var hay=(fe.type+' '+fe.action+' '+fe.details+' '+fe.oldVal+' '+fe.newVal+' '+fe.user+'').toLowerCase();
+    if(hay.indexOf(q)<0)continue;
+  }
+  filtered.push(fe);
+}
+
+if(filtered.length===0){
+  h+='<div style="text-align:center;padding:30px 0;font-size:.76rem;color:var(--t3)">';
+  if(S.auditLog.length===0)h+='<div><i class="fas fa-history" style="font-size:1.4rem;margin-bottom:8px;display:block;opacity:.4"></i>No edit history yet.<br>Changes to tasks, costs, inspections, and safety will appear here automatically.</div>';
+  else h+='<div>No entries match your filters.</div>';
+  h+='</div>';
+}else{
+  var showCount=Math.min(filtered.length,100);
+  h+='<div style="font-size:.56rem;color:var(--t3);margin-bottom:6px;font-family:JetBrains Mono">Showing '+showCount+' of '+filtered.length+' entries</div>';
+  h+='<div style="max-height:500px;overflow-y:auto">';
+  h+='<table style="width:100%;font-size:.66rem;border-collapse:collapse"><thead><tr>';
+  h+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem;white-space:nowrap">Time</th>';
+  h+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">Type</th>';
+  h+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">Action</th>';
+  h+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">Details</th>';
+  h+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">Old</th>';
+  h+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">New</th>';
+  h+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">User</th>';
+  h+='</tr></thead><tbody>';
+
+  for(var li=0;li<showCount;li++){
+    var le=filtered[li];
+    var lc=typeColors[le.type]||'#6a6560';
+    var ac=le.action==='Deleted'||le.action==='Reset'?'var(--rd)':le.action==='Created'?'var(--g)':le.action==='Modified'?'var(--bl)':'var(--t2)';
+    var tsStr='';
+    if(le.ts){
+      try{
+        var d=new Date(le.ts);
+        tsStr=LZ(d.getMonth()+1)+'/'+LZ(d.getDate())+' '+LZ(d.getHours())+':'+LZ(d.getMinutes());
+      }catch(e){tsStr=le.ts.substring(0,16)}
+    }
+    h+='<tr style="border-bottom:1px solid var(--bd)">';
+    h+='<td style="padding:4px 6px;font-family:JetBrains Mono;font-size:.56rem;white-space:nowrap;color:var(--t3)">'+H(tsStr)+'</td>';
+    h+='<td style="padding:4px 6px"><span style="font-size:.54rem;padding:1px 6px;border-radius:3px;background:'+lc+'22;color:'+lc+';font-family:JetBrains Mono">'+H(le.type)+'</span></td>';
+    h+='<td style="padding:4px 6px;color:'+ac+';font-weight:600">'+H(le.action)+'</td>';
+    h+='<td style="padding:4px 6px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(le.details)+'">'+H(le.details)+'</td>';
+    h+='<td style="padding:4px 6px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:JetBrains Mono;font-size:.54rem;color:var(--rd)" title="'+H(le.oldVal)+'">'+H(le.oldVal||'-')+'</td>';
+    h+='<td style="padding:4px 6px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:JetBrains Mono;font-size:.54rem;color:var(--g)" title="'+H(le.newVal)+'">'+H(le.newVal||'-')+'</td>';
+    h+='<td style="padding:4px 6px;font-size:.56rem;color:var(--t3);white-space:nowrap" title="'+H(le.user)+'">'+H((le.user||'Unknown').split('@')[0])+'</td>';
+    h+='</tr>';
+  }
+  h+='</tbody></table></div>';
+}
+h+='</div>';
+
+/* === RECENT ACTIVITY BY USER === */
+h+='<div class="card"><div class="ch"><span class="ct">Activity by User</span></div>';
+if(Object.keys(userCount).length===0){
+  h+='<div style="font-size:.72rem;color:var(--t3);text-align:center;padding:14px">No activity recorded</div>';
+}else{
+  var uArr=[];
+  for(var uk in userCount)uArr.push({u:uk,c:userCount[uk]});
+  uArr.sort(function(a,b){return b.c-a.c});
+  var uMax=uArr[0].c;
+  var uCols=['#2874a6','#d4930d','#2d8a32','#9b59b6','#b89630','#cc3333'];
+  for(var ui=0;ui<uArr.length;ui++){
+    var uo=uArr[ui];
+    var uw=Math.round(uo.c/uMax*100);
+    var uc=uCols[ui%uCols.length];
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:4px 0">';
+    h+='<div style="width:140px;font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+H(uo.u)+'">'+H(uo.u)+'</div>';
+    h+='<div style="flex:1;height:18px;background:var(--s2);border-radius:3px;overflow:hidden">';
+    h+='<div style="height:100%;width:'+uw+'%;background:'+uc+';border-radius:3px;display:flex;align-items:center;padding-left:6px">';
+    h+='<span style="font-family:JetBrains Mono;font-size:.52rem;color:#fff">'+uo.c+'</span>';
+    h+='</div></div></div>';
+  }
+}
+h+='</div>';
+
+/* Recent deletions highlight */
+var recentDels=[];
+for(var di=0;di<S.auditLog.length&&di<200;di++){
+  if(S.auditLog[di].action==='Deleted'||S.auditLog[di].action==='Reset'){
+    recentDels.push(S.auditLog[di]);
+    if(recentDels.length>=10)break;
+  }
+}
+if(recentDels.length>0){
+  h+='<div class="card" style="border-left:4px solid var(--rd)"><div class="ch"><span class="ct" style="color:var(--rd)">Recent Deletions</span></div>';
+  h+='<div style="font-size:.62rem;color:var(--t3);margin-bottom:8px"><i class="fas fa-exclamation-triangle" style="color:var(--or);margin-right:4px"></i>Track data loss from recent deletions</div>';
+  for(var rdi=0;rdi<recentDels.length;rdi++){
+    var rd2=recentDels[rdi];
+    var rts='';
+    if(rd2.ts){try{var d2=new Date(rd2.ts);rts=LZ(d2.getMonth()+1)+'/'+LZ(d2.getDate())+' '+LZ(d2.getHours())+':'+LZ(d2.getMinutes())}catch(e){rts=''}}
+    h+='<div style="display:flex;align-items:flex-start;gap:8px;padding:4px 0;border-bottom:1px solid var(--bd)">';
+    h+='<span style="width:6px;height:6px;border-radius:50%;background:var(--rd);flex-shrink:0;margin-top:5px"></span>';
+    h+='<div style="flex:1"><div style="font-size:.68rem"><b style="color:var(--rd)">'+H(rd2.type)+'</b> '+H(rd2.action)+'</div>';
+    h+='<div style="font-size:.62rem;color:var(--t3)">'+H(rd2.details)+'</div>';
+    h+='<div style="font-size:.52rem;color:var(--t3);font-family:JetBrains Mono">'+H(rts)+' by '+H((rd2.user||'').split('@')[0])+'</div>';
+    h+='</div></div>';
+  }
+  h+='</div>';
+}
+
+$('app').innerHTML=h;
+};
+
+function saveCloud(){
+var cfg={apiKey:$('cKey').value.trim(),databaseURL:$('cURL').value.trim(),projectId:$('cPid').value.trim(),authDomain:($('cPid').value.trim()||'')+'.firebaseapp.com'};
+if(!cfg.apiKey||!cfg.databaseURL)return;
+auditLogDataAction('Cloud Config','Updated Firebase config');
+localStorage.setItem('ss_cloud',JSON.stringify(cfg));
+notify('Connecting...');
+setTimeout(function(){location.reload()},600);
+}
+
+function expAll(){
+if(typeof XLSX==='undefined')return notify('XLSX not loaded');
+var wb=XLSX.utils.book_new(),sd=[['WBS','Name','Cat','Dur','Start','End','Prog','WT%','Pred','Assignee']];
+for(var i=0;i<S.tasks.length;i++){var t=S.tasks[i];sd.push([t.wbs,t.name,t.cat,t.dur,t.s,t.e,t.prog,t.wt||0,t.pred||'',t.assignee||''])}
+XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),'Tasks');
+auditLogDataAction('Export','Exported tasks to Excel ('+S.tasks.length+' tasks)');
+XLSX.writeFile(wb,'StellarSeeds_'+td()+'.xlsx');
+notify('Exported');
+}
+
+function expAuditCSV(){
+if(!S.auditLog||!S.auditLog.length)return notify('No audit data');
+if(typeof XLSX==='undefined')return notify('XLSX not loaded');
+var wb=XLSX.utils.book_new();
+var data=[['Time','Type','Action','Details','Old Value','New Value','User','Tab']];
+for(var i=0;i<S.auditLog.length;i++){
+  var a=S.auditLog[i];
+  var ts='';
+  if(a.ts){try{ts=a.ts}catch(e){ts=''}}
+  data.push([ts,a.type||'',a.action||'',a.details||'',a.oldVal||'',a.newVal||'',a.user||'',a.tab||'']);
+}
+XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'Audit Log');
+XLSX.writeFile(wb,'AuditLog_'+td()+'.xlsx');
+notify('Audit log exported');
+}
+
+function clearAuditLog(){
+if(!confirm('Clear all audit log entries? This cannot be undone.'))return;
+auditLogDataAction('Clear Log','Cleared audit log ('+S.auditLog.length+' entries removed)');
+var keep=[S.auditLog[0]];
+S.auditLog=keep;
+try{localStorage.setItem('ss_auditLog',JSON.stringify(S.auditLog))}catch(e){}
+try{if(typeof db!=='undefined'&&db)db.ref('ss/auditLog').set(S.auditLog)}catch(e){}
+notify('Audit log cleared');
+doRender();
+}
+
+function impAll(){
+mO('Import','<div class="dropzone" onclick="$(\'impF\').click()"><div>Upload Excel</div><input type="file" id="impF" accept=".xlsx" style="display:none" onchange="if(this.files[0])doImp(this.files[0])"></div>','<button class="btn" onclick="mC()">Cancel</button>');
+}
+
+function doImp(f){
+var rd=new FileReader();
+rd.onload=function(e){
+  try{
+    if(typeof XLSX==='undefined')return alert('XLSX not loaded');
+    var wb=XLSX.read(e.target.result,{type:'array'});
+    if(wb.Sheets['Tasks']){
+      var d=XLSX.utils.sheet_to_json(wb.Sheets['Tasks'],{header:1});
+      if(d.length>1){
+        var n2=[];for(var i=1;i<d.length;i++){var r=d[i];if(!r||!r[0])continue;n2.push({wbs:String(r[0]),name:String(r[1]||''),cat:String(r[2]||'General'),dur:parseInt(r[3])||0,s:String(r[4]||''),e:String(r[5]||''),prog:parseInt(r[6])||0,st:String(r[7]||'pending'),remarks:[],wt:parseFloat(r[8])||0,pred:String(r[9]||''),assignee:String(r[10]||'')})}
+        if(n2.length){
+          var oldCount=S.tasks.length;
+          auditLogDataAction('Import','Imported '+n2.length+' tasks from Excel (replaced '+oldCount+')');
+          S.tasks=n2;save();fbTasks();auditLog('Task','Modified','Task data changed');mC();notify('Imported '+n2.length);doRender();return;
+        }
+      }
+    }
+    alert('No data found');
+  }catch(err){alert(err.message)}
+};
+rd.readAsArrayBuffer(f);
+}
 /* === DEFAULTS === */
 function defTasks(){var d=[["1","LOI / CONTRACT SIGNING",32,"2026-01-17","2026-02-17",100,"done","Initiation",3,"","Nguyen Van A"],["2","DESIGN & APPLICATION",106,"2026-01-29","2026-05-14",83,"active","Design",8,"1","Maria Santos"],["2.1","Architecture Design",33,"2026-01-29","2026-03-02",100,"done","Design",0,"","Maria Santos"],["2.2","Structural Design",45,"2026-01-29","2026-03-14",100,"done","Design",0,"","Tran Minh"],["2.3","MEP Design",38,"2026-02-05","2026-03-14",100,"done","MEP",0,"2.1","Le Hoang"],["2.4","Permit Applications",61,"2026-03-15","2026-05-14",50,"active","Permits",0,"2.2","Nguyen Van A"],["3","TEMPORARY WORKS",15,"2026-05-15","2026-05-29",60,"active","Temp",3,"2.4","Pham Duc"],["3.1","Site Hoarding",7,"2026-05-15","2026-05-21",80,"active","Temp",0,"","Pham Duc"],["3.2","Temporary Utilities",8,"2026-05-22","2026-05-29",40,"active","Temp",0,"3.1","Le Hoang"],["4","EARTHWORK",27,"2026-05-29","2026-06-24",25,"active","Earthwork",12,"3","Pham Duc"],["4.1","Excavation",14,"2026-05-29","2026-06-11",40,"active","Earthwork",0,"3.2","Pham Duc"],["4.2","Foundation Works",13,"2026-06-12","2026-06-24",10,"active","Earthwork",0,"4.1","Pham Duc"],["5","BUILDINGS",180,"2026-06-25","2026-12-21",0,"pending","Buildings",40,"4","Nguyen Van A"],["5.1","Building A Structure",60,"2026-06-25","2026-08-23",0,"pending","Buildings",0,"4.2","Pham Duc"],["5.2","Building B Structure",60,"2026-07-25","2026-09-22",0,"pending","Buildings",0,"4.2","Tran Minh"],["5.3","Building A Finishes",60,"2026-08-24","2026-10-22",0,"pending","Buildings",0,"5.1","Maria Santos"],["5.4","Building B Finishes",60,"2026-09-23","2026-11-21",0,"pending","Buildings",0,"5.2","Maria Santos"],["6","INFRASTRUCTURE",90,"2026-06-25","2026-09-22",0,"pending","Infrastructure",15,"4","Le Hoang"],["6.1","Roads & Drainage",45,"2026-06-25","2026-08-08",0,"pending","Infrastructure",0,"4.2","Le Hoang"],["6.2","External MEP",45,"2026-08-09","2026-09-22",0,"pending","Infrastructure",0,"6.1","Le Hoang"],["7","SITE WORKS",45,"2026-09-23","2026-11-06",0,"pending","Site",10,"5","Pham Duc"],["7.1","Landscaping",30,"2026-09-23","2026-10-22",0,"pending","Site",0,"5.3","Pham Duc"],["7.2","Final Grading",15,"2026-10-23","2026-11-06",0,"pending","Site",0,"7.1","Pham Duc"],["8","CLOSEOUT",30,"2026-11-07","2026-12-06",0,"pending","Closeout",9,"7","Nguyen Van A"],["8.1","Punch List",15,"2026-11-07","2026-11-21",0,"pending","Closeout",0,"6.2","Nguyen Van A"],["8.2","Handover",15,"2026-11-22","2026-12-06",0,"pending","Closeout",0,"8.1","Nguyen Van A"]];return d.map(function(r){return{wbs:r[0],name:r[1],dur:r[2],s:r[3],e:r[4],prog:r[5],st:r[6],cat:r[7],wt:r[8],pred:r[9],assignee:r[10],remarks:[]}})}
 function defSafe(){return{safeHours:12450,startDate:"2026-04-13",fatalities:0,lti:0,recordable:1,firstAid:3,nearMisses:8,unsafeActs:2,unsafeConditions:1,observations:45,toolboxTalks:28,trainingHours:120,auditScore:88,ppeCompliance:95,entries:[{id:1,date:"2026-06-28",type:"observation",desc:"Worker without gloves",status:"closed"},{id:2,date:"2026-06-25",type:"near-miss",desc:"Falling debris",status:"closed"},{id:3,date:"2026-06-20",type:"toolbox",desc:"Hot weather briefing",status:"closed"},{id:4,date:"2026-06-15",type:"first-aid",desc:"Minor cut",status:"closed"},{id:5,date:"2026-06-10",type:"recordable",desc:"Sprained ankle",status:"closed"}]}}
