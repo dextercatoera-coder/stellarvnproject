@@ -216,7 +216,26 @@ function syncUp(){
     }
   }catch(e){}
 }
-function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());if(!Array.isArray(S.safety.manHoursLog))S.safety.manHoursLog=[];S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);siteCost=lj('siteCost',0);S.auditLog=lj('auditLog',[]);if(!Array.isArray(S.auditLog))S.auditLog=[];S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.originalPlan=lj('originalPlan',[])
+function load(){
+try{
+S.tasks=lj('tasks',defTasks());
+S.upds=lj('upds',[]);
+S.photos=lj('photos',[]);
+S.safety=lj('safety',defSafe());
+try{if(!Array.isArray(S.safety.manHoursLog))S.safety.manHoursLog=[]}catch(e){S.safety={manHoursLog:[]}}
+S.vgc=lj('vgc',{});
+S.taskProjects=lj('taskProjects',[]);
+S.sitePayments=lj('sitePayments',[]);
+siteCost=lj('siteCost',0);
+if(typeof siteCost!=='number'||isNaN(siteCost))siteCost=0;
+S.auditLog=lj('auditLog',[]);
+if(!Array.isArray(S.auditLog))S.auditLog=[];
+S.userLog=lj('userLog',[]);
+S.inspTemplates=lj('inspTemplates',defInspTpl());
+S.inspections=lj('inspections',[]);
+S.teamMembers=lj('teamMembers',[]);
+S.safetyInspections=lj('safetyInspections',[]);
+S.originalPlan=lj('originalPlan',[]);
 S.reports=[];
 try{var _r=localStorage.getItem('ss_reports');if(_r)S.reports=JSON.parse(_r)}catch(e){S.reports=[]}
 S.reportConfig={};
@@ -231,11 +250,11 @@ try{
     if(Array.isArray(rArr)&&rArr.length>0){
       var existIds={};
       for(var i=0;i<S.safetyInspections.length;i++){
-        if(S.safetyInspections[i].id)existIds[S.safetyInspections[i].id]=true;
+        if(S.safetyInspections[i]&&S.safetyInspections[i].id)existIds[S.safetyInspections[i].id]=true;
       }
       var added=0;
       for(var i=0;i<rArr.length;i++){
-        if(rArr[i].id&&!existIds[rArr[i].id]){
+        if(rArr[i]&&rArr[i].id&&!existIds[rArr[i].id]){
           S.safetyInspections.push(rArr[i]);
           added++;
         }
@@ -248,7 +267,10 @@ try{
     localStorage.removeItem('buildsync_safetyInspections_remote');
   }
 }catch(e){}
-  
+}catch(e){
+  console.error('Load error:',e);
+}
+}
 /* Merge Firebase teamMembers (no photos) with local (has photos) */
 try{
   var tmFb=S._fbTeamMembers||[];
