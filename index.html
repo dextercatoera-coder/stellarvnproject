@@ -1074,6 +1074,13 @@ setTimeout(function(){
   drawSC(months,lines,100,function(v){return v.toFixed(0)+'%'});
 },50);
 };
+/* === FIREBASE SYNC HELPERS === */
+function fbTasks(){try{if(typeof db!=='undefined'&&db)db.ref('ss/tasks').set(S.tasks||[])}catch(e){}}
+function fbProjects(){try{if(typeof db!=='undefined'&&db)db.ref('ss/taskProjects').set(S.taskProjects||[])}catch(e){}}
+function fbSiteCost(){try{if(typeof db!=='undefined'&&db)db.ref('ss/siteCost').set(siteCost||0)}catch(e){}}
+function fbSitePay(){try{if(typeof db!=='undefined'&&db)db.ref('ss/sitePayments').set(S.sitePayments||[])}catch(e){}}
+function fbInsp(){try{if(typeof db!=='undefined'&&db)db.ref('ss/inspections').set(S.inspections||[])}catch(e){}}
+
 /* === TASKS === */
 R.tasks=function(){
 var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
@@ -1108,14 +1115,14 @@ for(var i=0;i<m.length;i++){
 h+='</div>';
 
 var tw=totLW(S.tasks),wtOk=Math.abs(tw-100)<0.5;
-h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:6px 10px;background:'+(wtOk?'var(--gc)':'var(--rdc)')+';border:1px solid '+(wtOk?'rgba(45,138,50,.3)':'rgba(204,51,51,.3)')+';border-radius:var(--r)"><span style="font-family:JetBrains Mono;font-size:.66rem;font-weight:700;color:'+(wtOk?'var(--g)':'var(--rd)')+'">Main WT: '+tw.toFixed(2)+'%</span>'+(wtOk?'':' <span style="font-size:.62rem;color:var(--rd)">Should=100%</span>')+'<span style="flex:1"></span><button class="btn bs" onclick="calcWt(S.tasks);save();doRender()">Reset</button><button class="btn bs'+(wtOk?'':' bp')+'" onclick="normWt(S.tasks);save();doRender()">Normalize</button></div>';
+h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:6px 10px;background:'+(wtOk?'var(--gc)':'var(--rdc)')+';border:1px solid '+(wtOk?'rgba(45,138,50,.3)':'rgba(204,51,51,.3)')+';border-radius:var(--r)"><span style="font-family:JetBrains Mono;font-size:.66rem;font-weight:700;color:'+(wtOk?'var(--g)':'var(--rd)')+'">Main WT: '+tw.toFixed(2)+'%</span>'+(wtOk?'':' <span style="font-size:.62rem;color:var(--rd)">Should=100%</span>')+'<span style="flex:1"></span><button class="btn bs" onclick="calcWt(S.tasks);save();fbTasks();doRender()">Reset</button><button class="btn bs'+(wtOk?'':' bp')+'" onclick="normWt(S.tasks);save();fbTasks();doRender()">Normalize</button></div>';
 
 var sP=sPaid(),sR=(siteCost||0)-sP;
 h+='<div class="card"><div class="ch"><span class="ct">Cost</span>';
 if(showCost)h+='<button class="btn bs bp" onclick="addSP()">+ Payment</button>';
 h+='</div>';
 if(showCost){
-  h+='<div class="cost-row"><div class="cost-box" style="background:var(--amc)"><div class="cl" style="color:var(--am)">Contract</div><div class="cv" style="color:var(--am)"><input type="number" value="'+(siteCost||0)+'" style="width:100%;text-align:center;font-weight:700;color:var(--am);border:0;background:transparent;padding:0" onchange="siteCost=parseFloat(this.value)||0;save();doRender()"></div></div>';
+  h+='<div class="cost-row"><div class="cost-box" style="background:var(--amc)"><div class="cl" style="color:var(--am)">Contract</div><div class="cv" style="color:var(--am)"><input type="number" value="'+(siteCost||0)+'" style="width:100%;text-align:center;font-weight:700;color:var(--am);border:0;background:transparent;padding:0" onchange="siteCost=parseFloat(this.value)||0;save();fbSiteCost();doRender()"></div></div>';
   h+='<div class="cost-box" style="background:var(--gc)"><div class="cl" style="color:var(--g)">Paid</div><div class="cv" style="color:var(--g)">'+fmtD(sP)+'</div></div>';
   h+='<div class="cost-box" style="background:var(--orc)"><div class="cl" style="color:var(--or)">Balance</div><div class="cv" style="color:var(--or)">'+fmtD(sR)+'</div></div>';
   h+='<div class="cost-box" style="background:var(--blc)"><div class="cl" style="color:var(--bl)">Paid %</div><div class="cv" style="color:var(--bl)">'+(siteCost>0?pct(sP,siteCost):0)+'%</div></div></div>';
@@ -1130,27 +1137,27 @@ h+='</div>';
 var po='';
 for(var i=0;i<m.length;i++)po+='<option value="'+m[i].wbs+'">'+m[i].wbs+' '+H(m[i].name)+'</option>';
 
-h+='<div class="card"><div class="ch"><span class="ct">Tasks</span><span style="display:flex;align-items:center;gap:8px"><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+S.tasks.length+'</span><button class="btn bs" onclick="sortTasks(S.tasks);save();doRender()">Sort</button></span></div>';
+h+='<div class="card"><div class="ch"><span class="ct">Tasks</span><span style="display:flex;align-items:center;gap:8px"><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+S.tasks.length+'</span><button class="btn bs" onclick="sortTasks(S.tasks);save();fbTasks();doRender()">Sort</button></span></div>';
 h+='<div class="tw"><table><thead><tr><th style="width:30px">WBS</th><th>Task</th><th>Pred</th><th>Assigned</th><th>Cat</th><th style="text-align:right">WT%</th><th>Dur</th><th>Start</th><th>End</th><th>%</th><th>N</th><th style="text-align:center;width:90px">Actions</th></tr></thead><tbody>';
 for(var i=0;i<S.tasks.length;i++){
   var t=S.tasks[i],isM=t.wbs.indexOf('.')===-1;
-  h+='<tr'+(isM?' style="background:var(--s2);font-weight:600;border-left:3px solid var(--bl)"':' style="border-left:3px solid transparent"')+'><td'+(isM?'':' style="padding-left:22px"')+'><div class="wbs-ed" contenteditable onclick="event.stopPropagation()" onblur="if(this.textContent.trim()&&this.textContent.trim()!==S.tasks['+i+'].wbs){S.tasks['+i+'].wbs=this.textContent.trim();sortTasks(S.tasks);save();doRender()}">'+H(t.wbs)+'</div></td>';
-  h+='<td><div class="name-ed" contenteditable onclick="event.stopPropagation()" onblur="S.tasks['+i+'].name=this.textContent.trim();save()">'+H(t.name)+'</div>'+rmP(t)+'</td>';
-  h+='<td><input type="text" value="'+H(t.pred||'')+'" style="padding:2px;font-size:.68rem;width:44px;text-align:center;font-family:JetBrains Mono;border:1px solid var(--b2);border-radius:3px" onchange="S.tasks['+i+'].pred=this.value.trim();save()" placeholder="-"></td>';
-  h+='<td><input type="text" value="'+H(t.assignee||'')+'" style="padding:2px;font-size:.68rem;width:80px;border:1px solid var(--b2);border-radius:3px" onchange="S.tasks['+i+'].assignee=this.value.trim();save()" placeholder="Name"></td>';
-  h+='<td><select onchange="S.tasks['+i+'].cat=this.value;save()" style="padding:1px;font-size:.7rem;border:0;background:transparent">'+catOpts(t.cat)+'</select></td>';
+  h+='<tr'+(isM?' style="background:var(--s2);font-weight:600;border-left:3px solid var(--bl)"':' style="border-left:3px solid transparent"')+'><td'+(isM?'':' style="padding-left:22px"')+'><div class="wbs-ed" contenteditable onclick="event.stopPropagation()" onblur="if(this.textContent.trim()&&this.textContent.trim()!==S.tasks['+i+'].wbs){S.tasks['+i+'].wbs=this.textContent.trim();sortTasks(S.tasks);save();fbTasks();doRender()}">'+H(t.wbs)+'</div></td>';
+  h+='<td><div class="name-ed" contenteditable onclick="event.stopPropagation()" onblur="S.tasks['+i+'].name=this.textContent.trim();save();fbTasks()">'+H(t.name)+'</div>'+rmP(t)+'</td>';
+  h+='<td><input type="text" value="'+H(t.pred||'')+'" style="padding:2px;font-size:.68rem;width:44px;text-align:center;font-family:JetBrains Mono;border:1px solid var(--b2);border-radius:3px" onchange="S.tasks['+i+'].pred=this.value.trim();save();fbTasks()" placeholder="-"></td>';
+  h+='<td><input type="text" value="'+H(t.assignee||'')+'" style="padding:2px;font-size:.68rem;width:80px;border:1px solid var(--b2);border-radius:3px" onchange="S.tasks['+i+'].assignee=this.value.trim();save();fbTasks()" placeholder="Name"></td>';
+  h+='<td><select onchange="S.tasks['+i+'].cat=this.value;save();fbTasks()" style="padding:1px;font-size:.7rem;border:0;background:transparent">'+catOpts(t.cat)+'</select></td>';
   if(!isM)h+='<td style="text-align:center;font-family:JetBrains Mono;font-size:.6rem;color:var(--t3)">-</td>';
-  else h+='<td><input type="number" value="'+(t.wt||0).toFixed(2)+'" step="0.01" style="padding:2px;font-size:.7rem;width:54px;text-align:right;font-family:JetBrains Mono" onchange="S.tasks['+i+'].wt=parseFloat(this.value)||0;save()"></td>';
+  else h+='<td><input type="number" value="'+(t.wt||0).toFixed(2)+'" step="0.01" style="padding:2px;font-size:.7rem;width:54px;text-align:right;font-family:JetBrains Mono" onchange="S.tasks['+i+'].wt=parseFloat(this.value)||0;save();fbTasks()"></td>';
   h+='<td>'+t.dur+'</td>';
-  h+='<td><input type="date" value="'+t.s+'" style="padding:2px;font-size:.7rem;width:110px" onchange="S.tasks['+i+'].s=this.value;S.tasks['+i+'].dur=dd(S.tasks['+i+'].s,S.tasks['+i+'].e);save()"></td>';
-  h+='<td><input type="date" value="'+t.e+'" style="padding:2px;font-size:.7rem;width:110px" onchange="S.tasks['+i+'].e=this.value;S.tasks['+i+'].dur=dd(S.tasks['+i+'].s,S.tasks['+i+'].e);save()"></td>';
-  h+='<td><input type="number" value="'+t.prog+'" min="0" max="100" style="padding:2px;font-size:.7rem;width:46px;text-align:right" onchange="S.tasks['+i+'].prog=parseInt(this.value)||0;S.tasks['+i+'].st=aSt(S.tasks['+i+'].prog);save();doRender()"></td>';
+  h+='<td><input type="date" value="'+t.s+'" style="padding:2px;font-size:.7rem;width:110px" onchange="S.tasks['+i+'].s=this.value;S.tasks['+i+'].dur=dd(S.tasks['+i+'].s,S.tasks['+i+'].e);save();fbTasks()"></td>';
+  h+='<td><input type="date" value="'+t.e+'" style="padding:2px;font-size:.7rem;width:110px" onchange="S.tasks['+i+'].e=this.value;S.tasks['+i+'].dur=dd(S.tasks['+i+'].s,S.tasks['+i+'].e);save();fbTasks()"></td>';
+  h+='<td><input type="number" value="'+t.prog+'" min="0" max="100" style="padding:2px;font-size:.7rem;width:46px;text-align:right" onchange="S.tasks['+i+'].prog=parseInt(this.value)||0;S.tasks['+i+'].st=aSt(S.tasks['+i+'].prog);save();fbTasks();doRender()"></td>';
   h+='<td>'+rmB(t,i,0)+'</td>';
   h+='<td style="text-align:center;white-space:nowrap">';
   if(isM)h+='<button class="btn bs bp" onclick="addSubToWbs(\''+t.wbs+'\')" style="font-size:.56rem;padding:2px 5px">+Sub</button> ';
-  h+='<button class="mv-btn"'+(canMv(S.tasks,i,-1)?'':' disabled')+' onclick="if(canMv(S.tasks,'+i+',-1)){doMv(S.tasks,'+i+',-1);save();doRender()}">&#9650;</button>';
-  h+='<button class="mv-btn"'+(canMv(S.tasks,i,1)?'':' disabled')+' onclick="if(canMv(S.tasks,'+i+',1)){doMv(S.tasks,'+i+',1);save();doRender()}">&#9660;</button> ';
-  h+='<button class="btn bs bd" onclick="if(confirm(\'Delete\')){delTask(S.tasks,'+i+');save();doRender()}" style="padding:2px 5px">&times;</button></td></tr>';
+  h+='<button class="mv-btn"'+(canMv(S.tasks,i,-1)?'':' disabled')+' onclick="if(canMv(S.tasks,'+i+',-1)){doMv(S.tasks,'+i+',-1);save();fbTasks();doRender()}">&#9650;</button>';
+  h+='<button class="mv-btn"'+(canMv(S.tasks,i,1)?'':' disabled')+' onclick="if(canMv(S.tasks,'+i+',1)){doMv(S.tasks,'+i+',1);save();fbTasks();doRender()}">&#9660;</button> ';
+  h+='<button class="btn bs bd" onclick="if(confirm(\'Delete\')){delTask(S.tasks,'+i+');save();fbTasks();doRender()}" style="padding:2px 5px">&times;</button></td></tr>';
 }
 h+='<tr class="iar"><td><select id="ntW" style="width:56px">'+po+'</select></td>';
 h+='<td><input type="text" id="ntN" placeholder="New task..."></td>';
@@ -1183,7 +1190,7 @@ for(var i=0;i<m.length;i++){
 }
 h+='</div>';
 
-h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:6px 10px;background:'+(wtOk?'var(--gc)':'var(--rdc)')+';border:1px solid '+(wtOk?'rgba(45,138,50,.3)':'rgba(204,51,51,.3)')+';border-radius:var(--r)"><span style="font-family:JetBrains Mono;font-size:.66rem;font-weight:700;color:'+(wtOk?'var(--g)':'var(--rd)')+'">Main WT: '+tw.toFixed(2)+'%</span>'+(wtOk?'':' <span style="font-size:.62rem;color:var(--rd)">Should=100%</span>')+'<span style="flex:1"></span><button class="btn bs" onclick="calcWt(getProj().tasks);save();doRender()">Reset</button><button class="btn bs'+(wtOk?'':' bp')+'" onclick="normWt(getProj().tasks);save();doRender()">Normalize</button></div>';
+h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:6px 10px;background:'+(wtOk?'var(--gc)':'var(--rdc)')+';border:1px solid '+(wtOk?'rgba(45,138,50,.3)':'rgba(204,51,51,.3)')+';border-radius:var(--r)"><span style="font-family:JetBrains Mono;font-size:.66rem;font-weight:700;color:'+(wtOk?'var(--g)':'var(--rd)')+'">Main WT: '+tw.toFixed(2)+'%</span>'+(wtOk?'':' <span style="font-size:.62rem;color:var(--rd)">Should=100%</span>')+'<span style="flex:1"></span><button class="btn bs" onclick="calcWt(getProj().tasks);save();fbProjects();doRender()">Reset</button><button class="btn bs'+(wtOk?'':' bp')+'" onclick="normWt(getProj().tasks);save();fbProjects();doRender()">Normalize</button></div>';
 
 h+='<div class="card"><div class="ch"><span class="ct">Cost</span>';
 if(showCost)h+='<button class="btn bs bp" onclick="addPay('+proj.id+')">+ Payment</button>';
@@ -1201,21 +1208,21 @@ if(showCost){
 }
 h+='</div>';
 
-h+='<div class="card"><div class="ch"><span class="ct">Tasks</span><span style="display:flex;align-items:center;gap:8px"><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+tasks.length+'</span><button class="btn bs" onclick="sortTasks(getProj().tasks);save();doRender()">Sort</button><button class="btn bs bp" onclick="addPTP()">+ Phase</button></span></div>';
+h+='<div class="card"><div class="ch"><span class="ct">Tasks</span><span style="display:flex;align-items:center;gap:8px"><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+tasks.length+'</span><button class="btn bs" onclick="sortTasks(getProj().tasks);save();fbProjects();doRender()">Sort</button><button class="btn bs bp" onclick="addPTP()">+ Phase</button></span></div>';
 h+='<div class="tw"><table><thead><tr><th>WBS</th><th>Task</th><th>Pred</th><th>Assign</th><th>Cat</th><th style="text-align:right">WT%</th><th>Dur</th><th>Start</th><th>End</th><th>%</th><th>N</th><th style="text-align:center;width:80px">Actions</th></tr></thead><tbody>';
 for(var i=0;i<tasks.length;i++){
   var t=tasks[i],isM=t.wbs.indexOf('.')===-1;
-  h+='<tr'+(isM?' style="background:var(--s2);font-weight:600;border-left:3px solid var(--pu)"':' style="border-left:3px solid transparent"')+'><td'+(isM?'':' style="padding-left:22px"')+'><div class="wbs-ed" contenteditable onclick="event.stopPropagation()" onblur="getProj().tasks['+i+'].wbs=this.textContent.trim();sortTasks(getProj().tasks);save();doRender()">'+H(t.wbs)+'</div></td>';
-  h+='<td><div class="name-ed" contenteditable onclick="event.stopPropagation()" onblur="getProj().tasks['+i+'].name=this.textContent.trim();save()">'+H(t.name)+'</div>'+rmP(t)+'</td>';
-  h+='<td><input type="text" value="'+H(t.pred||'')+'" style="padding:2px;font-size:.68rem;width:44px;text-align:center;font-family:JetBrains Mono;border:1px solid var(--b2);border-radius:3px" onchange="getProj().tasks['+i+'].pred=this.value.trim();save()" placeholder="-"></td>';
-  h+='<td><input type="text" value="'+H(t.assignee||'')+'" style="padding:2px;font-size:.68rem;width:80px;border:1px solid var(--b2);border-radius:3px" onchange="getProj().tasks['+i+'].assignee=this.value.trim();save()" placeholder="Name"></td>';
-  h+='<td><select onchange="getProj().tasks['+i+'].cat=this.value;save()" style="padding:1px;font-size:.7rem;border:0;background:transparent">'+catOpts(t.cat)+'</select></td>';
+  h+='<tr'+(isM?' style="background:var(--s2);font-weight:600;border-left:3px solid var(--pu)"':' style="border-left:3px solid transparent"')+'><td'+(isM?'':' style="padding-left:22px"')+'><div class="wbs-ed" contenteditable onclick="event.stopPropagation()" onblur="getProj().tasks['+i+'].wbs=this.textContent.trim();sortTasks(getProj().tasks);save();fbProjects();doRender()">'+H(t.wbs)+'</div></td>';
+  h+='<td><div class="name-ed" contenteditable onclick="event.stopPropagation()" onblur="getProj().tasks['+i+'].name=this.textContent.trim();save();fbProjects()">'+H(t.name)+'</div>'+rmP(t)+'</td>';
+  h+='<td><input type="text" value="'+H(t.pred||'')+'" style="padding:2px;font-size:.68rem;width:44px;text-align:center;font-family:JetBrains Mono;border:1px solid var(--b2);border-radius:3px" onchange="getProj().tasks['+i+'].pred=this.value.trim();save();fbProjects()" placeholder="-"></td>';
+  h+='<td><input type="text" value="'+H(t.assignee||'')+'" style="padding:2px;font-size:.68rem;width:80px;border:1px solid var(--b2);border-radius:3px" onchange="getProj().tasks['+i+'].assignee=this.value.trim();save();fbProjects()" placeholder="Name"></td>';
+  h+='<td><select onchange="getProj().tasks['+i+'].cat=this.value;save();fbProjects()" style="padding:1px;font-size:.7rem;border:0;background:transparent">'+catOpts(t.cat)+'</select></td>';
   if(!isM)h+='<td style="text-align:center;font-family:JetBrains Mono;font-size:.6rem;color:var(--t3)">-</td>';
-  else h+='<td><input type="number" value="'+(t.wt||0).toFixed(2)+'" step="0.01" style="padding:2px;font-size:.7rem;width:54px;text-align:right;font-family:JetBrains Mono" onchange="getProj().tasks['+i+'].wt=parseFloat(this.value)||0;save()"></td>';
+  else h+='<td><input type="number" value="'+(t.wt||0).toFixed(2)+'" step="0.01" style="padding:2px;font-size:.7rem;width:54px;text-align:right;font-family:JetBrains Mono" onchange="getProj().tasks['+i+'].wt=parseFloat(this.value)||0;save();fbProjects()"></td>';
   h+='<td>'+(t.dur||'-')+'</td>';
-  h+='<td><input type="date" value="'+(t.s||'')+'" style="padding:2px;font-size:.7rem;width:110px" onchange="var p=getProj().tasks['+i+'];p.s=this.value;if(p.s&&p.e)p.dur=dd(p.s,p.e);save()"></td>';
-  h+='<td><input type="date" value="'+(t.e||'')+'" style="padding:2px;font-size:.7rem;width:110px" onchange="var p=getProj().tasks['+i+'];p.e=this.value;if(p.s&&p.e)p.dur=dd(p.s,p.e);save()"></td>';
-  h+='<td><input type="number" value="'+t.prog+'" min="0" max="100" style="padding:2px;font-size:.7rem;width:46px;text-align:right" onchange="getProj().tasks['+i+'].prog=parseInt(this.value)||0;getProj().tasks['+i+'].st=aSt(getProj().tasks['+i+'].prog);save();doRender()"></td>';
+  h+='<td><input type="date" value="'+(t.s||'')+'" style="padding:2px;font-size:.7rem;width:110px" onchange="var p=getProj().tasks['+i+'];p.s=this.value;if(p.s&&p.e)p.dur=dd(p.s,p.e);save();fbProjects()"></td>';
+  h+='<td><input type="date" value="'+(t.e||'')+'" style="padding:2px;font-size:.7rem;width:110px" onchange="var p=getProj().tasks['+i+'];p.e=this.value;if(p.s&&p.e)p.dur=dd(p.s,p.e);save();fbProjects()"></td>';
+  h+='<td><input type="number" value="'+t.prog+'" min="0" max="100" style="padding:2px;font-size:.7rem;width:46px;text-align:right" onchange="getProj().tasks['+i+'].prog=parseInt(this.value)||0;getProj().tasks['+i+'].st=aSt(getProj().tasks['+i+'].prog);save();fbProjects();doRender()"></td>';
   h+='<td>'+rmB(t,i,1)+'</td>';
   h+='<td style="text-align:center;white-space:nowrap">';
   if(isM)h+='<button class="btn bs bp" onclick="addPS('+i+')" style="font-size:.56rem;padding:2px 5px">+Sub</button> ';
@@ -1247,14 +1254,10 @@ function impDownloadTpl(){
     ['5','Finishing','Construction',30,'2026-06-01','2026-06-30',0,10,'','']
   ];
   var ws=XLSX.utils.aoa_to_sheet(sd);
-  /* Set column widths */
   ws['!cols']=[{wch:8},{wch:25},{wch:15},{wch:10},{wch:12},{wch:12},{wch:10},{wch:8},{wch:12},{wch:15}];
   XLSX.utils.book_append_sheet(wb,ws,'Site Master');
-
-  /* Add instructions sheet */
   var instr=[
-    ['INSTRUCTIONS FOR IMPORT'],
-    [''],
+    ['INSTRUCTIONS FOR IMPORT'],[''],
     ['Column','Required','Description','Example'],
     ['WBS','YES','Work Breakdown Structure number. Main tasks have no dot (1,2,3). Sub-tasks use dots (1.1, 1.2, 2.1)','1.1'],
     ['Name','YES','Task name','Site Clearing'],
@@ -1266,8 +1269,7 @@ function impDownloadTpl(){
     ['WT%','NO','Weight percentage for main tasks. Main tasks should total 100%. Sub-tasks are 0.','10'],
     ['Predecessor','NO','WBS of predecessor task. Leave blank if none.','1.1'],
     ['Assignee','NO','Person responsible','Juan'],
-    [''],
-    ['RULES:'],
+    [''],['RULES:'],
     ['- Main tasks: WBS has no dot (1, 2, 3, 4, 5)'],
     ['- Sub-tasks: WBS has dots (1.1, 1.2, 2.1, 2.1.1)'],
     ['- Duration is auto-calculated from Start and End dates'],
@@ -1279,7 +1281,6 @@ function impDownloadTpl(){
   var ws2=XLSX.utils.aoa_to_sheet(instr);
   ws2['!cols']=[{wch:15},{wch:10},{wch:60},{wch:15}];
   XLSX.utils.book_append_sheet(wb,ws2,'Instructions');
-
   XLSX.writeFile(wb,'Task_Import_Template.xlsx');
   notify('Template downloaded');
 }
@@ -1288,31 +1289,21 @@ function impTasks(input){
   var f=input.files[0];
   if(!f)return;
   if(typeof XLSX==='undefined'){alert('XLSX library not loaded');return}
-
   var rd=new FileReader();
   rd.onload=function(e){
     try{
       var wb=XLSX.read(e.target.result,{type:'array'});
       var ws=wb.Sheets[wb.SheetNames[0]];
       var data=XLSX.utils.sheet_to_json(ws,{header:1});
-
       if(data.length<2){alert('File is empty or has no data rows.');return}
-
-      /* Find header row */
       var hdrRow=-1;
       for(var r=0;r<Math.min(5,data.length);r++){
-        var row=data[r];
-        if(!row)continue;
-        for(var c=0;c<row.length;c++){
-          var cell=String(row[c]||'').toLowerCase().trim();
-          if(cell==='wbs'||cell==='wbs no'||cell==='wbs#'){hdrRow=r;break}
-        }
+        var row=data[r];if(!row)continue;
+        for(var c=0;c<row.length;c++){var cell=String(row[c]||'').toLowerCase().trim();if(cell==='wbs'||cell==='wbs no'||cell==='wbs#'){hdrRow=r;break}}
         if(hdrRow>=0)break;
       }
       if(hdrRow<0){alert('Cannot find header row. Make sure column A header is "WBS".');return}
-
-      var hdr=data[hdrRow];
-      var colMap={};
+      var hdr=data[hdrRow];var colMap={};
       for(var c=0;c<hdr.length;c++){
         var h=String(hdr[c]||'').toLowerCase().trim();
         if(h==='wbs'||h==='wbs no'||h==='wbs#')colMap.wbs=c;
@@ -1326,1037 +1317,102 @@ function impTasks(input){
         else if(h==='predecessor'||h==='pred')colMap.pred=c;
         else if(h==='assignee'||h==='assigned')colMap.assignee=c;
       }
-
-      if(colMap.wbs===undefined){alert('Column "WBS" not found. Check header row.');return}
-      if(colMap.name===undefined){alert('Column "Name" not found. Check header row.');return}
-
-      /* Parse rows */
-      var newTasks=[];
-      var errors=[];
+      if(colMap.wbs===undefined){alert('Column "WBS" not found.');return}
+      if(colMap.name===undefined){alert('Column "Name" not found.');return}
+      var newTasks=[];var errors=[];
       for(var r=hdrRow+1;r<data.length;r++){
-        var row=data[r];
-        if(!row||!row.length)continue;
-        var wbs=String(row[colMap.wbs]||'').trim();
-        var name=String(row[colMap.name]||'').trim();
+        var row=data[r];if(!row||!row.length)continue;
+        var wbs=String(row[colMap.wbs]||'').trim();var name=String(row[colMap.name]||'').trim();
         if(!wbs||!name)continue;
-
-        var cat=colMap.cat!==undefined?String(row[colMap.cat]||'').trim():'General';
-        if(!cat)cat='General';
-
-        var s=colMap.s!==undefined?String(row[colMap.s]||'').trim():'';
-        var e=colMap.e!==undefined?String(row[colMap.e]||'').trim():'';
-
-        /* Fix date format - handle Excel serial dates */
-        s=impFixDate(s);
-        e=impFixDate(e);
-
-        var dur=0;
-        if(colMap.dur!==undefined){
-          dur=parseInt(row[colMap.dur])||0;
-        }
-        if(!dur&&s&&e){
-          dur=dd(s,e);
-        }
-        if(!dur)dur=14;
-
+        var cat=colMap.cat!==undefined?String(row[colMap.cat]||'').trim():'General';if(!cat)cat='General';
+        var s=colMap.s!==undefined?String(row[colMap.s]||'').trim():'';s=impFixDate(s);
+        var e=colMap.e!==undefined?String(row[colMap.e]||'').trim():'';e=impFixDate(e);
+        var dur=0;if(colMap.dur!==undefined)dur=parseInt(row[colMap.dur])||0;
+        if(!dur&&s&&e)dur=dd(s,e);if(!dur)dur=14;
         var prog=colMap.prog!==undefined?(parseInt(row[colMap.prog])||0):0;
         var wt=colMap.wt!==undefined?(parseFloat(row[colMap.wt])||0):0;
         var pred=colMap.pred!==undefined?String(row[colMap.pred]||'').trim():'';
         var assignee=colMap.assignee!==undefined?String(row[colMap.assignee]||'').trim():'';
-
-        newTasks.push({
-          wbs:wbs,
-          name:name,
-          cat:cat,
-          dur:dur,
-          s:s,
-          e:e,
-          prog:prog,
-          st:aSt(prog),
-          wt:wt,
-          pred:pred,
-          assignee:assignee,
-          remarks:[]
-        });
+        newTasks.push({wbs:wbs,name:name,cat:cat,dur:dur,s:s,e:e,prog:prog,st:aSt(prog),wt:wt,pred:pred,assignee:assignee,remarks:[]});
       }
-
       if(newTasks.length===0){alert('No valid tasks found in file.');return}
-
-      /* Show preview */
       impShowPreview(newTasks,errors);
-
-    }catch(err){
-      alert('Error reading file: '+err.message);
-    }
+    }catch(err){alert('Error reading file: '+err.message)}
   };
   rd.readAsArrayBuffer(f);
 }
 
 function impFixDate(val){
-  if(!val)return '';
-  val=String(val).trim();
-  /* Already YYYY-MM-DD */
+  if(!val)return '';val=String(val).trim();
   if(/^\d{4}-\d{2}-\d{2}$/.test(val))return val;
-  /* Excel serial number */
-  if(/^\d{5,}$/.test(val)){
-    var d=new Date((parseInt(val)-25569)*86400000);
-    return d.getFullYear()+'-'+LZ(d.getMonth()+1)+'-'+LZ(d.getDate());
-  }
-  /* MM/DD/YYYY or DD/MM/YYYY */
+  if(/^\d{5,}$/.test(val)){var d=new Date((parseInt(val)-25569)*86400000);return d.getFullYear()+'-'+LZ(d.getMonth()+1)+'-'+LZ(d.getDate())}
   var parts=val.split(/[\/\-\.]/);
-  if(parts.length===3){
-    var p0=parseInt(parts[0]),p1=parseInt(parts[1]),p2=parseInt(parts[2]);
-    if(p2>1900){return p2+'-'+LZ(p0)+'-'+LZ(p1)}
-    else if(p0>1900){return p0+'-'+LZ(p1)+'-'+LZ(p2)}
-  }
+  if(parts.length===3){var p0=parseInt(parts[0]),p1=parseInt(parts[1]),p2=parseInt(parts[2]);if(p2>1900)return p2+'-'+LZ(p0)+'-'+LZ(p1);else if(p0>1900)return p0+'-'+LZ(p1)+'-'+LZ(p2)}
   return val;
 }
 
 function impShowPreview(newTasks,errors){
-  var mains=0,subs=0;
-  for(var i=0;i<newTasks.length;i++){
-    if(newTasks[i].wbs.indexOf('.')===-1)mains++;
-    else subs++;
-  }
-
-  var bd='<div style="font-size:.76rem;margin-bottom:10px">';
-  bd+='<b>'+newTasks.length+' tasks found</b> ('+mains+' main, '+subs+' sub-tasks)';
-  bd+='</div>';
-
-  if(errors.length>0){
-    bd+='<div style="padding:8px;background:var(--rdc);border-radius:var(--r);margin-bottom:10px;font-size:.68rem">';
-    for(var ei=0;ei<errors.length;ei++)bd+='<div style="color:var(--rd)">'+H(errors[ei])+'</div>';
-    bd+='</div>';
-  }
-
+  var mains=0,subs=0;for(var i=0;i<newTasks.length;i++){if(newTasks[i].wbs.indexOf('.')===-1)mains++;else subs++}
+  var bd='<div style="font-size:.76rem;margin-bottom:10px"><b>'+newTasks.length+' tasks found</b> ('+mains+' main, '+subs+' sub-tasks)</div>';
+  if(errors.length>0){bd+='<div style="padding:8px;background:var(--rdc);border-radius:var(--r);margin-bottom:10px;font-size:.68rem">';for(var ei=0;ei<errors.length;ei++)bd+='<div style="color:var(--rd)">'+H(errors[ei])+'</div>';bd+='</div>'}
   bd+='<div style="font-size:.72rem;margin-bottom:10px"><b>Preview (first 10 rows):</b></div>';
   bd+='<div class="tw" style="max-height:300px;overflow-y:auto"><table><thead><tr><th>WBS</th><th>Name</th><th>Cat</th><th>Dur</th><th>Start</th><th>End</th><th>WT%</th></tr></thead><tbody>';
-  for(var i=0;i<Math.min(10,newTasks.length);i++){
-    var t=newTasks[i];
-    var isM=t.wbs.indexOf('.')===-1;
-    bd+='<tr'+(isM?' style="background:var(--s2);font-weight:600"':'')+'>';
-    bd+='<td>'+H(t.wbs)+'</td>';
-    bd+='<td>'+H(t.name)+'</td>';
-    bd+='<td>'+H(t.cat)+'</td>';
-    bd+='<td>'+t.dur+'</td>';
-    bd+='<td>'+H(t.s)+'</td>';
-    bd+='<td>'+H(t.e)+'</td>';
-    bd+='<td>'+(isM?t.wt+'%':'-')+'</td>';
-    bd+='</tr>';
-  }
+  for(var i=0;i<Math.min(10,newTasks.length);i++){var t=newTasks[i],isM=t.wbs.indexOf('.')===-1;bd+='<tr'+(isM?' style="background:var(--s2);font-weight:600"':'')+'><td>'+H(t.wbs)+'</td><td>'+H(t.name)+'</td><td>'+H(t.cat)+'</td><td>'+t.dur+'</td><td>'+H(t.s)+'</td><td>'+H(t.e)+'</td><td>'+(isM?t.wt+'%':'-')+'</td></tr>'}
   if(newTasks.length>10)bd+='<tr><td colspan="7" style="text-align:center;color:var(--t3)">... and '+(newTasks.length-10)+' more</td></tr>';
   bd+='</tbody></table></div>';
-
-  bd+='<div style="margin-top:12px;padding:10px;background:var(--rdc);border:1px solid rgba(204,51,51,.3);border-radius:var(--r);font-size:.72rem">';
-  bd+='<b style="color:var(--rd)">Warning:</b> This will <b>replace all current site master tasks</b>. ';
-  bd+='Make sure you have a backup or export first.';
-  bd+='</div>';
-
-  bd+='<div style="margin-top:10px;display:flex;gap:8px">';
-  bd+='<button class="btn bs" onclick="impAddMode()">Add to Existing (Merge)</button>';
-  bd+='<span style="font-size:.62rem;color:var(--t3);display:flex;align-items:center">Keeps current tasks, adds new ones</span>';
-  bd+='</div>';
-
+  bd+='<div style="margin-top:12px;padding:10px;background:var(--rdc);border:1px solid rgba(204,51,51,.3);border-radius:var(--r);font-size:.72rem"><b style="color:var(--rd)">Warning:</b> This will <b>replace all current site master tasks</b>. Make sure you have a backup.</div>';
+  bd+='<div style="margin-top:10px;display:flex;gap:8px"><button class="btn bs" onclick="impAddMode()">Add to Existing (Merge)</button><span style="font-size:.62rem;color:var(--t3);display:flex;align-items:center">Keeps current tasks, adds new ones</span></div>';
   window._impTasks=newTasks;
   mO('Import Preview',bd,'<button class="btn" onclick="mC();window._impTasks=null">Cancel</button><button class="btn bp" onclick="impReplaceMode()">Replace All</button>');
 }
 
 function impReplaceMode(){
   if(!window._impTasks)return;
-  if(!confirm('Replace all '+S.tasks.length+' current tasks with '+window._impTasks.length+' imported tasks?\n\nThis cannot be undone.'))return;
-
-  S.tasks=window._impTasks;
-  sortTasks(S.tasks);
-  save();
-  try{if(typeof db!=='undefined'&&db)db.ref('ss/tasks').set(S.tasks)}catch(e){}
-  mC();
-  window._impTasks=null;
-  notify('Imported '+S.tasks.length+' tasks');
-  doRender();
+  if(!confirm('Replace all '+S.tasks.length+' current tasks with '+window._impTasks.length+' imported tasks?'))return;
+  S.tasks=window._impTasks;sortTasks(S.tasks);save();fbTasks();mC();window._impTasks=null;notify('Imported '+S.tasks.length+' tasks');doRender();
 }
 
 function impAddMode(){
   if(!window._impTasks)return;
-  var newTasks=window._impTasks;
-  var existWbs={};
-  for(var i=0;i<S.tasks.length;i++)existWbs[S.tasks[i].wbs]=true;
-
+  var newTasks=window._impTasks;var existWbs={};for(var i=0;i<S.tasks.length;i++)existWbs[S.tasks[i].wbs]=true;
   var added=0,skipped=0;
-  for(var i=0;i<newTasks.length;i++){
-    if(existWbs[newTasks[i].wbs]){
-      skipped++;
-    }else{
-      S.tasks.push(newTasks[i]);
-      added++;
-    }
-  }
-
-  sortTasks(S.tasks);
-  save();
-  try{if(typeof db!=='undefined'&&db)db.ref('ss/tasks').set(S.tasks)}catch(e){}
-  mC();
-  window._impTasks=null;
-  notify('Added '+added+' tasks ('+skipped+' skipped)');
-  doRender();
+  for(var i=0;i<newTasks.length;i++){if(existWbs[newTasks[i].wbs])skipped++;else{S.tasks.push(newTasks[i]);added++}}
+  sortTasks(S.tasks);save();fbTasks();mC();window._impTasks=null;notify('Added '+added+' tasks ('+skipped+' skipped)');doRender();
 }
 
-function addT(){var p=$('ntW').value,n=$('ntN').value.trim();if(!n)return;var mx=0;for(var i=0;i<S.tasks.length;i++){if(S.tasks[i].wbs.indexOf(p+'.')===0){var num=parseInt(S.tasks[i].wbs.substring(p.length+1));if(!isNaN(num)&&num>mx)mx=num}}S.tasks.push({wbs:p+'.'+(mx+1),name:n,dur:dd($('ntS').value,$('ntE').value),s:$('ntS').value,e:$('ntE').value,prog:0,st:'pending',cat:$('ntC').value,remarks:[],wt:5,pred:$('ntP').value.trim(),assignee:$('ntA').value.trim()});sortTasks(S.tasks);save();notify('Added');doRender()}
+function addT(){var p=$('ntW').value,n=$('ntN').value.trim();if(!n)return;var mx=0;for(var i=0;i<S.tasks.length;i++){if(S.tasks[i].wbs.indexOf(p+'.')===0){var num=parseInt(S.tasks[i].wbs.substring(p.length+1));if(!isNaN(num)&&num>mx)mx=num}}S.tasks.push({wbs:p+'.'+(mx+1),name:n,dur:dd($('ntS').value,$('ntE').value),s:$('ntS').value,e:$('ntE').value,prog:0,st:'pending',cat:$('ntC').value,remarks:[],wt:5,pred:$('ntP').value.trim(),assignee:$('ntA').value.trim()});sortTasks(S.tasks);save();fbTasks();notify('Added');doRender()}
 
 function addSubToWbs(parentWbs){var parentCat='General';for(var i=0;i<S.tasks.length;i++)if(S.tasks[i].wbs===parentWbs){parentCat=S.tasks[i].cat||'General';break}mO('Add Sub-Task under '+parentWbs,'<div style="font-size:.72rem;color:var(--t3);margin-bottom:10px">Adding under <b>'+H(parentWbs)+'</b></div><div class="fg"><label class="fl">Task Name</label><input type="text" id="asubN" style="width:100%" autofocus></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">Start</label><input type="date" id="asubS" value="'+td()+'" style="width:100%"></div><div class="fg"><label class="fl">End</label><input type="date" id="asubE" value="'+addD(td(),14)+'" style="width:100%"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">Category</label><select id="asubC" style="width:100%">'+catOpts(parentCat)+'</select></div><div class="fg"><label class="fl">Predecessor</label><input type="text" id="asubP" style="width:100%" placeholder="e.g. '+parentWbs+'.1"></div></div><div class="fg"><label class="fl">Assignee</label><input type="text" id="asubA" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savSubToWbs(\''+parentWbs+'\')">Add Sub-Task</button>');setTimeout(function(){var el=$('asubN');if(el)el.focus()},100)}
 
-function savSubToWbs(parentWbs){var n=$('asubN').value.trim();if(!n)return;var mx=0;for(var i=0;i<S.tasks.length;i++){if(S.tasks[i].wbs.indexOf(parentWbs+'.')===0){var num=parseInt(S.tasks[i].wbs.substring(parentWbs.length+1));if(!isNaN(num)&&num>mx)mx=num}}S.tasks.push({wbs:parentWbs+'.'+(mx+1),name:n,dur:dd($('asubS').value,$('asubE').value),s:$('asubS').value,e:$('asubE').value,prog:0,st:'pending',cat:$('asubC').value||'General',remarks:[],wt:0,pred:$('asubP').value.trim(),assignee:$('asubA').value.trim()});sortTasks(S.tasks);save();mC();notify('Added sub-task');doRender()}
+function savSubToWbs(parentWbs){var n=$('asubN').value.trim();if(!n)return;var mx=0;for(var i=0;i<S.tasks.length;i++){if(S.tasks[i].wbs.indexOf(parentWbs+'.')===0){var num=parseInt(S.tasks[i].wbs.substring(parentWbs.length+1));if(!isNaN(num)&&num>mx)mx=num}}S.tasks.push({wbs:parentWbs+'.'+(mx+1),name:n,dur:dd($('asubS').value,$('asubE').value),s:$('asubS').value,e:$('asubE').value,prog:0,st:'pending',cat:$('asubC').value||'General',remarks:[],wt:0,pred:$('asubP').value.trim(),assignee:$('asubA').value.trim()});sortTasks(S.tasks);save();fbTasks();mC();notify('Added sub-task');doRender()}
 
 function newTP(){mO('New Project','<div class="fg"><label class="fl">Name</label><input type="text" id="ntpN" style="width:100%"></div><div class="fg"><label class="fl">Cost</label><input type="number" id="ntpC" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savTP()">Create</button>')}
 
-function savTP(){var n=$('ntpN').value.trim();if(!n)return;var id=Date.now();S.taskProjects.push({id:id,name:n,cost:parseFloat($('ntpC').value)||0,payments:[],tasks:[]});tpSel=id;save();mC();notify('Created');doRender()}
+function savTP(){var n=$('ntpN').value.trim();if(!n)return;var id=Date.now();S.taskProjects.push({id:id,name:n,cost:parseFloat($('ntpC').value)||0,payments:[],tasks:[]});tpSel=id;save();fbProjects();mC();notify('Created');doRender()}
 
-function delTP(){var p=getProj();if(!p||!confirm('Delete?'))return;S.taskProjects=S.taskProjects.filter(function(x){return x.id!=tpSel});tpSel='site';save();notify('Deleted');doRender()}
+function delTP(){var p=getProj();if(!p||!confirm('Delete?'))return;S.taskProjects=S.taskProjects.filter(function(x){return x.id!=tpSel});tpSel='site';save();fbProjects();notify('Deleted');doRender()}
 
-function updPCost(id,val){for(var i=0;i<S.taskProjects.length;i++)if(S.taskProjects[i].id==id){S.taskProjects[i].cost=val;save();doRender();return}}
+function updPCost(id,val){for(var i=0;i<S.taskProjects.length;i++)if(S.taskProjects[i].id==id){S.taskProjects[i].cost=val;save();fbProjects();doRender();return}}
 
 function addPS(mi){var p=getProj();if(!p)return;var m2=p.tasks[mi];mO('Add Sub','<div class="fg"><label class="fl">Name</label><input type="text" id="psN" style="width:100%"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">Start</label><input type="date" id="psS" value="'+td()+'" style="width:100%"></div><div class="fg"><label class="fl">End</label><input type="date" id="psE" value="'+addD(td(),14)+'" style="width:100%"></div></div><div class="fg"><label class="fl">Pred</label><input type="text" id="psP" style="width:100%"></div><div class="fg"><label class="fl">Assignee</label><input type="text" id="psA" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savPS('+mi+')">Add</button>')}
 
-function savPS(mi){var p=getProj();if(!p)return;var m2=p.tasks[mi],n=$('psN').value.trim();if(!n)return;var mx=0;for(var i=0;i<p.tasks.length;i++)if(p.tasks[i].wbs.indexOf(m2.wbs+'.')===0){var num=parseInt(p.tasks[i].wbs.substring(m2.wbs.length+1));if(!isNaN(num)&&num>mx)mx=num}p.tasks.push({wbs:m2.wbs+'.'+(mx+1),name:n,dur:dd($('psS').value,$('psE').value),s:$('psS').value,e:$('psE').value,prog:0,st:'pending',cat:m2.cat||'General',remarks:[],wt:0,pred:$('psP').value.trim(),assignee:$('psA').value.trim()});sortTasks(p.tasks);save();mC();notify('Added');doRender()}
+function savPS(mi){var p=getProj();if(!p)return;var m2=p.tasks[mi],n=$('psN').value.trim();if(!n)return;var mx=0;for(var i=0;i<p.tasks.length;i++)if(p.tasks[i].wbs.indexOf(m2.wbs+'.')===0){var num=parseInt(p.tasks[i].wbs.substring(m2.wbs.length+1));if(!isNaN(num)&&num>mx)mx=num}p.tasks.push({wbs:m2.wbs+'.'+(mx+1),name:n,dur:dd($('psS').value,$('psE').value),s:$('psS').value,e:$('psE').value,prog:0,st:'pending',cat:m2.cat||'General',remarks:[],wt:0,pred:$('psP').value.trim(),assignee:$('psA').value.trim()});sortTasks(p.tasks);save();fbProjects();mC();notify('Added');doRender()}
 
 function addPTP(){mO('Add Phase','<div class="fg"><label class="fl">Name</label><input type="text" id="ppN" style="width:100%"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">Start</label><input type="date" id="ppS" value="'+td()+'" style="width:100%"></div><div class="fg"><label class="fl">End</label><input type="date" id="ppE" value="'+addD(td(),14)+'" style="width:100%"></div></div><div class="fg"><label class="fl">Category</label><select id="ppC" style="width:100%">'+catOpts('General')+'</select></div><div class="fg"><label class="fl">Assignee</label><input type="text" id="ppA" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savPTP()">Add</button>')}
 
-function savPTP(){var p=getProj();if(!p)return;var n=$('ppN').value.trim();if(!n)return;var mt=[];for(var i=0;i<p.tasks.length;i++)if(p.tasks[i].wbs.indexOf('.')===-1)mt.push(p.tasks[i]);p.tasks.push({wbs:String(mt.length+1),name:n,dur:dd($('ppS').value,$('ppE').value),s:$('ppS').value,e:$('ppE').value,prog:0,st:'pending',cat:$('ppC').value,remarks:[],wt:5,pred:'',assignee:$('ppA').value.trim()});sortTasks(p.tasks);save();mC();notify('Added');doRender()}
+function savPTP(){var p=getProj();if(!p)return;var n=$('ppN').value.trim();if(!n)return;var mt=[];for(var i=0;i<p.tasks.length;i++)if(p.tasks[i].wbs.indexOf('.')===-1)mt.push(p.tasks[i]);p.tasks.push({wbs:String(mt.length+1),name:n,dur:dd($('ppS').value,$('ppE').value),s:$('ppS').value,e:$('ppE').value,prog:0,st:'pending',cat:$('ppC').value,remarks:[],wt:5,pred:'',assignee:$('ppA').value.trim()});sortTasks(p.tasks);save();fbProjects();mC();notify('Added');doRender()}
 
-function delPT(idx){if(!confirm('Delete?'))return;var p=getProj();if(!p)return;delTask(p.tasks,idx);save();notify('Deleted');doRender()}
+function delPT(idx){if(!confirm('Delete?'))return;var p=getProj();if(!p)return;delTask(p.tasks,idx);save();fbProjects();notify('Deleted');doRender()}
 
 function addPay(id){mO('Payment','<div class="fg"><label class="fl">Date</label><input type="date" id="payD" value="'+td()+'" style="width:100%"></div><div class="fg"><label class="fl">Amount</label><input type="number" id="payA" style="width:100%"></div><div class="fg"><label class="fl">Desc</label><input type="text" id="payDe" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savPay('+id+')">Add</button>')}
 
-function savPay(id){var a=parseFloat($('payA').value)||0;if(!a)return;for(var i=0;i<S.taskProjects.length;i++){if(S.taskProjects[i].id==id){if(!S.taskProjects[i].payments)S.taskProjects[i].payments=[];S.taskProjects[i].payments.push({id:Date.now(),date:$('payD').value,amount:a,desc:$('payDe').value.trim()});save();mC();notify('Added');doRender();return}}}
+function savPay(id){var a=parseFloat($('payA').value)||0;if(!a)return;for(var i=0;i<S.taskProjects.length;i++){if(S.taskProjects[i].id==id){if(!S.taskProjects[i].payments)S.taskProjects[i].payments=[];S.taskProjects[i].payments.push({id:Date.now(),date:$('payD').value,amount:a,desc:$('payDe').value.trim()});save();fbProjects();mC();notify('Added');doRender();return}}}
 
 function addSP(){mO('Site Payment','<div class="fg"><label class="fl">Date</label><input type="date" id="spD" value="'+td()+'" style="width:100%"></div><div class="fg"><label class="fl">Amount</label><input type="number" id="spA" style="width:100%"></div><div class="fg"><label class="fl">Desc</label><input type="text" id="spDe" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savSP()">Add</button>')}
 
-function savSP(){var a=parseFloat($('spA').value)||0;if(!a)return;S.sitePayments.push({id:Date.now(),date:$('spD').value,amount:a,desc:$('spDe').value.trim()});save();mC();notify('Added');doRender()}
+function savSP(){var a=parseFloat($('spA').value)||0;if(!a)return;S.sitePayments.push({id:Date.now(),date:$('spD').value,amount:a,desc:$('spDe').value.trim()});save();fbSitePay();mC();notify('Added');doRender()}
 
 function expProj(){if(typeof XLSX==='undefined')return notify('XLSX not loaded');var p=getProj();if(!p)return;var wb=XLSX.utils.book_new(),sd=[['WBS','Name','Cat','Dur','Start','End','Prog','WT%','Pred','Assignee']];for(var i=0;i<p.tasks.length;i++){var t=p.tasks[i];sd.push([t.wbs,t.name,t.cat,t.dur,t.s,t.e,t.prog,t.wt||0,t.pred||'',t.assignee||''])}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),'Tasks');XLSX.writeFile(wb,p.name.replace(/[^a-z0-9]/gi,'_')+'.xlsx');notify('Exported')}
-/* === INSPECTION === */
-var selectedInps=[];
-var inspReady=false;
-var syncedInps=[];
-
-function ensureInps(){
-  /* Convert object to array if Firebase broke it */
-  if(S.inspections&&!Array.isArray(S.inspections)){
-    var arr=[];
-    for(var k in S.inspections){if(S.inspections[k])arr.push(S.inspections[k])}
-    S.inspections=arr;
-  }
-  if(!Array.isArray(S.inspections))S.inspections=[];
-  /* Filter out deleted items */
-  var clean=[];
-  for(var i=0;i<S.inspections.length;i++){
-    var ins=S.inspections[i];if(!ins)continue;
-    var did=ins.id||('d_'+Date.now()+'_'+i);
-    if(deletedInspIds.indexOf(did)>=0)continue;
-    clean.push(ins);
-  }
-  S.inspections=clean;
-  /* Dedupe by ID only */
-  if(!inspReady){
-    var seen={},deduped=[];
-    for(var i=0;i<S.inspections.length;i++){
-      var ins2=S.inspections[i];
-      var id=ins2.id;
-      if(!id){ins2.id=Date.now()+i;id=ins2.id}
-      if(!seen[id]){seen[id]=1;deduped.push(ins2)}
-    }
-    S.inspections=deduped;
-    inspReady=true;
-  }
-}
-
-/* --- Real-time listener for Power Automate sync --- */
-function startInspSync(){
-  if(!db)return;
-  try{var _d=localStorage.getItem('ss_del_insp');if(_d)deletedInspIds=JSON.parse(_d)}catch(e){}
-  try{
-    db.ref('ss/inspectionsSync').on('value',function(snap){
-      var val=snap.val();
-      if(!val)return;
-      ensureInps();
-      var existMap={};
-      for(var i=0;i<S.inspections.length;i++){
-        existMap[S.inspections[i].id]=true;
-      }
-      var added=0;
-      for(var key in val){
-        if(!val[key]||typeof val[key]!=='object')continue;
-        var item=val[key];
-        if(!item.id)item.id='sync_'+key;
-        if(existMap[item.id])continue;
-        if(deletedInspIds.indexOf(item.id)>=0)continue;
-        S.inspections.push(item);
-        existMap[item.id]=true;
-        added++;
-      }
-      if(added){
-        inspReady=false;
-        save();
-        notify(added+' new inspection(s) synced');
-        if(tab==='insp')doRender();
-      }
-    });
-  }catch(e){console.log('Sync err:',e)}
-}
-/* --- Tab render --- */
-R.insp=function(){
-ensureInps();
-var inps=S.inspections;
-var total=inps.length,conf=0,rev=0,nonConf=0;
-var discCount={},contractorCount={},statusCount={},dateCount={};
-for(var i=0;i<total;i++){
-  var ins=inps[i];if(!ins)continue;
-  var c=ins.conformance||'';
-  if(c==='Conforming'||c==='Yes')conf++;
-  else if(c==='For Review')rev++;
-  else if(c)nonConf++;
-  if(ins.discipline)discCount[ins.discipline]=(discCount[ins.discipline]||0)+1;
-  if(ins.contractor)contractorCount[ins.contractor]=(contractorCount[ins.contractor]||0)+1;
-  if(ins.status)statusCount[ins.status]=(statusCount[ins.status]||0)+1;
-  if(ins.date){var dk=String(ins.date).substring(5);dateCount[dk]=(dateCount[dk]||0)+1}
-}
-var rate=total>0?Math.round(conf/total*100):0;
-
-var syncBadge=cOn?'<span class="sync-ind"><span class="sp"></span>Live</span>':'<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">Offline</span>';
-
-var h='<div class="val-hero"><div><h2>Daily Construction Validation</h2><p style="font-size:.76rem;opacity:.8">Stellar Seeds Vietnam</p><div style="margin-top:6px">'+syncBadge+'</div></div><div style="text-align:center"><a href="'+MF+'" target="_blank" class="val-cta">Conduct Inspection</a></div></div>';
-
-if(!total){
-  h+='<div class="card" style="border-left:4px solid var(--or);background:var(--orc)">';
-  h+='<div style="display:flex;justify-content:space-between;align-items:center"><div>';
-  h+='<div style="font-weight:700;font-size:.82rem;color:var(--or);margin-bottom:4px">No Inspection Data Yet</div>';
-  h+='<div style="font-size:.72rem;color:var(--t2)">Option A: <b>Auto-sync</b> via Power Automate</div>';
-  h+='<div style="font-size:.72rem;color:var(--t2)">Option B: <b>Manual</b> — download Excel from Form responses, upload here</div>';
-  h+='</div><div style="display:flex;gap:6px"><button class="btn" onclick="showInspSetup()">Auto-Sync Guide</button><button class="btn bp" onclick="massUploadInsp()">Upload Excel</button></div></div></div>';
-}
-
-h+='<div class="stats">';
-h+='<div class="val-metric green"><div class="vm-l">Total</div><div class="vm-v" style="color:var(--g)">'+total+'</div></div>';
-h+='<div class="val-metric green"><div class="vm-l">Conforming</div><div class="vm-v" style="color:var(--g)">'+conf+'</div></div>';
-h+='<div class="val-metric blue"><div class="vm-l">For Review</div><div class="vm-v" style="color:var(--bl)">'+rev+'</div></div>';
-h+='<div class="val-metric red"><div class="vm-l">Non-Conforming</div><div class="vm-v" style="color:var(--rd)">'+nonConf+'</div></div>';
-h+='<div class="val-metric purple"><div class="vm-l">Rate</div><div class="vm-v" style="color:var(--pu)">'+rate+'%</div></div>';
-h+='</div>';
-
-if(total>0){
-  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:14px">';
-  h+='<div class="card"><div class="ch"><span class="ct" style="color:var(--g)">Conformance</span></div>';
-  h+='<div style="display:flex;align-items:center;gap:20px">';
-  h+='<canvas id="confDonut" width="140" height="140" style="width:140px;height:140px;flex-shrink:0"></canvas>';
-  h+='<div style="font-size:.72rem;line-height:2">';
-  h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--g);margin-right:6px"></span>Conforming: <b>'+conf+'</b></div>';
-  h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--bl);margin-right:6px"></span>For Review: <b>'+rev+'</b></div>';
-  h+='<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--rd);margin-right:6px"></span>Non-Conforming: <b>'+nonConf+'</b></div>';
-  h+='</div></div></div>';
-
-  h+='<div class="card"><div class="ch"><span class="ct" style="color:var(--pu)">By Discipline</span></div>';
-  var discItems=[];for(var k in discCount)discItems.push({l:k,v:discCount[k]});
-  discItems.sort(function(a,b){return b.v-a.v});
-  var maxD=discItems.length?discItems[0].v:1;
-  var dC=['#2d8a32','#2874a6','#d4930d','#9b59b6','#b89630','#cc3333'];
-  for(var d=0;d<discItems.length;d++){
-    var di=discItems[d],wp=Math.round(di.v/maxD*100);
-    h+='<div class="val-chart"><div class="val-clabel">'+H(di.l)+'</div><div class="val-ctrack"><div class="val-cfill" style="width:'+wp+'%;background:'+dC[d%dC.length]+'">'+di.v+'</div></div><div class="val-cval">'+Math.round(di.v/total*100)+'%</div></div>';
-  }
-  h+='</div></div>';
-
-  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:14px">';
-  h+='<div class="card"><div class="ch"><span class="ct">By Contractor</span></div>';
-  var conItems=[];for(var k in contractorCount)conItems.push({l:k,v:contractorCount[k]});
-  conItems.sort(function(a,b){return b.v-a.v});
-  var maxC=conItems.length?conItems[0].v:1;
-  var cC=['#2874a6','#d4930d','#2d8a32','#cc3333'];
-  for(var d=0;d<conItems.length;d++){
-    var ci=conItems[d],wp2=Math.round(ci.v/maxC*100);
-    h+='<div class="val-chart"><div class="val-clabel">'+H(ci.l)+'</div><div class="val-ctrack"><div class="val-cfill" style="width:'+wp2+'%;background:'+cC[d%cC.length]+'">'+ci.v+'</div></div><div class="val-cval">'+Math.round(ci.v/total*100)+'%</div></div>';
-  }
-  h+='</div>';
-
-  h+='<div class="card"><div class="ch"><span class="ct">By Status</span></div>';
-  var stItems=[];for(var k in statusCount)stItems.push({l:k,v:statusCount[k]});
-  stItems.sort(function(a,b){return b.v-a.v});
-  var maxS=stItems.length?stItems[0].v:1;
-  for(var d=0;d<stItems.length;d++){
-    var si=stItems[d],wp3=Math.round(si.v/maxS*100);
-    h+='<div class="val-chart"><div class="val-clabel">'+H(si.l)+'</div><div class="val-ctrack"><div class="val-cfill" style="width:'+wp3+'%;background:#b89630">'+si.v+'</div></div><div class="val-cval">'+Math.round(si.v/total*100)+'%</div></div>';
-  }
-  h+='</div></div>';
-  h+='<div class="card"><div class="ch"><span class="ct">By Email</span></div>';
-  var _emailCount={};
-  for(var _ei=0;_ei<total;_ei++){
-    var _em=inps[_ei].email||'Unknown';
-    _emailCount[_em]=(_emailCount[_em]||0)+1;
-  }
-  var _emSorted=[];
-  for(var _ek in _emailCount)_emSorted.push({n:_ek,c:_emailCount[_ek]});
-  _emSorted.sort(function(a,b){return b.c-a.c});
-  var _emMax=_emSorted.length?_emSorted[0].c:1;
-  var _emCols=['#2874a6','#d4930d','#2d8a32','#9b59b6','#b89630','#cc3333'];
-  for(var _ei2=0;_ei2<_emSorted.length;_ei2++){
-    var _em2=_emSorted[_ei2];
-    var _emw=Math.round(_em2.c/_emMax*100);
-    var _emc=_emCols[_ei2%_emCols.length];
-    h+='<div style="display:flex;align-items:center;gap:8px;padding:4px 0">';
-    h+='<div style="width:180px;font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+H(_em2.n)+'">'+H(_em2.n)+'</div>';
-    h+='<div style="flex:1;height:18px;background:var(--s2);border-radius:3px;overflow:hidden">';
-    h+='<div style="height:100%;width:'+_emw+'%;background:'+_emc+';border-radius:3px;display:flex;align-items:center;padding-left:6px">';
-    h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:#fff;font-weight:700">'+_em2.c+'</span>';
-    h+='</div></div></div>';
-  }
-  h+='</div>';
-
-  h+='<div class="card"><div class="ch"><span class="ct">By Area Inspected</span></div>';
-  var _areaCount={};
-  var _areaOriginal={};
-  for(var _ai=0;_ai<total;_ai++){
-    var _arRaw=inps[_ai].area||'Unknown';
-    var _ar=_arRaw.toLowerCase().trim();
-    if(!_areaOriginal[_ar])_areaOriginal[_ar]=_arRaw;
-    _areaCount[_ar]=(_areaCount[_ar]||0)+1;
-  }
-  var _arSorted=[];
-  for(var _ak in _areaCount)_arSorted.push({n:_areaOriginal[_ak],c:_areaCount[_ak]});
-  _arSorted.sort(function(a,b){return b.c-a.c});
-  var _arMax=_arSorted.length?_arSorted[0].c:1;
-  var _arCols=['#2d8a32','#2874a6','#d4930d','#9b59b6','#b89630','#cc3333'];
-  for(var _ai2=0;_ai2<_arSorted.length;_ai2++){
-    var _ar2=_arSorted[_ai2];
-    var _arw=Math.round(_ar2.c/_arMax*100);
-    var _arc=_arCols[_ai2%_arCols.length];
-    h+='<div style="display:flex;align-items:center;gap:8px;padding:4px 0">';
-    h+='<div style="width:180px;font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+H(_ar2.n)+'">'+H(_ar2.n)+'</div>';
-    h+='<div style="flex:1;height:18px;background:var(--s2);border-radius:3px;overflow:hidden">';
-    h+='<div style="height:100%;width:'+_arw+'%;background:'+_arc+';border-radius:3px;display:flex;align-items:center;padding-left:6px">';
-    h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:#fff;font-weight:700">'+_ar2.c+'</span>';
-    h+='</div></div></div>';
-  }
-  h+='</div>';
-  h+='<div class="card"><div class="ch"><span class="ct">Inspections Per Day</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+Object.keys(dateCount).length+' days</span></div>';
-  h+='<canvas id="dateChart" width="900" height="200" style="width:100%;height:auto;display:block"></canvas></div>';
-  /* Filter and search controls */
-  h+='<div class="card">';
-  h+='<div class="ch"><span class="ct">Inspection Log</span><span id="inspCount" style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+total+' records</span></div>';
-  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">';
-  h+='<input type="text" id="inspQ" placeholder="Search inspections..." value="'+H(inspSearch)+'" style="width:240px;padding:5px 10px;font-size:.72rem" oninput="inspSearch=this.value;doRender()">';
-  h+='<select id="inspFS" style="padding:5px;font-size:.72rem" onchange="inspFilterStatus=this.value;doRender()">';
-  h+='<option value="all"'+(inspFilterStatus==='all'?' selected':'')+'>All Status</option>';
-  var _fStatuses={};
-  for(var _fsi=0;_fsi<total;_fsi++){var _fst=inps[_fsi].status;if(_fst)_fStatuses[_fst]=1}
-  for(var _fsk in _fStatuses)h+='<option value="'+H(_fsk)+'"'+(inspFilterStatus===_fsk?' selected':'')+'>'+H(_fsk)+'</option>';
-  h+='</select>';
-  h+='<select id="inspFC" style="padding:5px;font-size:.72rem" onchange="inspFilterConf=this.value;doRender()">';
-  h+='<option value="all"'+(inspFilterConf==='all'?' selected':'')+'>All Conformance</option>';
-  h+='<option value="Conforming"'+(inspFilterConf==='Conforming'?' selected':'')+'>Conforming</option>';
-  h+='<option value="For Review"'+(inspFilterConf==='For Review'?' selected':'')+'>For Review</option>';
-  h+='<option value="Non-Conforming"'+(inspFilterConf==='Non-Conforming'?' selected':'')+'>Non-Conforming</option>';
-  h+='</select>';
-  h+='<span style="flex:1"></span>';
-  h+='<button class="btn bs" onclick="inspSearch=\'\';inspFilterStatus=\'all\';inspFilterConf=\'all\';doRender()">Clear Filters</button>';
-  h+='</div>';
-
-  /* Build filtered list */
-  var filteredInps=[];
-  for(var i=0;i<total;i++){
-    var ins=inps[i];if(!ins)continue;
-    if(inspFilterStatus!=='all'&&ins.status!==inspFilterStatus)continue;
-    if(inspFilterConf!=='all'&&ins.conformance!==inspFilterConf)continue;
-    if(inspSearch){
-      var q=inspSearch.toLowerCase();
-      var found=false;
-      var fields=[ins.date,ins.area,ins.inspector,ins.email,ins.contractor,ins.discipline,ins.workElement,ins.drawingNo,ins.requestingTo,ins.actualSiteMaterial,ins.conformance,ins.immediateAction,ins.escalationRequired,ins.personResponsible,ins.reviewedBy,ins.discussedWith,ins.remarks,ins.status];
-      for(var fi=0;fi<fields.length;fi++){if((fields[fi]||'').toLowerCase().indexOf(q)>=0){found=true;break}}
-      if(!found)continue;
-    }
-    filteredInps.push({ins:ins,idx:i});
-  }
-
-  /* Sort */
-  filteredInps.sort(function(a,b){
-    var va,vb;
-    if(inspSortCol==='date'){va=a.ins.date||'';vb=b.ins.date||''}
-    else if(inspSortCol==='area'){va=(a.ins.area||'').toLowerCase();vb=(b.ins.area||'').toLowerCase()}
-    else if(inspSortCol==='name'){va=(a.ins.inspector||'').toLowerCase();vb=(b.ins.inspector||'').toLowerCase()}
-    else if(inspSortCol==='email'){va=(a.ins.email||'').toLowerCase();vb=(b.ins.email||'').toLowerCase()}
-    else if(inspSortCol==='contractor'){va=(a.ins.contractor||'').toLowerCase();vb=(b.ins.contractor||'').toLowerCase()}
-    else if(inspSortCol==='discipline'){va=(a.ins.discipline||'').toLowerCase();vb=(b.ins.discipline||'').toLowerCase()}
-    else if(inspSortCol==='conformance'){va=(a.ins.conformance||'').toLowerCase();vb=(b.ins.conformance||'').toLowerCase()}
-    else if(inspSortCol==='status'){va=(a.ins.status||'').toLowerCase();vb=(b.ins.status||'').toLowerCase()}
-    else if(inspSortCol==='remarks'){va=(a.ins.remarks||'').toLowerCase();vb=(b.ins.remarks||'').toLowerCase()}
-    else{va=a.idx;vb=b.idx}
-    if(typeof va==='number')return inspSortAsc?va-vb:vb-va;
-    return inspSortAsc?(va>vb?1:va<vb?-1:0):(va<vb?1:va>vb?-1:0);
-  });
-
-  function iSortArrow(col){return inspSortCol===col?(inspSortAsc?'&#9650;':'&#9660;'):''}
-  function iHdrClick(col){return 'onclick="inspSortCol=\''+col+'\';inspSortAsc=inspSortCol===\''+col+'\'?!inspSortAsc:true;doRender()" style="cursor:pointer;user-select:none"'}
-
-  h+='<div class="tw"><table><thead><tr>';
-  h+='<th style="width:30px"><input type="checkbox" onchange="toggleAllInps(this.checked)" style="cursor:pointer"></th>';
-  h+='<th '+iHdrClick('date')+'>Date '+iSortArrow('date')+'</th>';
-  h+='<th '+iHdrClick('area')+'>Area/Zone '+iSortArrow('area')+'</th>';
-  h+='<th '+iHdrClick('name')+'>Name '+iSortArrow('name')+'</th>';
-  h+='<th '+iHdrClick('email')+'>Email '+iSortArrow('email')+'</th>';
-  h+='<th '+iHdrClick('contractor')+'>Contractor '+iSortArrow('contractor')+'</th>';
-  h+='<th '+iHdrClick('discipline')+'>Discipline '+iSortArrow('discipline')+'</th>';
-  h+='<th>Work Element</th>';
-  h+='<th>Drawing No</th>';
-  h+='<th>Requesting To</th>';
-  h+='<th>Actual Site Material</th>';
-  h+='<th '+iHdrClick('conformance')+'>Conformance '+iSortArrow('conformance')+'</th>';
-  h+='<th>Immediate Action</th>';
-  h+='<th>Escalation</th>';
-  h+='<th>Person Responsible</th>';
-  h+='<th>Reviewed By</th>';
-  h+='<th>Discussed With</th>';
-  h+='<th '+iHdrClick('remarks')+'>Remarks '+iSortArrow('remarks')+'</th>';
-  h+='<th '+iHdrClick('status')+'>Status '+iSortArrow('status')+'</th>';
-  h+='<th style="width:70px">Actions</th>';
-  h+='</tr></thead><tbody>';
-
-  for(var fi2=0;fi2<filteredInps.length;fi2++){
-    var ins=filteredInps[fi2].ins;
-    var i=filteredInps[fi2].idx;
-    var isChecked=selectedInps.indexOf(i)>=0;
-    var cb=(ins.conformance==='Conforming'||ins.conformance==='Yes')?'bg2':ins.conformance==='For Review'?'by2':'bd2';
-    var sb=ins.status==='Completed'||ins.status==='Closed'?'bg2':ins.status==='In Progress'?'bx2':'by2';
-    h+='<tr'+(isChecked?' style="background:var(--blc)"':'')+'>';
-    h+='<td><input type="checkbox" '+(isChecked?'checked':'')+' onchange="toggleInp('+i+',this.checked)" style="cursor:pointer"></td>';
-    h+='<td style="font-family:JetBrains Mono;font-size:.64rem;white-space:nowrap">'+H(ins.date)+'</td>';
-    h+='<td>'+H(ins.area)+'</td>';
-    h+='<td>'+H(ins.inspector)+'</td>';
-    h+='<td style="font-size:.64rem">'+H(ins.email||'-')+'</td>';
-    h+='<td>'+H(ins.contractor||'-')+'</td>';
-    h+='<td style="font-size:.64rem">'+H(ins.discipline||'-')+'</td>';
-    h+='<td style="font-size:.64rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.workElement||'')+'">'+H(ins.workElement||'-')+'</td>';
-    h+='<td style="font-family:JetBrains Mono;font-size:.6rem">'+H(ins.drawingNo||'-')+'</td>';
-    h+='<td style="font-size:.64rem">'+H(ins.requestingTo||'-')+'</td>';
-    h+='<td style="font-size:.64rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.actualSiteMaterial||'')+'">'+H(ins.actualSiteMaterial||'-')+'</td>';
-    h+='<td><span class="badge '+cb+'">'+H(ins.conformance||'-')+'</span></td>';
-    h+='<td style="font-size:.62rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.immediateAction||'')+'">'+H(ins.immediateAction||'-')+'</td>';
-    h+='<td style="font-size:.62rem">'+H(ins.escalationRequired||'-')+'</td>';
-    h+='<td style="font-size:.62rem">'+H(ins.personResponsible||'-')+'</td>';
-    h+='<td style="font-size:.62rem">'+H(ins.reviewedBy||'-')+'</td>';
-    h+='<td style="font-size:.62rem">'+H(ins.discussedWith||'-')+'</td>';
-    h+='<td style="font-size:.62rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(ins.remarks||'')+'">'+H((ins.remarks||'').substring(0,25))+'</td>';
-    h+='<td><span class="badge '+sb+'">'+H(ins.status||'-')+'</span></td>';
-    h+='<td style="white-space:nowrap"><button class="btn bs" onclick="editInsp('+i+')">Edit</button> <button class="btn bs bd" onclick="delInsp('+i+')">&times;</button></td>';
-    h+='</tr>';
-  }
-  h+='</tbody></table></div>';
-  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">';
-  h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">Click column headers to sort</span>';
-  h+='<div style="display:flex;gap:8px;align-items:center">';
-  if(selectedInps.length){
-    h+='<span style="font-family:JetBrains Mono;font-size:.64rem;color:var(--bl)">'+selectedInps.length+' selected</span>';
-    h+='<button class="btn bs bd" onclick="delSelectedInps()">Delete Selected</button>';
-    h+='<button class="btn bs" onclick="selectedInps=[];doRender()">Clear Selection</button>';
-  }
-  h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+filteredInps.length+' of '+total+' shown</span>';
-  h+='</div>';
-  h+='</div>';
-  h+='</div>';
-}
-h+='<div class="fbar">';
-h+='<button class="btn bp" onclick="addInsp()">+ Record</button>';
-h+='<button class="btn" onclick="massUploadInsp()" style="border-color:var(--pu);color:var(--pu)">Mass Upload Excel</button>';
-h+='<a href="'+MF+'" target="_blank" class="btn bb" style="text-decoration:none">Open MS Form</a>';
-h+='<button class="btn" onclick="showInspSetup()" style="border-color:var(--or);color:var(--or)">Auto-Sync Guide</button>';
-h+='<button class="btn bs bd" onclick="clearAllSync()" title="Clear stuck Firebase sync data">Clear Sync</button>';
-h+='<span style="flex:1"></span>';
-h+='<button class="btn bs" onclick="exportInspData()">Export</button>';
-h+='</div>';
-  if(total>0){
-    h+='<div style="margin-top:6px;display:flex;gap:8px;align-items:center">';
-    h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">BULK:</span>';
-    h+='<button class="btn bs bd" onclick="clearAllInsp()">Delete All</button>';
-    h+='<button class="btn bs bd" onclick="delInspByDate()">Delete by Date</button>';
-    h+='<button class="btn bs" onclick="undoLastUpload()">Undo Last Upload</button>';
-    h+='</div>';
-  }
-var wasInspFocused=document.activeElement&&document.activeElement.id==='inspQ';
-var inspCurPos=wasInspFocused?document.activeElement.selectionStart:0;
-$('app').innerHTML=h;
-if(wasInspFocused)setTimeout(function(){var el=document.getElementById('inspQ');if(el){el.focus();el.setSelectionRange(inspCurPos,inspCurPos)}},0);
-if(total>0)setTimeout(function(){
-  drawDonut('confDonut',[{v:conf,c:'#2d8a32'},{v:rev,c:'#2874a6'},{v:nonConf,c:'#cc3333'}],total);
-  drawDateChart(dateCount);
-},50);
-};
-
-function drawDonut(canvasId,segs,total){
-  var cv=$(canvasId);if(!cv||!total)return;
-  var ctx=cv.getContext('2d'),cx=70,cy=70,rad=58,ir=35;
-  ctx.clearRect(0,0,140,140);
-  var angle=-Math.PI/2;
-  for(var i=0;i<segs.length;i++){
-    if(!segs[i].v)continue;
-    var sweep=segs[i].v/total*Math.PI*2;
-    ctx.beginPath();ctx.arc(cx,cy,rad,angle,angle+sweep);
-    ctx.arc(cx,cy,ir,angle+sweep,angle,true);ctx.closePath();
-    ctx.fillStyle=segs[i].c;ctx.fill();angle+=sweep;
-  }
-  ctx.fillStyle='#1a1c18';ctx.font='bold 16px DM Sans';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(total,cx,cy-3);
-  ctx.font='9px JetBrains Mono';ctx.fillStyle='#999';ctx.fillText('total',cx,cy+11);
-}
-
-function drawDateChart(dateCount){
-  var cv=$('dateChart');if(!cv)return;
-  var W=cv.width,H2=cv.height,pL=50,pR=15,pT=15,pB=45,cW=W-pL-pR,cH=H2-pT-pB;
-  var ctx=cv.getContext('2d');ctx.clearRect(0,0,W,H2);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H2);
-  var dates=Object.keys(dateCount).sort();if(!dates.length)return;
-  var maxV=0;for(var d=0;d<dates.length;d++)if(dateCount[dates[d]]>maxV)maxV=dateCount[dates[d]];
-  for(var g=0;g<=4;g++){
-    var y=pT+cH-cH*(g/4);
-    ctx.strokeStyle='#ece9e3';ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(W-pR,y);ctx.stroke();
-    ctx.fillStyle='#999';ctx.font='9px JetBrains Mono';ctx.textAlign='right';ctx.textBaseline='middle';
-    ctx.fillText(Math.round(maxV*g/4),pL-6,y);
-  }
-  var bw=Math.max(6,Math.min(28,Math.floor(cW/dates.length)-6));
-  for(var d=0;d<dates.length;d++){
-    var v=dateCount[dates[d]],bh=Math.round(v/maxV*cH);
-    var bx=pL+d*(cW/dates.length)+(cW/dates.length-bw)/2,by=pT+cH-bh;
-    var col=v>=3?'#d4930d':v>=2?'#2874a6':'#2d8a32';
-    ctx.fillStyle=col;ctx.fillRect(bx,by,bw,bh);
-    ctx.fillStyle='#555';ctx.font='bold 10px JetBrains Mono';ctx.textAlign='center';ctx.textBaseline='bottom';
-    ctx.fillText(v,bx+bw/2,by-3);
-    ctx.save();ctx.translate(bx+bw/2,pT+cH+8);ctx.rotate(-0.5);
-    ctx.fillStyle='#999';ctx.font='8px JetBrains Mono';ctx.textAlign='right';ctx.fillText(dates[d],0,0);
-    ctx.restore();
-  }
-}
-
-function addInsp(){
-mO('New Inspection',
-'<div class="fg"><label class="fl">Start Time</label><input type="datetime-local" id="iST" value="'+td()+'T08:00" style="width:100%"></div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Completion Time</label><input type="datetime-local" id="iCT" style="width:100%"></div>'+
-'<div class="fg"><label class="fl">Date of Inspection</label><input type="date" id="iD" value="'+td()+'" style="width:100%"></div>'+
-'</div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Area/Zone</label><input type="text" id="iA" style="width:100%"></div>'+
-'<div class="fg"><label class="fl">Name</label><input type="text" id="iN" style="width:100%"></div>'+
-'</div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Email</label><input type="text" id="iEm" style="width:100%"></div>'+
-'<div class="fg"><label class="fl">Contractor/Sub</label><input type="text" id="iCo" style="width:100%"></div>'+
-'</div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Discipline</label><input type="text" id="iDis" style="width:100%"></div>'+
-'<div class="fg"><label class="fl">Work Element</label><input type="text" id="iWE" style="width:100%"></div>'+
-'</div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Drawing Number</label><input type="text" id="iDrw" style="width:100%"></div>'+
-'<div class="fg"><label class="fl">Requesting To</label><input type="text" id="iRT" style="width:100%"></div>'+
-'</div>'+
-'<div class="fg"><label class="fl">Actual Site Material</label><input type="text" id="iASM" style="width:100%"></div>'+
-'<div style="font-weight:700;font-size:.76rem;color:var(--t2);margin:10px 0 6px;border-top:1px solid var(--b2);padding-top:10px">Conformance Check</div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Conformance</label><select id="iConf" style="width:100%"><option>Conforming</option><option>For Review</option><option>Non-Conforming</option></select></div>'+
-'<div class="fg"><label class="fl">Immediate Action</label><input type="text" id="iIA" style="width:100%"></div>'+
-'</div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Escalation Required</label><select id="iER" style="width:100%"><option>No</option><option>Yes</option></select></div>'+
-'<div class="fg"><label class="fl">Person Responsible</label><input type="text" id="iPR" style="width:100%"></div>'+
-'</div>'+
-'<div class="fg"><label class="fl">Image URL</label><input type="text" id="iImg" style="width:100%" placeholder="https://..."></div>'+
-'<div style="font-weight:700;font-size:.76rem;color:var(--t2);margin:10px 0 6px;border-top:1px solid var(--b2);padding-top:10px">Review</div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Reviewed By</label><input type="text" id="iRB" style="width:100%"></div>'+
-'<div class="fg"><label class="fl">Discussed With</label><input type="text" id="iDW" style="width:100%"></div>'+
-'</div>'+
-'<div class="fg"><label class="fl">Remarks</label><textarea id="iRm" rows="2" style="width:100%"></textarea></div>'+
-'<div class="fg"><label class="fl">Status</label><select id="iSt" style="width:100%">'+function(){var opts='';var allS={'Open':1,'In Progress':1,'Completed':1,'Closed':1};for(var si2=0;si2<(S.inspections||[]).length;si2++){var _s2=S.inspections[si2].status;if(_s2)allS[_s2]=1}for(var sk2 in allS)opts+='<option>'+H(sk2)+'</option>';return opts}()+'</select></div>',
-'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savInsp()">Save</button>');
-}
-
-function savInsp(){
-ensureInps();
-var n=$('iN').value.trim();if(!n)return;
-S.inspections.unshift({
-  id:Date.now(),formName:'Daily Construction Validation',
-  startTime:$('iST').value,completionTime:$('iCT').value,date:$('iD').value,
-  area:$('iA').value.trim(),inspector:n,email:$('iEm').value.trim(),
-  contractor:$('iCo').value.trim(),discipline:$('iDis').value.trim(),
-  workElement:$('iWE').value.trim(),drawingNo:$('iDrw').value.trim(),
-  requestingTo:$('iRT').value.trim(),actualSiteMaterial:$('iASM').value.trim(),
-  conformance:$('iConf').value,immediateAction:$('iIA').value.trim(),
-  escalationRequired:$('iER').value,personResponsible:$('iPR').value.trim(),
-  image:$('iImg').value.trim(),reviewedBy:$('iRB').value.trim(),
-  discussedWith:$('iDW').value.trim(),remarks:$('iRm').value.trim(),
-  status:$('iSt').value,activityType:$('iDis').value.trim()
-});
-save();mC();notify('Recorded');doRender();
-}
-
-function editInsp(i){
-ensureInps();
-var ins=S.inspections[i];if(!ins)return;
-
-/* Collect all unique statuses from data */
-var _allStatus={'Open':1,'In Progress':1,'Completed':1,'Closed':1};
-for(var si=0;si<S.inspections.length;si++){
-  var _s=S.inspections[si].status;
-  if(_s)_allStatus[_s]=1;
-}
-var _statusOpts='';
-for(var _sk in _allStatus){
-  _statusOpts+='<option'+(ins.status===_sk?' selected':'')+'>'+H(_sk)+'</option>';
-}
-
-/* Collect all unique conformance values */
-var _allConf={'Conforming':1,'For Review':1,'Non-Conforming':1};
-for(var ci=0;ci<S.inspections.length;ci++){
-  var _c=S.inspections[ci].conformance;
-  if(_c)_allConf[_c]=1;
-}
-var _confOpts='';
-for(var _ck in _allConf){
-  _confOpts+='<option'+(ins.conformance===_ck?' selected':'')+'>'+H(_ck)+'</option>';
-}
-
-/* Collect all unique escalation values */
-var _allEsc={'No':1,'Yes':1};
-for(var ei=0;ei<S.inspections.length;ei++){
-  var _e=S.inspections[ei].escalationRequired;
-  if(_e)_allEsc[_e]=1;
-}
-var _escOpts='';
-for(var _ek in _allEsc){
-  _escOpts+='<option'+(ins.escalationRequired===_ek?' selected':'')+'>'+H(_ek)+'</option>';
-}
-
-mO('Edit #'+(i+1),
-'<div class="fg"><label class="fl">Start Time</label><input type="datetime-local" id="eiST" value="'+H(ins.startTime||'')+'" style="width:100%"></div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Completion Time</label><input type="datetime-local" id="eiCT" value="'+H(ins.completionTime||'')+'" style="width:100%"></div>'+
-'<div class="fg"><label class="fl">Date</label><input type="date" id="eiD" value="'+H(ins.date)+'" style="width:100%"></div>'+
-'</div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Area/Zone</label><input type="text" id="eiA" value="'+H(ins.area)+'" style="width:100%"></div>'+
-'<div class="fg"><label class="fl">Name</label><input type="text" id="eiN" value="'+H(ins.inspector)+'" style="width:100%"></div>'+
-'</div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Email</label><input type="text" id="eiEm" value="'+H(ins.email||'')+'" style="width:100%"></div>'+
-'<div class="fg"><label class="fl">Contractor</label><input type="text" id="eiCo" value="'+H(ins.contractor||'')+'" style="width:100%"></div>'+
-'</div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Discipline</label><input type="text" id="eiDis" value="'+H(ins.discipline||'')+'" style="width:100%"></div>'+
-'<div class="fg"><label class="fl">Work Element</label><input type="text" id="eiWE" value="'+H(ins.workElement||'')+'" style="width:100%"></div>'+
-'</div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Drawing</label><input type="text" id="eiDrw" value="'+H(ins.drawingNo||'')+'" style="width:100%"></div>'+
-'<div class="fg"><label class="fl">Requesting To</label><input type="text" id="eiRT" value="'+H(ins.requestingTo||'')+'" style="width:100%"></div>'+
-'</div>'+
-'<div class="fg"><label class="fl">Actual Site Material</label><input type="text" id="eiASM" value="'+H(ins.actualSiteMaterial||'')+'" style="width:100%"></div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Conformance</label><select id="eiConf" style="width:100%">'+_confOpts+'</select></div>'+
-'<div class="fg"><label class="fl">Immediate Action</label><input type="text" id="eiIA" value="'+H(ins.immediateAction||'')+'" style="width:100%"></div>'+
-'</div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Escalation</label><select id="eiER" style="width:100%">'+_escOpts+'</select></div>'+
-'<div class="fg"><label class="fl">Person Responsible</label><input type="text" id="eiPR" value="'+H(ins.personResponsible||'')+'" style="width:100%"></div>'+
-'</div>'+
-'<div class="fg"><label class="fl">Image URL</label><input type="text" id="eiImg" value="'+H(ins.image||'')+'" style="width:100%"></div>'+
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-'<div class="fg"><label class="fl">Reviewed By</label><input type="text" id="eiRB" value="'+H(ins.reviewedBy||'')+'" style="width:100%"></div>'+
-'<div class="fg"><label class="fl">Discussed With</label><input type="text" id="eiDW" value="'+H(ins.discussedWith||'')+'" style="width:100%"></div>'+
-'</div>'+
-'<div class="fg"><label class="fl">Remarks</label><textarea id="eiRm" rows="2" style="width:100%">'+H(ins.remarks||'')+'</textarea></div>'+
-'<div class="fg"><label class="fl">Status</label><select id="eiSt" style="width:100%">'+_statusOpts+'</select></div>'+
-'<div style="font-size:.62rem;color:var(--t3);margin-top:4px">To add a new status, type it in Remarks or contact admin</div>',
-'<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savEditInsp('+i+')">Save</button>');
-}
-
-function savEditInsp(i){
-ensureInps();
-var ins=S.inspections[i];if(!ins)return;
-ins.startTime=$('eiST').value;ins.completionTime=$('eiCT').value;ins.date=$('eiD').value;
-ins.area=$('eiA').value.trim();ins.inspector=$('eiN').value.trim();ins.email=$('eiEm').value.trim();
-ins.contractor=$('eiCo').value.trim();ins.discipline=$('eiDis').value.trim();
-ins.workElement=$('eiWE').value.trim();ins.drawingNo=$('eiDrw').value.trim();
-ins.requestingTo=$('eiRT').value.trim();ins.actualSiteMaterial=$('eiASM').value.trim();
-ins.conformance=$('eiConf').value;ins.immediateAction=$('eiIA').value.trim();
-ins.escalationRequired=$('eiER').value;ins.personResponsible=$('eiPR').value.trim();
-ins.image=$('eiImg').value.trim();ins.reviewedBy=$('eiRB').value.trim();
-ins.discussedWith=$('eiDW').value.trim();ins.remarks=$('eiRm').value.trim();ins.status=$('eiSt').value;
-save();mC();notify('Updated');doRender();
-}
-
-function delInsp(i){
-ensureInps();
-if(!confirm('Delete inspection #'+(i+1)+'?'))return;
-var ins=S.inspections[i];
-if(ins){
-  var did=ins.id||('d_'+ins.date+'_'+ins.inspector+'_'+ins.area);
-  var mkey=(ins.date||'')+'_'+(ins.inspector||'')+'_'+(ins.area||'');
-  if(deletedInspIds.indexOf(did)<0)deletedInspIds.push(did);
-  if(deletedInspIds.indexOf(mkey)<0)deletedInspIds.push(mkey);
-  try{localStorage.setItem('ss_del_insp',JSON.stringify(deletedInspIds))}catch(e){}
-  if(db){
-    try{db.ref('ss/inspectionsSync/'+ins.id).remove()}catch(e){}
-    try{db.ref('ss/inspections/'+ins.id).remove()}catch(e){}
-  }
-}
-S.inspections.splice(i,1);save();notify('Deleted');doRender();
-}
-
-function delSelectedInps(){
-ensureInps();
-if(!selectedInps.length)return;
-if(!confirm('Delete '+selectedInps.length+' inspection(s)?'))return;
-selectedInps.sort(function(a,b){return b-a});
-for(var j=0;j<selectedInps.length;j++){
-  var ins=S.inspections[selectedInps[j]];
-  if(ins){
-    var did=ins.id||('d_'+ins.date+'_'+ins.inspector+'_'+ins.area);
-    var mkey=(ins.date||'')+'_'+(ins.inspector||'')+'_'+(ins.area||'');
-    if(deletedInspIds.indexOf(did)<0)deletedInspIds.push(did);
-    if(deletedInspIds.indexOf(mkey)<0)deletedInspIds.push(mkey);
-    if(db){
-      try{db.ref('ss/inspectionsSync/'+ins.id).remove()}catch(e){}
-      try{db.ref('ss/inspections/'+ins.id).remove()}catch(e){}
-    }
-  }
-  S.inspections.splice(selectedInps[j],1);
-}
-try{localStorage.setItem('ss_del_insp',JSON.stringify(deletedInspIds))}catch(e){}
-selectedInps=[];save();notify('Deleted');doRender();
-}
-function undoLastUpload(){
-  ensureInps();
-  /* Find the most recent batch by timestamp proximity */
-  if(!S.inspections.length)return notify('No inspections');
-  /* Sort by ID (timestamp) descending to find the latest batch */
-  var sorted=S.inspections.slice().sort(function(a,b){return (b.id||0)-(a.id||0)});
-  var latestId=sorted[0].id||0;
-  /* Group items added within 5 seconds of the latest */
-  var batch=[];
-  for(var i=0;i<sorted.length;i++){
-    if(Math.abs((sorted[i].id||0)-latestId)<5000)batch.push(sorted[i]);
-    else break;
-  }
-  if(batch.length===0)return notify('No recent batch found');
-  if(!confirm('Undo last upload? This will remove '+batch.length+' most recently added inspection(s).'))return;
-  var batchIds={};
-  for(var i=0;i<batch.length;i++)batchIds[batch[i].id]=true;
-  S.inspections=S.inspections.filter(function(ins){return !batchIds[ins.id]});
-  save();
-  try{if(typeof db!=='undefined'&&db)db.ref('ss/inspections').set(S.inspections)}catch(e){}
-  notify('Removed '+batch.length+' inspections');
-  doRender();
-}
-
-function delInspByDate(){
-  ensureInps();
-  var dates={};
-  for(var i=0;i<S.inspections.length;i++){
-    var d=S.inspections[i].date;if(d)dates[d]=(dates[d]||0)+1;
-  }
-  var dArr=[];for(var dk in dates)dArr.push({d:dk,c:dates[dk]});
-  dArr.sort(function(a,b){return b.d>a.d?1:-1});
-  var opts='';
-  for(var i=0;i<dArr.length;i++)opts+='<option value="'+H(dArr[i].d)+'">'+H(dArr[i].d)+' ('+dArr[i].c+')</option>';
-  var bd='<div class="fg"><label class="fl">Select Date</label><select id="delDateSel" style="width:100%">'+opts+'</select></div>';
-  bd+='<div style="font-size:.72rem;color:var(--rd);margin-top:8px"><i class="fas fa-exclamation-triangle"></i> This will delete ALL inspections from the selected date.</div>';
-  mO('Delete by Date',bd,'<button class="btn" onclick="mC()">Cancel</button><button class="btn bs bd" onclick="confirmDelByDate()">Delete All from This Date</button>');
-}
-
-function confirmDelByDate(){
-  var selDate=$('delDateSel').value;
-  var count=0;
-  for(var i=0;i<S.inspections.length;i++){if(S.inspections[i].date===selDate)count++}
-  if(!confirm('Delete '+count+' inspections from '+selDate+'?'))return;
-  S.inspections=S.inspections.filter(function(ins){return ins.date!==selDate});
-  save();
-  try{if(typeof db!=='undefined'&&db)db.ref('ss/inspections').set(S.inspections)}catch(e){}
-  mC();notify('Deleted '+count+' from '+selDate);doRender();
-}
-
-function clearAllInsp(){
-  ensureInps();
-  var total=S.inspections.length;
-  if(!total)return notify('No inspections');
-  if(!confirm('DELETE ALL '+total+' INSPECTIONS?\n\nThis cannot be undone.'))return;
-  if(!confirm('Are you absolutely sure? Type OK to confirm.'))return;
-  S.inspections=[];
-  inspReady=false;
-  selectedInps=[];
-  save();
-  try{if(typeof db!=='undefined'&&db){
-    db.ref('ss/inspections').set([]);
-    db.ref('ss/inspectionsSync').set(null);
-  }}catch(e){}
-  notify('All '+total+' inspections deleted');
-  doRender();
-}
-function toggleInp(i,checked){
-  var idx=selectedInps.indexOf(i);
-  if(checked&&idx<0)selectedInps.push(i);
-  else if(!checked&&idx>=0)selectedInps.splice(idx,1);
-  doRender();
-}
-
-function toggleAllInps(checked){
-  ensureInps();
-  if(checked){selectedInps=[];for(var i=0;i<S.inspections.length;i++)selectedInps.push(i)}
-  else selectedInps=[];
-  doRender();
-}
-
-function delSelectedInps(){
-  ensureInps();
-  if(!selectedInps.length)return;
-  if(!confirm('Delete '+selectedInps.length+' inspection(s)?'))return;
-  selectedInps.sort(function(a,b){return b-a});
-  for(var i=0;i<selectedInps.length;i++)S.inspections.splice(selectedInps[i],1);
-  selectedInps=[];save();notify('Deleted');doRender();
-}
-
-function exportInspData(){
-ensureInps();
-if(typeof XLSX==='undefined')return notify('XLSX loading...');
-var wb=XLSX.utils.book_new();
-var data=[['#','Start Time','Completion Time','Date','Area/Zone','Name','Email','Contractor/Sub','Discipline','Work Element','Drawing No','Requesting To','Actual Site Material','Conformance','Immediate Action','Escalation Required','Person Responsible','Image','Reviewed By','Discussed With','Remarks','Status']];
-for(var i=0;i<S.inspections.length;i++){var ins=S.inspections[i];data.push([i+1,ins.startTime||'',ins.completionTime||'',ins.date||'',ins.area||'',ins.inspector||'',ins.email||'',ins.contractor||'',ins.discipline||'',ins.workElement||'',ins.drawingNo||'',ins.requestingTo||'',ins.actualSiteMaterial||'',ins.conformance||'',ins.immediateAction||'',ins.escalationRequired||'',ins.personResponsible||'',ins.image||'',ins.reviewedBy||'',ins.discussedWith||'',ins.remarks||'',ins.status||''])}
-XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'Inspections');
-XLSX.writeFile(wb,'Inspections_'+td()+'.xlsx');notify('Exported');
-}
-
-function massUploadInsp(){
-mO('Mass Upload',
-'<div style="font-size:.72rem;color:var(--t2);margin-bottom:12px"><b>Upload Excel from Microsoft Form.</b><br>Steps: Form &rarr; Responses &rarr; Open in Excel &rarr; Upload here.<br>Auto-detects columns by header name.</div>'+
-'<div class="dropzone" onclick="$(\'massInspF\').click()">'+
-'<div style="font-size:.82rem;font-weight:600">Click to upload Excel file</div>'+
-'<div style="font-size:.62rem;color:var(--t3);margin-top:4px">.xlsx or .xls</div>'+
-'<input type="file" id="massInspF" accept=".xlsx,.xls" style="display:none" onchange="processMassInsp(this.files[0])"></div>',
-'<button class="btn" onclick="mC()">Close</button>');
-}
-  function clearAllSync(){
-  /* Approach 1: Try via db variable */
-  var dbRef=null;
-  try{if(db)dbRef=db}catch(e){}
-  /* Approach 2: Try via firebase.database() */
-  if(!dbRef){try{dbRef=firebase.database()}catch(e){}}
-  /* Approach 3: Try via any global */
-  if(!dbRef){try{dbRef=window.db||window.database||window.fbDb}catch(e){}}
-
-  if(dbRef){
-    dbRef.ref('ss/inspectionsSync').remove().then(function(){
-      notify('Sync cleared. Refreshing...');
-      setTimeout(function(){location.reload()},1000);
-    }).catch(function(e){
-      notify('Firebase clear failed, clearing locally...');
-      clearInspLocal();
-    });
-  }else{
-    notify('Firebase not available, clearing locally...');
-    clearInspLocal();
-  }
-}
-
-function clearInspLocal(){
-  /* Remove all inspections, clear sync data, clear deleted list */
-  S.inspections=[];
-  inspReady=false;
-  selectedInps=[];
-  deletedInspIds=[];
-  try{localStorage.removeItem('ss_del_insp')}catch(e){}
-  try{localStorage.removeItem('ss_inspections')}catch(e){}
-  save();
-  notify('All inspection data cleared. Refreshing...');
-  setTimeout(function(){location.reload()},1000);
-}
-
-function processMassInsp(file){
-if(!file)return;
-if(typeof XLSX==='undefined')return alert('Excel library still loading.');
-var rd=new FileReader();
-rd.onload=function(e){
-try{
-ensureInps();
-var wb=XLSX.read(e.target.result,{type:'array'});
-var data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
-if(data.length<2)return alert('No data rows.');
-var headers=data[0].map(function(h){return String(h).toLowerCase().trim()});
-var ci={};
-var fields=[
-  ['id','id'],['start time','startTime'],['start_time','startTime'],
-  ['completion time','completionTime'],['completion_time','completionTime'],
-  ['date of insp','date'],['date of inspection','date'],['date','date'],['timestamp','date'],
-  ['area/zone','area'],['area','area'],
-  ['name','name'],['email','email'],
-  ['contractor/sub','contractor'],['contractor','contractor'],
-  ['discipline','discipline'],['work element','workElement'],
-  ['drawing num','drawingNo'],['drawing no','drawingNo'],['drawing','drawingNo'],
-  ['requesting to','requestingTo'],
-  ['actual site ma','actualSiteMaterial'],['actual site material','actualSiteMaterial'],['actual site','actualSiteMaterial'],
-  ['conformance','conformance'],
-  ['immediate ac','immediateAction'],['immediate action','immediateAction'],
-  ['evaluation re','escalationRequired'],['escalation re','escalationRequired'],['escalation','escalationRequired'],
-  ['personality','personResponsible'],['person responsible','personResponsible'],
-  ['image','image'],
-  ['reviewed by','reviewedBy'],['review by','reviewedBy'],
-  ['discussed with','discussedWith'],
-  ['remarks','remarks'],['notes','remarks'],
-  ['status','status']
-];
-for(var f=0;f<fields.length;f++){
-  for(var h2=0;h2<headers.length;h2++){
-    if(headers[h2]===fields[f][0]||headers[h2].indexOf(fields[f][0])===0){
-      if(!ci[fields[f][1]])ci[fields[f][1]]=h2;
-    }
-  }
-}
-if(!ci.date&&ci.startTime)ci.date=ci.startTime;
-if(!ci.date)return alert('No Date column found. Headers: '+headers.join(', '));
-var added=0;
-for(var r=1;r<data.length;r++){
-  var row=data[r];
-  if(!row||(!row[ci.date]&&row[ci.date]!==0))continue;
-  var dateV=String(row[ci.date]||'');
-  if(typeof row[ci.date]==='number'){var dt=new Date((row[ci.date]-25569)*86400000);dateV=dt.getFullYear()+'-'+LZ(dt.getMonth()+1)+'-'+LZ(dt.getDate())}
-  else if(dateV.indexOf('T')>0){dateV=dateV.substring(0,10)}
-  function gc(field){return ci[field]!==undefined?String(row[ci[field]]||'').trim():''}
-  S.inspections.push({
-    id:Date.now()+r,formName:'Daily Construction Validation',date:dateV,
-    startTime:gc('startTime'),completionTime:gc('completionTime'),
-    area:gc('area'),inspector:gc('name'),email:gc('email'),
-    contractor:gc('contractor'),discipline:gc('discipline'),
-    workElement:gc('workElement'),drawingNo:gc('drawingNo'),
-    requestingTo:gc('requestingTo'),actualSiteMaterial:gc('actualSiteMaterial'),
-    conformance:gc('conformance'),immediateAction:gc('immediateAction'),
-    escalationRequired:gc('escalationRequired'),personResponsible:gc('personResponsible'),
-    image:gc('image'),reviewedBy:gc('reviewedBy'),discussedWith:gc('discussedWith'),
-    remarks:gc('remarks'),status:gc('status')||'Open',activityType:gc('discipline')
-  });
-  added++;
-}
-if(!added)return alert('No valid rows found.');
-save();mC();notify('Imported '+added+' inspections');doRender();
-}catch(err){alert('Error: '+err.message)}};
-rd.readAsArrayBuffer(file);
-}
-
-function showInspSetup(){
-var cld;try{cld=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){cld=null}
-var fbUrl=cld&&cld.databaseURL?cld.databaseURL:'';
-var fbPath=fbUrl?fbUrl+'/ss/inspectionsSync.json':'Not configured — set up Cloud tab first';
-var bd='<div style="font-size:.74rem;line-height:1.7">';
-bd+='<div style="background:var(--blc);padding:12px;border-radius:var(--r);margin-bottom:14px;border-left:3px solid var(--bl)"><div style="font-weight:700;color:var(--bl);margin-bottom:4px">How it works</div>MS Form &rarr; Power Automate &rarr; Firebase (inspectionsSync) &rarr; This app reads and merges automatically.</div>';
-bd+='<div style="font-weight:700;font-size:.84rem;margin-bottom:10px;color:var(--g)">Step-by-Step</div>';
-bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 1: Copy this URL</div><div style="display:flex;align-items:center;gap:8px"><code style="flex:1;font-size:.62rem;background:var(--s1);padding:6px 10px;border-radius:4px;border:1px solid var(--b1);word-break:break-all;color:var(--bl)">'+H(fbPath)+'</code>'+(fbUrl?'<button class="btn bs bp" onclick="navigator.clipboard.writeText(\''+H(fbPath)+'\');notify(\'Copied!\')">Copy</button>':'<span style="font-size:.62rem;color:var(--rd)">Set Cloud first</span>')+'</div></div>';
-bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 2: Power Automate HTTP action</div><div>Method: <b>POST</b></div><div>URI: paste the URL above</div><div>Header: <code style="font-size:.64rem;background:var(--s1);padding:1px 5px;border-radius:3px">Content-Type: application/json</code></div><div>Body: map all form fields to JSON</div></div>';
-bd+='<div style="background:var(--s2);padding:10px 12px;border-radius:var(--r);margin-bottom:8px"><div style="font-weight:700;color:var(--am);margin-bottom:4px">Step 3: Add this to Body</div><div>Add <code style="font-size:.64rem;background:var(--s1);padding:1px 5px;border-radius:3px">"autoSync": true</code> to mark as auto-synced</div></div>';
-bd+='<div style="background:var(--gc);padding:10px 12px;border-radius:var(--r);border-left:3px solid var(--g);margin-top:10px"><div style="font-weight:700;color:var(--g);margin-bottom:4px">What happens next</div>New submissions appear here automatically. Mass uploaded data is preserved. Both merge together.</div>';
-bd+='</div>';
-mO('Auto-Sync Setup',bd,'<button class="btn" onclick="mC()">Close</button><button class="btn bp" onclick="window.open(\'https://flow.microsoft.com\',\'_blank\');mC()">Power Automate</button><button class="btn bb" onclick="mC();massUploadInsp()">Upload Excel</button>');
-}
-
 /* === TEAM === */
 var teamEditMode=false;
 var teamViewMode='chart';/* 'chart' or 'list' */
