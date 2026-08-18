@@ -2820,7 +2820,6 @@ S.photos=S.photos.filter(function(p){return p.id!==id});
 save();notify('Deleted');doRender();
 }
 /* === AUDIT LOG SYSTEM === */
-if(!Array.isArray(S.auditLog))S.auditLog=[];
 var auditMaxEntries=500;
 var auditFilterType='all';
 var auditFilterSearch='';
