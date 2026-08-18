@@ -216,26 +216,7 @@ function syncUp(){
     }
   }catch(e){}
 }
-function load(){
-try{
-S.tasks=lj('tasks',defTasks());
-S.upds=lj('upds',[]);
-S.photos=lj('photos',[]);
-S.safety=lj('safety',defSafe());
-if(!Array.isArray(S.safety.manHoursLog))S.safety.manHoursLog=[];
-S.vgc=lj('vgc',{});
-S.taskProjects=lj('taskProjects',[]);
-S.sitePayments=lj('sitePayments',[]);
-siteCost=lj('siteCost',0);
-if(typeof siteCost!=='number'||isNaN(siteCost))siteCost=0;
-S.auditLog=lj('auditLog',[]);
-if(!Array.isArray(S.auditLog))S.auditLog=[];
-S.userLog=lj('userLog',[]);
-S.inspTemplates=lj('inspTemplates',defInspTpl());
-S.inspections=lj('inspections',[]);
-S.teamMembers=lj('teamMembers',[]);
-S.safetyInspections=lj('safetyInspections',[]);
-S.originalPlan=lj('originalPlan',[]);
+function load(){try{S.tasks=lj('tasks',defTasks());S.upds=lj('upds',[]);S.photos=lj('photos',[]);S.safety=lj('safety',defSafe());if(!Array.isArray(S.safety.manHoursLog))S.safety.manHoursLog=[];S.vgc=lj('vgc',{});S.taskProjects=lj('taskProjects',[]);S.sitePayments=lj('sitePayments',[]);S.userLog=lj('userLog',[]);S.inspTemplates=lj('inspTemplates',defInspTpl());S.inspections=lj('inspections',[]);S.teamMembers=lj('teamMembers',[]);S.safetyInspections=lj('safetyInspections',[]);S.originalPlan=lj('originalPlan',[])
 S.reports=[];
 try{var _r=localStorage.getItem('ss_reports');if(_r)S.reports=JSON.parse(_r)}catch(e){S.reports=[]}
 S.reportConfig={};
@@ -250,11 +231,11 @@ try{
     if(Array.isArray(rArr)&&rArr.length>0){
       var existIds={};
       for(var i=0;i<S.safetyInspections.length;i++){
-        if(S.safetyInspections[i]&&S.safetyInspections[i].id)existIds[S.safetyInspections[i].id]=true;
+        if(S.safetyInspections[i].id)existIds[S.safetyInspections[i].id]=true;
       }
       var added=0;
       for(var i=0;i<rArr.length;i++){
-        if(rArr[i]&&rArr[i].id&&!existIds[rArr[i].id]){
+        if(rArr[i].id&&!existIds[rArr[i].id]){
           S.safetyInspections.push(rArr[i]);
           added++;
         }
@@ -267,6 +248,8 @@ try{
     localStorage.removeItem('buildsync_safetyInspections_remote');
   }
 }catch(e){}
+  
+/* Merge Firebase teamMembers (no photos) with local (has photos) */
 try{
   var tmFb=S._fbTeamMembers||[];
   for(var ti=0;ti<tmFb.length;ti++){
@@ -276,37 +259,24 @@ try{
     }
     if(!found)S.teamMembers.push(tmFb[ti]);
   }
-}catch(e){}
-var sc=localStorage.getItem('ss_siteCost');
-siteCost=sc?parseFloat(sc):0;
-for(var i=0;i<S.tasks.length;i++){
-  if(!S.tasks[i].remarks)S.tasks[i].remarks=[];
-  if(!S.tasks[i].pred)S.tasks[i].pred='';
-  if(!S.tasks[i].assignee)S.tasks[i].assignee='';
-}
-var nw=false;
-for(var i=0;i<S.tasks.length;i++)if(S.tasks[i].wbs.indexOf('.')===-1&&!S.tasks[i].wt)nw=true;
-if(nw)calcWt(S.tasks);
-sortTasks(S.tasks);
-if(!localStorage.getItem('ss_v3')){
-  S.inspections=[];
-  localStorage.setItem('ss_v3','1');
-}
-for(var p=0;p<S.taskProjects.length;p++){
-  var pts=S.taskProjects[p].tasks||[];
-  for(var i=0;i<pts.length;i++){
-    if(!pts[i].remarks)pts[i].remarks=[];
-    if(!pts[i].pred)pts[i].pred='';
-    if(!pts[i].assignee)pts[i].assignee='';
-    if(pts[i].wt===undefined)pts[i].wt=(pts[i].wbs.indexOf('.')===-1)?5:0;
-  }
-  var needsWt=false;
-  for(var i=0;i<pts.length;i++){if(pts[i].wbs.indexOf('.')===-1&&!pts[i].wt)needsWt=true}
-  if(needsWt)calcWt(pts);
-  sortTasks(pts);
-}
-}catch(e){console.error('Load:',e)}
-}
+}catch(e){}var sc=localStorage.getItem('ss_siteCost');siteCost=sc?parseFloat(sc):0;for(var i=0;i<S.tasks.length;i++){if(!S.tasks[i].remarks)S.tasks[i].remarks=[];if(!S.tasks[i].pred)S.tasks[i].pred='';if(!S.tasks[i].assignee)S.tasks[i].assignee=''}var nw=false;for(var i=0;i<S.tasks.length;i++)if(S.tasks[i].wbs.indexOf('.')===-1&&!S.tasks[i].wt)nw=true;if(nw)calcWt(S.tasks);sortTasks(S.tasks);if(!localStorage.getItem('ss_v3')){S.inspections=[];localStorage.setItem('ss_v3','1')}for(var p=0;p<S.taskProjects.length;p++){var pts=S.taskProjects[p].tasks||[];for(var i=0;i<pts.length;i++){if(!pts[i].remarks)pts[i].remarks=[];if(!pts[i].pred)pts[i].pred='';if(!pts[i].assignee)pts[i].assignee='';if(pts[i].wt===undefined)pts[i].wt=(pts[i].wbs.indexOf('.')===-1)?5:0}var needsWt=false;for(var i=0;i<pts.length;i++){if(pts[i].wbs.indexOf('.')===-1&&!pts[i].wt)needsWt=true}if(needsWt)calcWt(pts);sortTasks(pts)}}catch(e){console.error('Load:',e)}}
+function loadScr(src,cb){var s=document.createElement('script');s.src=src;s.onload=cb;s.onerror=cb;document.head.appendChild(s)}
+function tryCloud(){var c;try{c=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}if(!c||!c.apiKey||!c.databaseURL)return;$('loginScr').style.display='flex';if(typeof firebase!=='undefined'){initFB(c);return}loadScr('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js',function(){if(typeof firebase==='undefined')return;loadScr('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js',function(){loadScr('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js',function(){initFB(c)})})})}
+function initFB(c){try{if(!firebase.apps.length)firebase.initializeApp(c);db=firebase.database();fbAuth=firebase.auth();cOn=true;if(location.search.indexOf('logout=1')>=0){fbAuth.signOut();localStorage.clear();}fbAuth.onAuthStateChanged(function(u){if(u){curUser=u;$('hUser').textContent=u.email||'';$('hUser').style.display='inline';$('hOut').style.display='inline';$('loginScr').style.display='none';$('mainApp').style.display='block';syncDown()}else{curUser=null;$('hUser').style.display='none';$('hOut').style.display='none'}})}catch(e){console.error(e)}}
+function syncDown(){if(!db)return;$('hDot').className='dot wr';$('hLbl').textContent='Syncing...';db.ref('ss').once('value').then(function(s){var v=s.val();if(v&&v.tasks){applyR(v);notify('Synced')}else{syncUp()}$('hDot').className='dot on';$('hLbl').textContent='Connected';db.ref('ss').on('value',function(s2){applyR(s2.val())});db.ref('.info/connected').on('value',function(s2){$('hDot').className=s2.val()?'dot on':'dot off';$('hLbl').textContent=s2.val()?'Connected':'Offline'})}).catch(function(){$('hDot').className='dot off';$('hLbl').textContent='Failed'})}
+function applyR(v){
+  if(!v)return;
+  ['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','photos'].forEach(function(k){
+    if(v[k]!==undefined){S[k]=v[k];localStorage.setItem('ss_'+k,JSON.stringify(v[k]))}
+  });
+  if(v.siteCost!==undefined){siteCost=v.siteCost;localStorage.setItem('ss_siteCost',String(siteCost))}
+  if(v.phWebhookUrl!==undefined){S.phWebhookUrl=v.phWebhookUrl;localStorage.setItem('ss_phWebhookUrl',v.phWebhookUrl)}
+  if(v.phSPFolder!==undefined){S.phSPFolder=v.phSPFolder;localStorage.setItem('ss_phSPFolder',v.phSPFolder)}
+  if(v.phSPSite!==undefined){S.phSPSite=v.phSPSite;localStorage.setItem('ss_phSPSite',v.phSPSite)}
+  if(v.wthApiKey!==undefined){S.wthApiKey=v.wthApiKey;localStorage.setItem('ss_wthApiKey',v.wthApiKey)}
+  if(v.wthLocation!==undefined){S.wthLocation=v.wthLocation;localStorage.setItem('ss_wthLocation',v.wthLocation)}
+  if(v.wthUnit!==undefined){S.wthUnit=v.wthUnit;localStorage.setItem('ss_wthUnit',v.wthUnit)}
+  if(v.viewer3d!==undefined){S.viewer3d=v.viewer3d;localStorage.setItem('ss_viewer3d',JSON.stringify(v.viewer3d))}
   /* Merge safetyInspections by ID — never overwrite */
   if(v.safetyInspections!==undefined){
     var remoteArr=Array.isArray(v.safetyInspections)?v.safetyInspections:[];
@@ -327,6 +297,7 @@ for(var p=0;p<S.taskProjects.length;p++){
     }
   }
   doRender();
+}
 function togAuth(){authMode=authMode==='login'?'signup':'login';$('lTitle').textContent=authMode==='signup'?'Create Account':'Sign In';$('lSub').textContent=authMode==='signup'?'Create an account':'Sign in';$('lBtn').textContent=authMode==='signup'?'Sign Up':'Sign In'}
 function doLogin(){var em=$('lEmail').value.trim(),pw=$('lPass').value;if(!em||!pw||!fbAuth)return;$('lBtn').textContent='...';var fn=authMode==='signup'?fbAuth.createUserWithEmailAndPassword:fbAuth.signInWithEmailAndPassword;fn.call(fbAuth,em,pw).catch(function(e){$('lBtn').textContent='Sign In';$('lErr').textContent=e.message;$('lErr').style.display='block'})}
 function doLogout(){if(fbAuth)fbAuth.signOut();$('loginScr').style.display='none'}
@@ -1104,7 +1075,7 @@ setTimeout(function(){
 },50);
 };
 /* === FIREBASE SYNC HELPERS === */
-function fbTasks()auditLog('Task','Modified','Task data changed'){try{if(typeof db!=='undefined'&&db)db.ref('ss/tasks').set(S.tasks||[])}catch(e){}}
+function fbTasks(){try{if(typeof db!=='undefined'&&db)db.ref('ss/tasks').set(S.tasks||[])}catch(e){}}
 function fbProjects(){try{if(typeof db!=='undefined'&&db)db.ref('ss/taskProjects').set(S.taskProjects||[])}catch(e){}}
 function fbSiteCost(){try{if(typeof db!=='undefined'&&db)db.ref('ss/siteCost').set(siteCost||0)}catch(e){}}
 function fbSitePay(){try{if(typeof db!=='undefined'&&db)db.ref('ss/sitePayments').set(S.sitePayments||[])}catch(e){}}
@@ -1144,7 +1115,7 @@ for(var i=0;i<m.length;i++){
 h+='</div>';
 
 var tw=totLW(S.tasks),wtOk=Math.abs(tw-100)<0.5;
-h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:6px 10px;background:'+(wtOk?'var(--gc)':'var(--rdc)')+';border:1px solid '+(wtOk?'rgba(45,138,50,.3)':'rgba(204,51,51,.3)')+';border-radius:var(--r)"><span style="font-family:JetBrains Mono;font-size:.66rem;font-weight:700;color:'+(wtOk?'var(--g)':'var(--rd)')+'">Main WT: '+tw.toFixed(2)+'%</span>'+(wtOk?'':' <span style="font-size:.62rem;color:var(--rd)">Should=100%</span>')+'<span style="flex:1"></span><button class="btn bs" onclick="calcWt(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()">Reset</button><button class="btn bs'+(wtOk?'':' bp')+'" onclick="normWt(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()">Normalize</button></div>';
+h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:6px 10px;background:'+(wtOk?'var(--gc)':'var(--rdc)')+';border:1px solid '+(wtOk?'rgba(45,138,50,.3)':'rgba(204,51,51,.3)')+';border-radius:var(--r)"><span style="font-family:JetBrains Mono;font-size:.66rem;font-weight:700;color:'+(wtOk?'var(--g)':'var(--rd)')+'">Main WT: '+tw.toFixed(2)+'%</span>'+(wtOk?'':' <span style="font-size:.62rem;color:var(--rd)">Should=100%</span>')+'<span style="flex:1"></span><button class="btn bs" onclick="calcWt(S.tasks);save();fbTasks();doRender()">Reset</button><button class="btn bs'+(wtOk?'':' bp')+'" onclick="normWt(S.tasks);save();fbTasks();doRender()">Normalize</button></div>';
 
 var sP=sPaid(),sR=(siteCost||0)-sP;
 h+='<div class="card"><div class="ch"><span class="ct">Cost</span>';
@@ -1166,27 +1137,27 @@ h+='</div>';
 var po='';
 for(var i=0;i<m.length;i++)po+='<option value="'+m[i].wbs+'">'+m[i].wbs+' '+H(m[i].name)+'</option>';
 
-h+='<div class="card"><div class="ch"><span class="ct">Tasks</span><span style="display:flex;align-items:center;gap:8px"><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+S.tasks.length+'</span><button class="btn bs" onclick="sortTasks(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()">Sort</button></span></div>';
+h+='<div class="card"><div class="ch"><span class="ct">Tasks</span><span style="display:flex;align-items:center;gap:8px"><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+S.tasks.length+'</span><button class="btn bs" onclick="sortTasks(S.tasks);save();fbTasks();doRender()">Sort</button></span></div>';
 h+='<div class="tw"><table><thead><tr><th style="width:30px">WBS</th><th>Task</th><th>Pred</th><th>Assigned</th><th>Cat</th><th style="text-align:right">WT%</th><th>Dur</th><th>Start</th><th>End</th><th>%</th><th>N</th><th style="text-align:center;width:90px">Actions</th></tr></thead><tbody>';
 for(var i=0;i<S.tasks.length;i++){
   var t=S.tasks[i],isM=t.wbs.indexOf('.')===-1;
-  h+='<tr'+(isM?' style="background:var(--s2);font-weight:600;border-left:3px solid var(--bl)"':' style="border-left:3px solid transparent"')+'><td'+(isM?'':' style="padding-left:22px"')+'><div class="wbs-ed" contenteditable onclick="event.stopPropagation()" onblur="if(this.textContent.trim()&&this.textContent.trim()!==S.tasks['+i+'].wbs){S.tasks['+i+'].wbs=this.textContent.trim();sortTasks(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()}">'+H(t.wbs)+'</div></td>';
-  h+='<td><div class="name-ed" contenteditable onclick="event.stopPropagation()" onblur="S.tasks['+i+'].name=this.textContent.trim();save();fbTasks();auditLog('Task','Modified','Task data changed')">'+H(t.name)+'</div>'+rmP(t)+'</td>';
-  h+='<td><input type="text" value="'+H(t.pred||'')+'" style="padding:2px;font-size:.68rem;width:44px;text-align:center;font-family:JetBrains Mono;border:1px solid var(--b2);border-radius:3px" onchange="S.tasks['+i+'].pred=this.value.trim();save();fbTasks();auditLog('Task','Modified','Task data changed')" placeholder="-"></td>';
-  h+='<td><input type="text" value="'+H(t.assignee||'')+'" style="padding:2px;font-size:.68rem;width:80px;border:1px solid var(--b2);border-radius:3px" onchange="S.tasks['+i+'].assignee=this.value.trim();save();fbTasks();auditLog('Task','Modified','Task data changed')" placeholder="Name"></td>';
-  h+='<td><select onchange="S.tasks['+i+'].cat=this.value;save();fbTasks();auditLog('Task','Modified','Task data changed')" style="padding:1px;font-size:.7rem;border:0;background:transparent">'+catOpts(t.cat)+'</select></td>';
+  h+='<tr'+(isM?' style="background:var(--s2);font-weight:600;border-left:3px solid var(--bl)"':' style="border-left:3px solid transparent"')+'><td'+(isM?'':' style="padding-left:22px"')+'><div class="wbs-ed" contenteditable onclick="event.stopPropagation()" onblur="if(this.textContent.trim()&&this.textContent.trim()!==S.tasks['+i+'].wbs){S.tasks['+i+'].wbs=this.textContent.trim();sortTasks(S.tasks);save();fbTasks();doRender()}">'+H(t.wbs)+'</div></td>';
+  h+='<td><div class="name-ed" contenteditable onclick="event.stopPropagation()" onblur="S.tasks['+i+'].name=this.textContent.trim();save();fbTasks()">'+H(t.name)+'</div>'+rmP(t)+'</td>';
+  h+='<td><input type="text" value="'+H(t.pred||'')+'" style="padding:2px;font-size:.68rem;width:44px;text-align:center;font-family:JetBrains Mono;border:1px solid var(--b2);border-radius:3px" onchange="S.tasks['+i+'].pred=this.value.trim();save();fbTasks()" placeholder="-"></td>';
+  h+='<td><input type="text" value="'+H(t.assignee||'')+'" style="padding:2px;font-size:.68rem;width:80px;border:1px solid var(--b2);border-radius:3px" onchange="S.tasks['+i+'].assignee=this.value.trim();save();fbTasks()" placeholder="Name"></td>';
+  h+='<td><select onchange="S.tasks['+i+'].cat=this.value;save();fbTasks()" style="padding:1px;font-size:.7rem;border:0;background:transparent">'+catOpts(t.cat)+'</select></td>';
   if(!isM)h+='<td style="text-align:center;font-family:JetBrains Mono;font-size:.6rem;color:var(--t3)">-</td>';
-  else h+='<td><input type="number" value="'+(t.wt||0).toFixed(2)+'" step="0.01" style="padding:2px;font-size:.7rem;width:54px;text-align:right;font-family:JetBrains Mono" onchange="S.tasks['+i+'].wt=parseFloat(this.value)||0;save();fbTasks();auditLog('Task','Modified','Task data changed')"></td>';
+  else h+='<td><input type="number" value="'+(t.wt||0).toFixed(2)+'" step="0.01" style="padding:2px;font-size:.7rem;width:54px;text-align:right;font-family:JetBrains Mono" onchange="S.tasks['+i+'].wt=parseFloat(this.value)||0;save();fbTasks()"></td>';
   h+='<td>'+t.dur+'</td>';
-  h+='<td><input type="date" value="'+t.s+'" style="padding:2px;font-size:.7rem;width:110px" onchange="S.tasks['+i+'].s=this.value;S.tasks['+i+'].dur=dd(S.tasks['+i+'].s,S.tasks['+i+'].e);save();fbTasks();auditLog('Task','Modified','Task data changed')"></td>';
-  h+='<td><input type="date" value="'+t.e+'" style="padding:2px;font-size:.7rem;width:110px" onchange="S.tasks['+i+'].e=this.value;S.tasks['+i+'].dur=dd(S.tasks['+i+'].s,S.tasks['+i+'].e);save();fbTasks();auditLog('Task','Modified','Task data changed')"></td>';
-  h+='<td><input type="number" value="'+t.prog+'" min="0" max="100" style="padding:2px;font-size:.7rem;width:46px;text-align:right" onchange="S.tasks['+i+'].prog=parseInt(this.value)||0;S.tasks['+i+'].st=aSt(S.tasks['+i+'].prog);save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()"></td>';
+  h+='<td><input type="date" value="'+t.s+'" style="padding:2px;font-size:.7rem;width:110px" onchange="S.tasks['+i+'].s=this.value;S.tasks['+i+'].dur=dd(S.tasks['+i+'].s,S.tasks['+i+'].e);save();fbTasks()"></td>';
+  h+='<td><input type="date" value="'+t.e+'" style="padding:2px;font-size:.7rem;width:110px" onchange="S.tasks['+i+'].e=this.value;S.tasks['+i+'].dur=dd(S.tasks['+i+'].s,S.tasks['+i+'].e);save();fbTasks()"></td>';
+  h+='<td><input type="number" value="'+t.prog+'" min="0" max="100" style="padding:2px;font-size:.7rem;width:46px;text-align:right" onchange="S.tasks['+i+'].prog=parseInt(this.value)||0;S.tasks['+i+'].st=aSt(S.tasks['+i+'].prog);save();fbTasks();doRender()"></td>';
   h+='<td>'+rmB(t,i,0)+'</td>';
   h+='<td style="text-align:center;white-space:nowrap">';
   if(isM)h+='<button class="btn bs bp" onclick="addSubToWbs(\''+t.wbs+'\')" style="font-size:.56rem;padding:2px 5px">+Sub</button> ';
-  h+='<button class="mv-btn"'+(canMv(S.tasks,i,-1)?'':' disabled')+' onclick="if(canMv(S.tasks,'+i+',-1)){doMv(S.tasks,'+i+',-1);save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()}">&#9650;</button>';
-  h+='<button class="mv-btn"'+(canMv(S.tasks,i,1)?'':' disabled')+' onclick="if(canMv(S.tasks,'+i+',1)){doMv(S.tasks,'+i+',1);save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()}">&#9660;</button> ';
-  h+='<button class="btn bs bd" onclick="if(confirm(\'Delete\')){delTask(S.tasks,'+i+');save();fbTasks();auditLog('Task','Modified','Task data changed');doRender()}" style="padding:2px 5px">&times;</button></td></tr>';
+  h+='<button class="mv-btn"'+(canMv(S.tasks,i,-1)?'':' disabled')+' onclick="if(canMv(S.tasks,'+i+',-1)){doMv(S.tasks,'+i+',-1);save();fbTasks();doRender()}">&#9650;</button>';
+  h+='<button class="mv-btn"'+(canMv(S.tasks,i,1)?'':' disabled')+' onclick="if(canMv(S.tasks,'+i+',1)){doMv(S.tasks,'+i+',1);save();fbTasks();doRender()}">&#9660;</button> ';
+  h+='<button class="btn bs bd" onclick="if(confirm(\'Delete\')){delTask(S.tasks,'+i+');save();fbTasks();doRender()}" style="padding:2px 5px">&times;</button></td></tr>';
 }
 h+='<tr class="iar"><td><select id="ntW" style="width:56px">'+po+'</select></td>';
 h+='<td><input type="text" id="ntN" placeholder="New task..."></td>';
@@ -1398,7 +1369,7 @@ function impShowPreview(newTasks,errors){
 function impReplaceMode(){
   if(!window._impTasks)return;
   if(!confirm('Replace all '+S.tasks.length+' current tasks with '+window._impTasks.length+' imported tasks?'))return;
-  S.tasks=window._impTasks;sortTasks(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');mC();window._impTasks=null;notify('Imported '+S.tasks.length+' tasks');doRender();
+  S.tasks=window._impTasks;sortTasks(S.tasks);save();fbTasks();mC();window._impTasks=null;notify('Imported '+S.tasks.length+' tasks');doRender();
 }
 
 function impAddMode(){
@@ -1406,22 +1377,22 @@ function impAddMode(){
   var newTasks=window._impTasks;var existWbs={};for(var i=0;i<S.tasks.length;i++)existWbs[S.tasks[i].wbs]=true;
   var added=0,skipped=0;
   for(var i=0;i<newTasks.length;i++){if(existWbs[newTasks[i].wbs])skipped++;else{S.tasks.push(newTasks[i]);added++}}
-  sortTasks(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');mC();window._impTasks=null;notify('Added '+added+' tasks ('+skipped+' skipped)');doRender();
+  sortTasks(S.tasks);save();fbTasks();mC();window._impTasks=null;notify('Added '+added+' tasks ('+skipped+' skipped)');doRender();
 }
 
-function addT(){var p=$('ntW').value,n=$('ntN').value.trim();if(!n)return;var mx=0;for(var i=0;i<S.tasks.length;i++){if(S.tasks[i].wbs.indexOf(p+'.')===0){var num=parseInt(S.tasks[i].wbs.substring(p.length+1));if(!isNaN(num)&&num>mx)mx=num}}S.tasks.push({wbs:p+'.'+(mx+1),name:n,dur:dd($('ntS').value,$('ntE').value),s:$('ntS').value,e:$('ntE').value,prog:0,st:'pending',cat:$('ntC').value,remarks:[],wt:5,pred:$('ntP').value.trim(),assignee:$('ntA').value.trim()});sortTasks(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');notify('Added');doRender()}
+function addT(){var p=$('ntW').value,n=$('ntN').value.trim();if(!n)return;var mx=0;for(var i=0;i<S.tasks.length;i++){if(S.tasks[i].wbs.indexOf(p+'.')===0){var num=parseInt(S.tasks[i].wbs.substring(p.length+1));if(!isNaN(num)&&num>mx)mx=num}}S.tasks.push({wbs:p+'.'+(mx+1),name:n,dur:dd($('ntS').value,$('ntE').value),s:$('ntS').value,e:$('ntE').value,prog:0,st:'pending',cat:$('ntC').value,remarks:[],wt:5,pred:$('ntP').value.trim(),assignee:$('ntA').value.trim()});sortTasks(S.tasks);save();fbTasks();notify('Added');doRender()}
 
 function addSubToWbs(parentWbs){var parentCat='General';for(var i=0;i<S.tasks.length;i++)if(S.tasks[i].wbs===parentWbs){parentCat=S.tasks[i].cat||'General';break}mO('Add Sub-Task under '+parentWbs,'<div style="font-size:.72rem;color:var(--t3);margin-bottom:10px">Adding under <b>'+H(parentWbs)+'</b></div><div class="fg"><label class="fl">Task Name</label><input type="text" id="asubN" style="width:100%" autofocus></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">Start</label><input type="date" id="asubS" value="'+td()+'" style="width:100%"></div><div class="fg"><label class="fl">End</label><input type="date" id="asubE" value="'+addD(td(),14)+'" style="width:100%"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">Category</label><select id="asubC" style="width:100%">'+catOpts(parentCat)+'</select></div><div class="fg"><label class="fl">Predecessor</label><input type="text" id="asubP" style="width:100%" placeholder="e.g. '+parentWbs+'.1"></div></div><div class="fg"><label class="fl">Assignee</label><input type="text" id="asubA" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savSubToWbs(\''+parentWbs+'\')">Add Sub-Task</button>');setTimeout(function(){var el=$('asubN');if(el)el.focus()},100)}
 
-function savSubToWbs(parentWbs){var n=$('asubN').value.trim();if(!n)return;var mx=0;for(var i=0;i<S.tasks.length;i++){if(S.tasks[i].wbs.indexOf(parentWbs+'.')===0){var num=parseInt(S.tasks[i].wbs.substring(parentWbs.length+1));if(!isNaN(num)&&num>mx)mx=num}}S.tasks.push({wbs:parentWbs+'.'+(mx+1),name:n,dur:dd($('asubS').value,$('asubE').value),s:$('asubS').value,e:$('asubE').value,prog:0,st:'pending',cat:$('asubC').value||'General',remarks:[],wt:0,pred:$('asubP').value.trim(),assignee:$('asubA').value.trim()});sortTasks(S.tasks);save();fbTasks();auditLog('Task','Modified','Task data changed');mC();notify('Added sub-task');doRender()}
+function savSubToWbs(parentWbs){var n=$('asubN').value.trim();if(!n)return;var mx=0;for(var i=0;i<S.tasks.length;i++){if(S.tasks[i].wbs.indexOf(parentWbs+'.')===0){var num=parseInt(S.tasks[i].wbs.substring(parentWbs.length+1));if(!isNaN(num)&&num>mx)mx=num}}S.tasks.push({wbs:parentWbs+'.'+(mx+1),name:n,dur:dd($('asubS').value,$('asubE').value),s:$('asubS').value,e:$('asubE').value,prog:0,st:'pending',cat:$('asubC').value||'General',remarks:[],wt:0,pred:$('asubP').value.trim(),assignee:$('asubA').value.trim()});sortTasks(S.tasks);save();fbTasks();mC();notify('Added sub-task');doRender()}
 
 function newTP(){mO('New Project','<div class="fg"><label class="fl">Name</label><input type="text" id="ntpN" style="width:100%"></div><div class="fg"><label class="fl">Cost</label><input type="number" id="ntpC" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savTP()">Create</button>')}
 
-function savTP(){var n=$('ntpN').value.trim();if(!n)return;var id=Date.now();S.taskProjects.push({id:id,name:n,cost:parseFloat($('ntpC').value)||0,payments:[],tasks:[]});tpSel=id;auditLog('Project','Created','New project: '+n);save();fbProjects();mC();notify('Created');doRender()}
+function savTP(){var n=$('ntpN').value.trim();if(!n)return;var id=Date.now();S.taskProjects.push({id:id,name:n,cost:parseFloat($('ntpC').value)||0,payments:[],tasks:[]});tpSel=id;save();fbProjects();mC();notify('Created');doRender()}
 
-function delTP(){var p=getProj();if(!p||!confirm('Delete?'))return;S.taskProjects=S.taskProjects.filter(function(x){return x.id!=tpSel});tpSel='site';auditLog('Project','Deleted','Deleted project: '+(p?p.name:'unknown'));save();fbProjects();notify('Deleted');doRender()}
+function delTP(){var p=getProj();if(!p||!confirm('Delete?'))return;S.taskProjects=S.taskProjects.filter(function(x){return x.id!=tpSel});tpSel='site';save();fbProjects();notify('Deleted');doRender()}
 
-function updPCost(id,val){for(var i=0;i<S.taskProjects.length;i++)if(S.taskProjects[i].id==id){S.taskProjects[i].cost=val;auditLogProjectChange(proj.name,'Contract Cost',proj.cost,val);save();fbProjects();doRender();return}}
+function updPCost(id,val){for(var i=0;i<S.taskProjects.length;i++)if(S.taskProjects[i].id==id){S.taskProjects[i].cost=val;save();fbProjects();doRender();return}}
 
 function addPS(mi){var p=getProj();if(!p)return;var m2=p.tasks[mi];mO('Add Sub','<div class="fg"><label class="fl">Name</label><input type="text" id="psN" style="width:100%"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="fg"><label class="fl">Start</label><input type="date" id="psS" value="'+td()+'" style="width:100%"></div><div class="fg"><label class="fl">End</label><input type="date" id="psE" value="'+addD(td(),14)+'" style="width:100%"></div></div><div class="fg"><label class="fl">Pred</label><input type="text" id="psP" style="width:100%"></div><div class="fg"><label class="fl">Assignee</label><input type="text" id="psA" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savPS('+mi+')">Add</button>')}
 
@@ -1439,7 +1410,7 @@ function savPay(id){var a=parseFloat($('payA').value)||0;if(!a)return;for(var i=
 
 function addSP(){mO('Site Payment','<div class="fg"><label class="fl">Date</label><input type="date" id="spD" value="'+td()+'" style="width:100%"></div><div class="fg"><label class="fl">Amount</label><input type="number" id="spA" style="width:100%"></div><div class="fg"><label class="fl">Desc</label><input type="text" id="spDe" style="width:100%"></div>','<button class="btn" onclick="mC()">Cancel</button><button class="btn bp" onclick="savSP()">Add</button>')}
 
-function savSP(){var a=parseFloat($('spA').value)||0;if(!a)return;S.sitePayments.push({id:Date.now(),date:$('spD').value,amount:a,desc:$('spDe').value.trim()});auditLogCostChange('Payment added',$('spA').value,$('spDe').value.trim());save();fbSitePay();mC();notify('Added');doRender()}
+function savSP(){var a=parseFloat($('spA').value)||0;if(!a)return;S.sitePayments.push({id:Date.now(),date:$('spD').value,amount:a,desc:$('spDe').value.trim()});save();fbSitePay();mC();notify('Added');doRender()}
 
 function expProj(){if(typeof XLSX==='undefined')return notify('XLSX not loaded');var p=getProj();if(!p)return;var wb=XLSX.utils.book_new(),sd=[['WBS','Name','Cat','Dur','Start','End','Prog','WT%','Pred','Assignee']];for(var i=0;i<p.tasks.length;i++){var t=p.tasks[i];sd.push([t.wbs,t.name,t.cat,t.dur,t.s,t.e,t.prog,t.wt||0,t.pred||'',t.assignee||''])}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),'Tasks');XLSX.writeFile(wb,p.name.replace(/[^a-z0-9]/gi,'_')+'.xlsx');notify('Exported')}
   /* === INSPECTION === */
@@ -2826,267 +2797,12 @@ if(!confirm('Delete?'))return;
 S.photos=S.photos.filter(function(p){return p.id!==id});
 save();notify('Deleted');doRender();
 }
-/* === AUDIT LOG SYSTEM === */
-var auditMaxEntries=500;
-var auditFilterType='all';
-var auditFilterSearch='';
-
 /* === CLOUD SETTINGS === */
-R.cloud=function(){
-var c;try{c=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}
-if(!Array.isArray(S.auditLog))S.auditLog=[];
-
-var h='<div style="margin-bottom:10px"><span class="ct" style="font-size:.92rem">Cloud Sync & Audit</span></div>';
-
-h+='<div class="card" style="border-left:4px solid var(--or);background:var(--orc)"><div style="font-size:.76rem;font-weight:700;color:var(--or);margin-bottom:6px">Setup</div><div style="font-size:.72rem;line-height:1.8">1. Create Firebase project<br>2. Enable Realtime DB + Email Auth<br>3. Enter config below</div></div>';
-
-h+='<div class="card"><div class="ch"><span class="ct">Config</span></div>';
-h+='<div class="fg"><label class="fl">API Key</label><input type="text" id="cKey" value="'+H((c&&c.apiKey)||'')+'" style="width:100%"></div>';
-h+='<div class="fg"><label class="fl">Database URL</label><input type="text" id="cURL" value="'+H((c&&c.databaseURL)||'')+'" style="width:100%"></div>';
-h+='<div class="fg"><label class="fl">Project ID</label><input type="text" id="cPid" value="'+H((c&&c.projectId)||'')+'" style="width:100%"></div>';
-h+='<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn" onclick="if(confirm(\'Clear?\')){localStorage.removeItem(\'ss_cloud\');location.reload()}">Clear</button><button class="btn bp" onclick="saveCloud()">Save &amp; Connect</button></div></div>';
-
-h+='<div class="card"><div class="ch"><span class="ct">Data</span></div>';
-h+='<div style="display:flex;gap:8px;flex-wrap:wrap">';
-h+='<button class="btn" onclick="expAll()"><i class="fas fa-download"></i> Export</button>';
-h+='<button class="btn bb" onclick="impAll()"><i class="fas fa-upload"></i> Import</button>';
-h+='<button class="btn bd" onclick="if(confirm(\'Reset ALL?\')){auditLogDataAction(\'Reset\',\'Full system reset\');localStorage.clear();location.reload()}"><i class="fas fa-trash"></i> Reset</button>';
-h+='<button class="btn" onclick="expAuditCSV()" style="border-color:var(--pu);color:var(--pu)"><i class="fas fa-file-csv"></i> Export Audit Log</button>';
-h+='<button class="btn" onclick="clearAuditLog()" style="border-color:var(--rd);color:var(--rd)"><i class="fas fa-broom"></i> Clear Audit Log</button>';
-h+='</div></div>';
-
-/* === AUDIT LOG SECTION === */
-h+='<div class="card" style="border-left:4px solid var(--pu)">';
-h+='<div class="ch"><span class="ct" style="color:var(--pu)">Edit History / Audit Log</span>';
-h+='<span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+S.auditLog.length+' entries</span></div>';
-
-/* Summary stats */
-var typeCount={};
-var actionCount={};
-var userCount={};
-var todayCount=0;
-var todayStr=td();
-for(var ai=0;ai<S.auditLog.length;ai++){
-  var ae=S.auditLog[ai];
-  typeCount[ae.type]=(typeCount[ae.type]||0)+1;
-  actionCount[ae.action]=(actionCount[ae.action]||0)+1;
-  var u=ae.user||'Unknown';
-  userCount[u]=(userCount[u]||0)+1;
-  if(ae.ts&&ae.ts.indexOf(todayStr)>=0)todayCount++;
-}
-
-h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:14px">';
-h+='<div style="padding:8px;background:var(--pu);background:rgba(155,89,182,.12);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--pu);font-family:JetBrains Mono">TOTAL</div><div style="font-size:1.2rem;font-weight:700;color:var(--pu)">'+S.auditLog.length+'</div></div>';
-h+='<div style="padding:8px;background:rgba(40,116,166,.12);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--bl);font-family:JetBrains Mono">TODAY</div><div style="font-size:1.2rem;font-weight:700;color:var(--bl)">'+todayCount+'</div></div>';
-h+='<div style="padding:8px;background:rgba(212,147,13,.12);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--or);font-family:JetBrains Mono">TYPES</div><div style="font-size:1.2rem;font-weight:700;color:var(--or)">'+Object.keys(typeCount).length+'</div></div>';
-h+='<div style="padding:8px;background:rgba(45,138,50,.12);border-radius:var(--r);text-align:center"><div style="font-size:.5rem;color:var(--g);font-family:JetBrains Mono">USERS</div><div style="font-size:1.2rem;font-weight:700;color:var(--g)">'+Object.keys(userCount).length+'</div></div>';
-h+='</div>';
-
-/* Type breakdown */
-if(S.auditLog.length>0){
-  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
-  var typeColors={'Task':'#2874a6','Project':'#2d8a32','Cost':'#d4930d','Inspection':'#9b59b6','Safety':'#cc3333','Data':'#6a6560','System':'#b89630'};
-  for(var tk in typeCount){
-    var tc=typeColors[tk]||'#6a6560';
-    h+='<span style="font-size:.58rem;padding:3px 8px;border-radius:3px;background:'+tc+'22;color:'+tc+';font-family:JetBrains Mono">'+H(tk)+': '+typeCount[tk]+'</span>';
-  }
-  h+='</div>';
-}
-
-/* Filters */
-h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">';
-h+='<input type="text" id="auditQ" placeholder="Search history..." value="'+H(auditFilterSearch)+'" style="width:220px;padding:5px 10px;font-size:.72rem" oninput="auditFilterSearch=this.value;doRender()">';
-h+='<select id="auditFT" style="padding:5px;font-size:.72rem" onchange="auditFilterType=this.value;doRender()">';
-h+='<option value="all"'+(auditFilterType==='all'?' selected':'')+'>All Types</option>';
-var atk=['Task','Project','Cost','Inspection','Safety','Data','System'];
-for(var ati=0;ati<atk.length;ati++){
-  if(typeCount[atk[ati]])h+='<option value="'+atk[ati]+'"'+(auditFilterType===atk[ati]?' selected':'')+'>'+atk[ati]+' ('+typeCount[atk[ati]]+')</option>';
-}
-h+='</select>';
-h+='<button class="btn bs" onclick="auditFilterType=\'all\';auditFilterSearch=\'\';doRender()">Clear</button>';
-h+='</div>';
-
-/* Log entries */
-var filtered=[];
-for(var fi=0;fi<S.auditLog.length;fi++){
-  var fe=S.auditLog[fi];
-  if(auditFilterType!=='all'&&fe.type!==auditFilterType)continue;
-  if(auditFilterSearch){
-    var q=auditFilterSearch.toLowerCase();
-    var hay=(fe.type+' '+fe.action+' '+fe.details+' '+fe.oldVal+' '+fe.newVal+' '+fe.user+'').toLowerCase();
-    if(hay.indexOf(q)<0)continue;
-  }
-  filtered.push(fe);
-}
-
-if(filtered.length===0){
-  h+='<div style="text-align:center;padding:30px 0;font-size:.76rem;color:var(--t3)">';
-  if(S.auditLog.length===0)h+='<div><i class="fas fa-history" style="font-size:1.4rem;margin-bottom:8px;display:block;opacity:.4"></i>No edit history yet.<br>Changes to tasks, costs, inspections, and safety will appear here automatically.</div>';
-  else h+='<div>No entries match your filters.</div>';
-  h+='</div>';
-}else{
-  var showCount=Math.min(filtered.length,100);
-  h+='<div style="font-size:.56rem;color:var(--t3);margin-bottom:6px;font-family:JetBrains Mono">Showing '+showCount+' of '+filtered.length+' entries</div>';
-  h+='<div style="max-height:500px;overflow-y:auto">';
-  h+='<table style="width:100%;font-size:.66rem;border-collapse:collapse"><thead><tr>';
-  h+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem;white-space:nowrap">Time</th>';
-  h+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">Type</th>';
-  h+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">Action</th>';
-  h+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">Details</th>';
-  h+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">Old</th>';
-  h+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">New</th>';
-  h+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">User</th>';
-  h+='</tr></thead><tbody>';
-
-  for(var li=0;li<showCount;li++){
-    var le=filtered[li];
-    var lc=typeColors[le.type]||'#6a6560';
-    var ac=le.action==='Deleted'||le.action==='Reset'?'var(--rd)':le.action==='Created'?'var(--g)':le.action==='Modified'?'var(--bl)':'var(--t2)';
-    var tsStr='';
-    if(le.ts){
-      try{
-        var d=new Date(le.ts);
-        tsStr=LZ(d.getMonth()+1)+'/'+LZ(d.getDate())+' '+LZ(d.getHours())+':'+LZ(d.getMinutes());
-      }catch(e){tsStr=le.ts.substring(0,16)}
-    }
-    h+='<tr style="border-bottom:1px solid var(--bd)">';
-    h+='<td style="padding:4px 6px;font-family:JetBrains Mono;font-size:.56rem;white-space:nowrap;color:var(--t3)">'+H(tsStr)+'</td>';
-    h+='<td style="padding:4px 6px"><span style="font-size:.54rem;padding:1px 6px;border-radius:3px;background:'+lc+'22;color:'+lc+';font-family:JetBrains Mono">'+H(le.type)+'</span></td>';
-    h+='<td style="padding:4px 6px;color:'+ac+';font-weight:600">'+H(le.action)+'</td>';
-    h+='<td style="padding:4px 6px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(le.details)+'">'+H(le.details)+'</td>';
-    h+='<td style="padding:4px 6px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:JetBrains Mono;font-size:.54rem;color:var(--rd)" title="'+H(le.oldVal)+'">'+H(le.oldVal||'-')+'</td>';
-    h+='<td style="padding:4px 6px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:JetBrains Mono;font-size:.54rem;color:var(--g)" title="'+H(le.newVal)+'">'+H(le.newVal||'-')+'</td>';
-    h+='<td style="padding:4px 6px;font-size:.56rem;color:var(--t3);white-space:nowrap" title="'+H(le.user)+'">'+H((le.user||'Unknown').split('@')[0])+'</td>';
-    h+='</tr>';
-  }
-  h+='</tbody></table></div>';
-}
-h+='</div>';
-
-/* === RECENT ACTIVITY BY USER === */
-h+='<div class="card"><div class="ch"><span class="ct">Activity by User</span></div>';
-if(Object.keys(userCount).length===0){
-  h+='<div style="font-size:.72rem;color:var(--t3);text-align:center;padding:14px">No activity recorded</div>';
-}else{
-  var uArr=[];
-  for(var uk in userCount)uArr.push({u:uk,c:userCount[uk]});
-  uArr.sort(function(a,b){return b.c-a.c});
-  var uMax=uArr[0].c;
-  var uCols=['#2874a6','#d4930d','#2d8a32','#9b59b6','#b89630','#cc3333'];
-  for(var ui=0;ui<uArr.length;ui++){
-    var uo=uArr[ui];
-    var uw=Math.round(uo.c/uMax*100);
-    var uc=uCols[ui%uCols.length];
-    h+='<div style="display:flex;align-items:center;gap:8px;padding:4px 0">';
-    h+='<div style="width:140px;font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+H(uo.u)+'">'+H(uo.u)+'</div>';
-    h+='<div style="flex:1;height:18px;background:var(--s2);border-radius:3px;overflow:hidden">';
-    h+='<div style="height:100%;width:'+uw+'%;background:'+uc+';border-radius:3px;display:flex;align-items:center;padding-left:6px">';
-    h+='<span style="font-family:JetBrains Mono;font-size:.52rem;color:#fff">'+uo.c+'</span>';
-    h+='</div></div></div>';
-  }
-}
-h+='</div>';
-
-/* Recent deletions highlight */
-var recentDels=[];
-for(var di=0;di<S.auditLog.length&&di<200;di++){
-  if(S.auditLog[di].action==='Deleted'||S.auditLog[di].action==='Reset'){
-    recentDels.push(S.auditLog[di]);
-    if(recentDels.length>=10)break;
-  }
-}
-if(recentDels.length>0){
-  h+='<div class="card" style="border-left:4px solid var(--rd)"><div class="ch"><span class="ct" style="color:var(--rd)">Recent Deletions</span></div>';
-  h+='<div style="font-size:.62rem;color:var(--t3);margin-bottom:8px"><i class="fas fa-exclamation-triangle" style="color:var(--or);margin-right:4px"></i>Track data loss from recent deletions</div>';
-  for(var rdi=0;rdi<recentDels.length;rdi++){
-    var rd2=recentDels[rdi];
-    var rts='';
-    if(rd2.ts){try{var d2=new Date(rd2.ts);rts=LZ(d2.getMonth()+1)+'/'+LZ(d2.getDate())+' '+LZ(d2.getHours())+':'+LZ(d2.getMinutes())}catch(e){rts=''}}
-    h+='<div style="display:flex;align-items:flex-start;gap:8px;padding:4px 0;border-bottom:1px solid var(--bd)">';
-    h+='<span style="width:6px;height:6px;border-radius:50%;background:var(--rd);flex-shrink:0;margin-top:5px"></span>';
-    h+='<div style="flex:1"><div style="font-size:.68rem"><b style="color:var(--rd)">'+H(rd2.type)+'</b> '+H(rd2.action)+'</div>';
-    h+='<div style="font-size:.62rem;color:var(--t3)">'+H(rd2.details)+'</div>';
-    h+='<div style="font-size:.52rem;color:var(--t3);font-family:JetBrains Mono">'+H(rts)+' by '+H((rd2.user||'').split('@')[0])+'</div>';
-    h+='</div></div>';
-  }
-  h+='</div>';
-}
-
-$('app').innerHTML=h;
-};
-
-function saveCloud(){
-var cfg={apiKey:$('cKey').value.trim(),databaseURL:$('cURL').value.trim(),projectId:$('cPid').value.trim(),authDomain:($('cPid').value.trim()||'')+'.firebaseapp.com'};
-if(!cfg.apiKey||!cfg.databaseURL)return;
-auditLogDataAction('Cloud Config','Updated Firebase config');
-localStorage.setItem('ss_cloud',JSON.stringify(cfg));
-notify('Connecting...');
-setTimeout(function(){location.reload()},600);
-}
-
-function expAll(){
-if(typeof XLSX==='undefined')return notify('XLSX not loaded');
-var wb=XLSX.utils.book_new(),sd=[['WBS','Name','Cat','Dur','Start','End','Prog','WT%','Pred','Assignee']];
-for(var i=0;i<S.tasks.length;i++){var t=S.tasks[i];sd.push([t.wbs,t.name,t.cat,t.dur,t.s,t.e,t.prog,t.wt||0,t.pred||'',t.assignee||''])}
-XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),'Tasks');
-auditLogDataAction('Export','Exported tasks to Excel ('+S.tasks.length+' tasks)');
-XLSX.writeFile(wb,'StellarSeeds_'+td()+'.xlsx');
-notify('Exported');
-}
-
-function expAuditCSV(){
-if(!S.auditLog||!S.auditLog.length)return notify('No audit data');
-if(typeof XLSX==='undefined')return notify('XLSX not loaded');
-var wb=XLSX.utils.book_new();
-var data=[['Time','Type','Action','Details','Old Value','New Value','User','Tab']];
-for(var i=0;i<S.auditLog.length;i++){
-  var a=S.auditLog[i];
-  var ts='';
-  if(a.ts){try{ts=a.ts}catch(e){ts=''}}
-  data.push([ts,a.type||'',a.action||'',a.details||'',a.oldVal||'',a.newVal||'',a.user||'',a.tab||'']);
-}
-XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'Audit Log');
-XLSX.writeFile(wb,'AuditLog_'+td()+'.xlsx');
-notify('Audit log exported');
-}
-
-function clearAuditLog(){
-if(!confirm('Clear all audit log entries? This cannot be undone.'))return;
-auditLogDataAction('Clear Log','Cleared audit log ('+S.auditLog.length+' entries removed)');
-var keep=[S.auditLog[0]];
-S.auditLog=keep;
-try{localStorage.setItem('ss_auditLog',JSON.stringify(S.auditLog))}catch(e){}
-try{if(typeof db!=='undefined'&&db)db.ref('ss/auditLog').set(S.auditLog)}catch(e){}
-notify('Audit log cleared');
-doRender();
-}
-
-function impAll(){
-mO('Import','<div class="dropzone" onclick="$(\'impF\').click()"><div>Upload Excel</div><input type="file" id="impF" accept=".xlsx" style="display:none" onchange="if(this.files[0])doImp(this.files[0])"></div>','<button class="btn" onclick="mC()">Cancel</button>');
-}
-
-function doImp(f){
-var rd=new FileReader();
-rd.onload=function(e){
-  try{
-    if(typeof XLSX==='undefined')return alert('XLSX not loaded');
-    var wb=XLSX.read(e.target.result,{type:'array'});
-    if(wb.Sheets['Tasks']){
-      var d=XLSX.utils.sheet_to_json(wb.Sheets['Tasks'],{header:1});
-      if(d.length>1){
-        var n2=[];for(var i=1;i<d.length;i++){var r=d[i];if(!r||!r[0])continue;n2.push({wbs:String(r[0]),name:String(r[1]||''),cat:String(r[2]||'General'),dur:parseInt(r[3])||0,s:String(r[4]||''),e:String(r[5]||''),prog:parseInt(r[6])||0,st:String(r[7]||'pending'),remarks:[],wt:parseFloat(r[8])||0,pred:String(r[9]||''),assignee:String(r[10]||'')})}
-        if(n2.length){
-          var oldCount=S.tasks.length;
-          auditLogDataAction('Import','Imported '+n2.length+' tasks from Excel (replaced '+oldCount+')');
-          S.tasks=n2;save();fbTasks();auditLog('Task','Modified','Task data changed');mC();notify('Imported '+n2.length);doRender();return;
-        }
-      }
-    }
-    alert('No data found');
-  }catch(err){alert(err.message)}
-};
-rd.readAsArrayBuffer(f);
-}
+R.cloud=function(){var c;try{c=JSON.parse(localStorage.getItem('ss_cloud'))}catch(e){}var h='<div style="margin-bottom:10px"><span class="ct" style="font-size:.92rem">Cloud Sync</span></div><div class="card" style="border-left:4px solid var(--or);background:var(--orc)"><div style="font-size:.76rem;font-weight:700;color:var(--or);margin-bottom:6px">Setup</div><div style="font-size:.72rem;line-height:1.8">1. Create Firebase project<br>2. Enable Realtime DB + Email Auth<br>3. Enter config below</div></div><div class="card"><div class="ch"><span class="ct">Config</span></div><div class="fg"><label class="fl">API Key</label><input type="text" id="cKey" value="'+H((c&&c.apiKey)||'')+'" style="width:100%"></div><div class="fg"><label class="fl">Database URL</label><input type="text" id="cURL" value="'+H((c&&c.databaseURL)||'')+'" style="width:100%"></div><div class="fg"><label class="fl">Project ID</label><input type="text" id="cPid" value="'+H((c&&c.projectId)||'')+'" style="width:100%"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn" onclick="if(confirm(\'Clear?\')){localStorage.removeItem(\'ss_cloud\');location.reload()}">Clear</button><button class="btn bp" onclick="saveCloud()">Save &amp; Connect</button></div></div><div class="card"><div class="ch"><span class="ct">Data</span></div><button class="btn" onclick="expAll()">Export</button> <button class="btn bb" onclick="impAll()">Import</button> <button class="btn bd" onclick="if(confirm(\'Reset ALL?\')){localStorage.clear();location.reload()}">Reset</button></div>';$('app').innerHTML=h};
+function saveCloud(){var cfg={apiKey:$('cKey').value.trim(),databaseURL:$('cURL').value.trim(),projectId:$('cPid').value.trim(),authDomain:($('cPid').value.trim()||'')+'.firebaseapp.com'};if(!cfg.apiKey||!cfg.databaseURL)return;localStorage.setItem('ss_cloud',JSON.stringify(cfg));notify('Connecting...');setTimeout(function(){location.reload()},600)}
+function expAll(){if(typeof XLSX==='undefined')return notify('XLSX not loaded');var wb=XLSX.utils.book_new(),sd=[['WBS','Name','Cat','Dur','Start','End','Prog','WT%','Pred','Assignee']];for(var i=0;i<S.tasks.length;i++){var t=S.tasks[i];sd.push([t.wbs,t.name,t.cat,t.dur,t.s,t.e,t.prog,t.wt||0,t.pred||'',t.assignee||''])}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),'Tasks');XLSX.writeFile(wb,'StellarSeeds_'+td()+'.xlsx');notify('Exported')}
+function impAll(){mO('Import','<div class="dropzone" onclick="$(\'impF\').click()"><div>Upload Excel</div><input type="file" id="impF" accept=".xlsx" style="display:none" onchange="if(this.files[0])doImp(this.files[0])"></div>','<button class="btn" onclick="mC()">Cancel</button>')}
+function doImp(f){var rd=new FileReader();rd.onload=function(e){try{if(typeof XLSX==='undefined')return alert('XLSX not loaded');var wb=XLSX.read(e.target.result,{type:'array'});if(wb.Sheets['Tasks']){var d=XLSX.utils.sheet_to_json(wb.Sheets['Tasks'],{header:1});if(d.length>1){var n2=[];for(var i=1;i<d.length;i++){var r=d[i];if(!r||!r[0])continue;n2.push({wbs:String(r[0]),name:String(r[1]||''),cat:String(r[2]||'General'),dur:parseInt(r[3])||0,s:String(r[4]||''),e:String(r[5]||''),prog:parseInt(r[6])||0,st:String(r[7]||'pending'),remarks:[],wt:parseFloat(r[8])||0,pred:String(r[9]||''),assignee:String(r[10]||'')})}if(n2.length){S.tasks=n2;save();mC();notify('Imported '+n2.length);doRender();return}}}alert('No data found')}catch(err){alert(err.message)}};rd.readAsArrayBuffer(f)}
 /* === DEFAULTS === */
 function defTasks(){var d=[["1","LOI / CONTRACT SIGNING",32,"2026-01-17","2026-02-17",100,"done","Initiation",3,"","Nguyen Van A"],["2","DESIGN & APPLICATION",106,"2026-01-29","2026-05-14",83,"active","Design",8,"1","Maria Santos"],["2.1","Architecture Design",33,"2026-01-29","2026-03-02",100,"done","Design",0,"","Maria Santos"],["2.2","Structural Design",45,"2026-01-29","2026-03-14",100,"done","Design",0,"","Tran Minh"],["2.3","MEP Design",38,"2026-02-05","2026-03-14",100,"done","MEP",0,"2.1","Le Hoang"],["2.4","Permit Applications",61,"2026-03-15","2026-05-14",50,"active","Permits",0,"2.2","Nguyen Van A"],["3","TEMPORARY WORKS",15,"2026-05-15","2026-05-29",60,"active","Temp",3,"2.4","Pham Duc"],["3.1","Site Hoarding",7,"2026-05-15","2026-05-21",80,"active","Temp",0,"","Pham Duc"],["3.2","Temporary Utilities",8,"2026-05-22","2026-05-29",40,"active","Temp",0,"3.1","Le Hoang"],["4","EARTHWORK",27,"2026-05-29","2026-06-24",25,"active","Earthwork",12,"3","Pham Duc"],["4.1","Excavation",14,"2026-05-29","2026-06-11",40,"active","Earthwork",0,"3.2","Pham Duc"],["4.2","Foundation Works",13,"2026-06-12","2026-06-24",10,"active","Earthwork",0,"4.1","Pham Duc"],["5","BUILDINGS",180,"2026-06-25","2026-12-21",0,"pending","Buildings",40,"4","Nguyen Van A"],["5.1","Building A Structure",60,"2026-06-25","2026-08-23",0,"pending","Buildings",0,"4.2","Pham Duc"],["5.2","Building B Structure",60,"2026-07-25","2026-09-22",0,"pending","Buildings",0,"4.2","Tran Minh"],["5.3","Building A Finishes",60,"2026-08-24","2026-10-22",0,"pending","Buildings",0,"5.1","Maria Santos"],["5.4","Building B Finishes",60,"2026-09-23","2026-11-21",0,"pending","Buildings",0,"5.2","Maria Santos"],["6","INFRASTRUCTURE",90,"2026-06-25","2026-09-22",0,"pending","Infrastructure",15,"4","Le Hoang"],["6.1","Roads & Drainage",45,"2026-06-25","2026-08-08",0,"pending","Infrastructure",0,"4.2","Le Hoang"],["6.2","External MEP",45,"2026-08-09","2026-09-22",0,"pending","Infrastructure",0,"6.1","Le Hoang"],["7","SITE WORKS",45,"2026-09-23","2026-11-06",0,"pending","Site",10,"5","Pham Duc"],["7.1","Landscaping",30,"2026-09-23","2026-10-22",0,"pending","Site",0,"5.3","Pham Duc"],["7.2","Final Grading",15,"2026-10-23","2026-11-06",0,"pending","Site",0,"7.1","Pham Duc"],["8","CLOSEOUT",30,"2026-11-07","2026-12-06",0,"pending","Closeout",9,"7","Nguyen Van A"],["8.1","Punch List",15,"2026-11-07","2026-11-21",0,"pending","Closeout",0,"6.2","Nguyen Van A"],["8.2","Handover",15,"2026-11-22","2026-12-06",0,"pending","Closeout",0,"8.1","Nguyen Van A"]];return d.map(function(r){return{wbs:r[0],name:r[1],dur:r[2],s:r[3],e:r[4],prog:r[5],st:r[6],cat:r[7],wt:r[8],pred:r[9],assignee:r[10],remarks:[]}})}
 function defSafe(){return{safeHours:12450,startDate:"2026-04-13",fatalities:0,lti:0,recordable:1,firstAid:3,nearMisses:8,unsafeActs:2,unsafeConditions:1,observations:45,toolboxTalks:28,trainingHours:120,auditScore:88,ppeCompliance:95,entries:[{id:1,date:"2026-06-28",type:"observation",desc:"Worker without gloves",status:"closed"},{id:2,date:"2026-06-25",type:"near-miss",desc:"Falling debris",status:"closed"},{id:3,date:"2026-06-20",type:"toolbox",desc:"Hot weather briefing",status:"closed"},{id:4,date:"2026-06-15",type:"first-aid",desc:"Minor cut",status:"closed"},{id:5,date:"2026-06-10",type:"recordable",desc:"Sprained ankle",status:"closed"}]}}
@@ -3111,6 +2827,423 @@ setTimeout(function(){
   btn.onclick=function(){go('ai')};
   document.body.appendChild(btn);
 },1000);
+  /* === AI ASSISTANT === */
+var aiMessages=[];
+var aiInput='';
+
+R.ai=function(){
+if(!aiMessages.length){
+  aiMessages.push({role:'ai',text:'Hello! I\'m your Project AI Assistant. I can help you with:\n\n• Task status and progress\n• Budget and cost analysis\n• Inspection summaries\n• Safety metrics\n• Schedule and deadlines\n• Team information\n• Risk alerts\n\nAsk me anything about your project!'})};
+
+var h='<div style="display:flex;flex-direction:column;height:calc(100vh - 160px)">';
+
+/* Header */
+h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">';
+h+='<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--pu),var(--bl));display:flex;align-items:center;justify-content:center;font-size:1.2rem">AI</div>';
+h+='<div><div style="font-weight:700;font-size:1rem">Project Assistant</div><div style="font-size:.64rem;color:var(--t3)">Powered by project data analysis</div></div>';
+h+='<span style="flex:1"></span>';
+h+='<button class="btn bs" onclick="aiMessages=[];doRender()">Clear Chat</button>';
+h+='</div>';
+
+/* Quick actions */
+h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">';
+var quickBtns=['Project Summary','Budget Status','Overdue Tasks','Safety Report','Inspection Summary','Risk Alerts','What\'s Behind Schedule?','Cost Overview'];
+for(var qi=0;qi<quickBtns.length;qi++){
+  h+='<button class="btn" style="font-size:.62rem;padding:4px 10px" onclick="aiAsk(\''+quickBtns[qi].replace(/'/g,"\\'")+'\')">'+quickBtns[qi]+'</button>';
+}
+h+='</div>';
+
+/* Messages */
+h+='<div id="aiChat" style="flex:1;overflow-y:auto;padding:10px;background:var(--s1);border-radius:var(--r);border:1px solid var(--b2);margin-bottom:10px">';
+for(var mi=0;mi<aiMessages.length;mi++){
+  var msg=aiMessages[mi];
+  var isUser=msg.role==='user';
+  h+='<div style="display:flex;justify-content:'+(isUser?'flex-end':'flex-start')+';margin-bottom:10px">';
+  if(!isUser)h+='<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--pu),var(--bl));display:flex;align-items:center;justify-content:center;font-size:.56rem;color:#fff;margin-right:8px;flex-shrink:0">AI</div>';
+  h+='<div style="max-width:80%;padding:10px 14px;border-radius:12px;font-size:.76rem;line-height:1.6;white-space:pre-wrap;'+(isUser?'background:var(--bl);color:#fff;border-bottom-right-radius:4px':'background:var(--s2);color:var(--t1);border-bottom-left-radius:4px')+'">';
+  h+=H(msg.text);
+  h+='</div>';
+  if(isUser)h+='<div style="width:28px;height:28px;border-radius:50%;background:var(--am);display:flex;align-items:center;justify-content:center;font-size:.56rem;color:#fff;margin-left:8px;flex-shrink:0">U</div>';
+  h+='</div>';
+}
+h+='</div>';
+
+/* Input */
+h+='<div style="display:flex;gap:8px">';
+h+='<input type="text" id="aiIn" placeholder="Ask about your project..." value="" style="flex:1;padding:10px 14px;font-size:.78rem;border-radius:20px" onkeydown="if(event.key===\'Enter\')aiSend()">';
+h+='<button class="btn bp" style="border-radius:20px;padding:10px 20px" onclick="aiSend()">Send</button>';
+h+='</div>';
+
+h+='</div>';
+$('app').innerHTML=h;
+setTimeout(function(){var el=document.getElementById('aiChat');if(el)el.scrollTop=el.scrollHeight},50);
+};
+
+function aiSend(){
+var input=document.getElementById('aiIn');
+if(!input)return;
+var q=input.value.trim();
+if(!q)return;
+aiMessages.push({role:'user',text:q});
+input.value='';
+aiInput=q;
+doRender();
+setTimeout(function(){aiProcess(q)},300);
+}
+
+function aiAsk(q){
+aiMessages.push({role:'user',text:q});
+doRender();
+setTimeout(function(){aiProcess(q)},300);
+}
+
+function aiProcess(q){
+var ql=q.toLowerCase();
+var resp='';
+
+/* Ensure arrays */
+if(!Array.isArray(S.tasks))S.tasks=[];
+if(!Array.isArray(S.taskProjects))S.taskProjects=[];
+if(!Array.isArray(S.inspections))S.inspections=[];
+if(!Array.isArray(S.teamMembers))S.teamMembers=[];
+if(!Array.isArray(S.userLog))S.userLog=[];
+
+/* Gather data */
+var tasks=S.tasks;
+var projs=S.taskProjects;
+var inps=S.inspections;
+var team=S.teamMembers;
+var safe=S.safety||{};
+
+var totalTasks=tasks.length;
+var doneTasks=0,activeTasks=0,pendingTasks=0,overdueTasks=0;
+var today=new Date().toISOString().substring(0,10);
+for(var i=0;i<totalTasks;i++){
+  var t=tasks[i];
+  if(t.st==='done')doneTasks++;
+  else if(t.st==='active'){activeTasks++;if(t.e&&t.e<today)overdueTasks++}
+  else{pendingTasks++;if(t.e&&t.e<today)overdueTasks++}
+}
+
+var siteP=ovProg(tasks);
+var siteC=siteCost;
+var sitePd=sPaid();
+var projC=0,projPd=0;
+for(var i=0;i<projs.length;i++){projC+=(projs[i].cost||0);projPd+=pPaid(projs[i])}
+var totalC=siteC+projC;
+var totalPd=sitePd+projPd;
+var balance=totalC-totalPd;
+var paidPct=totalC>0?Math.round(totalPd/totalC*100):0;
+
+var totalInps=inps.length;
+var confCount=0,revCount=0,nonConfCount=0;
+var openInps=0,progInps=0,compInps=0;
+for(var i=0;i<totalInps;i++){
+  var ins=inps[i];
+  var c=ins.conformance||'';
+  if(c==='Conforming'||c==='Yes')confCount++;
+  else if(c==='For Review')revCount++;
+  else nonConfCount++;
+  if(ins.status==='Open')openInps++;
+  else if(ins.status==='In Progress')progInps++;
+  else if(ins.status==='Completed'||ins.status==='Closed')compInps++;
+}
+
+var dLTI=dd(safe.startDate||'2026-04-13',today);
+
+/* Project summaries */
+var projSumm=[];
+for(var i=0;i<projs.length;i++){
+  var pj=projs[i];
+  var pt=pj.tasks||[];
+  var pp=ovProg(pt);
+  var pl=pPaid(pj);
+  var pc=pj.cost||0;
+  projSumm.push({name:pj.name,prog:pp,cost:pc,paid:pl,bal:pc-pl,tasks:pt.length});
+}
+
+/* Discipline breakdown */
+var discCount={};
+for(var i=0;i<totalInps;i++){var d=inps[i].discipline;if(d)discCount[d]=(discCount[d]||0)+1}
+
+/* Contractor breakdown */
+var contCount={};
+for(var i=0;i<totalInps;i++){var c2=inps[i].contractor;if(c2)contCount[c2]=(contCount[c2]||0)+1}
+
+/* --- RESPONSE LOGIC --- */
+
+/* Project Summary */
+if(ql.includes('project summary')||ql.includes('overview')||ql.includes('summary')){
+  resp='PROJECT SUMMARY\n\n';
+  resp+='Site Progress: '+fmtP(siteP)+'\n';
+  resp+='Total Tasks: '+totalTasks+' ('+doneTasks+' done, '+activeTasks+' active, '+pendingTasks+' pending)\n';
+  if(overdueTasks>0)resp+='Overdue Tasks: '+overdueTasks+' ⚠️\n';
+  resp+='\nSub-Projects: '+projs.length+'\n';
+  for(var i=0;i<projSumm.length;i++){
+    var ps=projSumm[i];
+    resp+='\n  '+ps.name+': '+fmtP(ps.prog)+' complete, '+ps.tasks+' tasks';
+  }
+  resp+='\n\nBudget: '+fmtD(totalC)+' | Paid: '+fmtD(totalPd)+' ('+paidPct+'%) | Balance: '+fmtD(balance);
+  resp+='\nInspections: '+totalInps+' total | Safety: '+dLTI+' days w/o LTI';
+}
+
+/* Budget/Cost */
+else if(ql.includes('budget')||ql.includes('cost')||ql.includes('money')||ql.includes('paid')||ql.includes('payment')){
+  resp='BUDGET STATUS\n\n';
+  resp+='Total Contract: '+fmtD(totalC)+'\n';
+  resp+='Total Paid: '+fmtD(totalPd)+' ('+paidPct+'%)\n';
+  resp+='Balance: '+fmtD(balance)+'\n\n';
+  resp+='Breakdown:\n';
+  resp+='  Site Master: Contract '+fmtD(siteC)+', Paid '+fmtD(sitePd)+', Bal '+fmtD(siteC-sitePd)+'\n';
+  for(var i=0;i<projSumm.length;i++){
+    var ps=projSumm[i];
+    resp+='  '+ps.name+': Contract '+fmtD(ps.cost)+', Paid '+fmtD(ps.paid)+', Bal '+fmtD(ps.bal)+'\n';
+  }
+  if(balance>totalC*0.5)resp+='\n⚠️ Alert: More than 50% of budget still unpaid.';
+}
+
+/* Overdue */
+else if(ql.includes('overdue')||ql.includes('behind')||ql.includes('late')||ql.includes('delay')){
+  var overdueList=[];
+  for(var i=0;i<tasks.length;i++){
+    var t=tasks[i];
+    if(t.st!=='done'&&t.e&&t.e<today)overdueList.push(t);
+  }
+  resp='SCHEDULE STATUS\n\n';
+  resp+='Overdue Tasks: '+overdueList.length+'\n';
+  if(overdueList.length){
+    resp+='\nOverdue items:\n';
+    for(var i=0;i<Math.min(overdueList.length,15);i++){
+      var od=overdueList[i];
+      var daysOver=Math.round((new Date(today)-new Date(od.e))/(1000*60*60*24));
+      resp+='  • '+od.wbs+' '+od.name+' (due '+od.e+', '+daysOver+' days ago)\n';
+    }
+    if(overdueList.length>15)resp+='  ... and '+(overdueList.length-15)+' more\n';
+  }else{
+    resp+='All tasks are on schedule!';
+  }
+  for(var i=0;i<projSumm.length;i++){
+    var ps=projSumm[i];
+    if(ps.prog<30)resp+='\n⚠️ '+ps.name+' is only '+fmtP(ps.prog)+' complete.';
+  }
+}
+
+/* Safety */
+else if(ql.includes('safe')||ql.includes('lti')||ql.includes('incident')||ql.includes('hse')){
+  resp='SAFETY REPORT\n\n';
+  resp+='Safe Hours: '+(safe.safeHours||0).toLocaleString()+'\n';
+  resp+='Days Without LTI: '+dLTI+'\n';
+  resp+='Near Misses: '+(safe.nearMisses||0)+'\n';
+  resp+='Incidents: '+(safe.incidents||0)+'\n';
+  resp+='Safety Starts: '+td()+'\n\n';
+  if((safe.nearMisses||0)>10)resp+='⚠️ High near-miss count. Review safety protocols.\n';
+  if(dLTI>100)resp+='✅ Excellent safety record.\n';
+  resp+='Inspections conducted: '+totalInps+'\n';
+  resp+='Conformance rate: '+(totalInps>0?Math.round(confCount/totalInps*100):0)+'%';
+}
+
+/* Inspection Summary */
+else if(ql.includes('inspection')||ql.includes('conformance')||ql.includes('quality')||ql.includes('validation')){
+  resp='INSPECTION SUMMARY\n\n';
+  resp+='Total Inspections: '+totalInps+'\n';
+  resp+='Conforming: '+confCount+' ('+(totalInps>0?Math.round(confCount/totalInps*100):0)+'%)\n';
+  resp+='For Review: '+revCount+'\n';
+  resp+='Non-Conforming: '+nonConfCount+'\n\n';
+  resp+='Status:\n';
+  resp+='  Open: '+openInps+'\n';
+  resp+='  In Progress: '+progInps+'\n';
+  resp+='  Completed/Closed: '+compInps+'\n\n';
+  if(Object.keys(discCount).length){
+    resp+='By Discipline:\n';
+    for(var dk in discCount)resp+='  '+dk+': '+discCount[dk]+'\n';
+  }
+  if(Object.keys(contCount).length){
+    resp+='\nBy Contractor:\n';
+    for(var ck in contCount)resp+='  '+ck+': '+contCount[ck]+'\n';
+  }
+  if(nonConfCount>0)resp+='\n⚠️ '+nonConfCount+' non-conforming items require corrective action.';
+}
+
+/* Risk Alerts */
+else if(ql.includes('risk')||ql.includes('alert')||ql.includes('issue')||ql.includes('problem')){
+  resp='RISK ALERTS\n\n';
+  var alerts=[];
+  if(overdueTasks>0)alerts.push('🔴 '+overdueTasks+' overdue task(s) — schedule risk');
+  if(nonConfCount>0)alerts.push('🔴 '+nonConfCount+' non-conforming inspection(s) — quality risk');
+  if(balance>totalC*0.7)alerts.push('🟡 '+paidPct+'% paid — cash flow may be tight');
+  if((safe.nearMisses||0)>5)alerts.push('🟡 '+(safe.nearMisses||0)+' near misses — safety risk');
+  for(var i=0;i<projSumm.length;i++){
+    if(projSumm[i].prog<20)alerts.push('🟡 '+projSumm[i].name+' only '+fmtP(projSumm[i].prog)+' — may need attention');
+  }
+  if(openInps>10)alerts.push('🟡 '+openInps+' open inspections — review backlog');
+  if(!alerts.length){
+    resp+='✅ No major alerts detected. Project is on track.';
+  }else{
+    resp+=alerts.length+' alert(s) found:\n\n';
+    for(var i=0;i<alerts.length;i++)resp+=alerts[i]+'\n';
+  }
+}
+
+/* Cost Overview */
+else if(ql.includes('cost overview')||ql.includes('expense')||ql.includes('financial')){
+  resp='COST OVERVIEW\n\n';
+  resp+='Total Budget: '+fmtD(totalC)+'\n';
+  resp+='Paid to Date: '+fmtD(totalPd)+' ('+paidPct+'%)\n';
+  resp+='Outstanding: '+fmtD(balance)+'\n\n';
+  var pctC=totalC>0?pct(totalPd,totalC):0;
+  resp+='Progress Bar: ';
+  var bars=Math.round(pctC/5);
+  for(var b=0;b<20;b++)resp+=b<bars?'█':'░';
+  resp+=' '+pctC+'%\n\n';
+  if(projSumm.length){
+    resp+='Per Project:\n';
+    for(var i=0;i<projSumm.length;i++){
+      var ps=projSumm[i];
+      var ppct=ps.cost>0?Math.round(ps.paid/ps.cost*100):0;
+      resp+='  '+ps.name+': '+fmtD(ps.paid)+'/'+fmtD(ps.cost)+' ('+ppct+'%)\n';
+    }
+  }
+}
+
+/* Task */
+else if(ql.includes('task')||ql.includes('progress')){
+  resp='TASK STATUS\n\n';
+  resp+='Total: '+totalTasks+'\n';
+  resp+='Done: '+doneTasks+' ('+Math.round(doneTasks/Math.max(totalTasks,1)*100)+'%)\n';
+  resp+='Active: '+activeTasks+'\n';
+  resp+='Pending: '+pendingTasks+'\n';
+  if(overdueTasks)resp+='Overdue: '+overdueTasks+' ⚠️\n';
+  resp+='\nSite Progress: '+fmtP(siteP)+'\n';
+  if(projs.length){
+    resp+='\nSub-Projects:\n';
+    for(var i=0;i<projSumm.length;i++){
+      resp+='  '+projSumm[i].name+': '+fmtP(projSumm[i].prog)+' ('+projSumm[i].tasks+' tasks)\n';
+    }
+  }
+}
+
+/* Team */
+else if(ql.includes('team')||ql.includes('member')||ql.includes('staff')||ql.includes('people')){
+  resp='TEAM\n\n';
+  resp+='Total Members: '+team.length+'\n\n';
+  var teamDepts={};
+  for(var i=0;i<team.length;i++){
+    var d=team[i].department||'Unassigned';
+    teamDepts[d]=(teamDepts[d]||0)+1;
+  }
+  for(var dk in teamDepts)resp+=dk+': '+teamDepts[dk]+' member(s)\n';
+  resp+='\nMembers:\n';
+  for(var i=0;i<team.length;i++){
+    resp+='  '+team[i].name+(team[i].role?' — '+team[i].role:'')+'\n';
+  }
+}
+
+/* Gantt / Schedule */
+else if(ql.includes('gantt')||ql.includes('schedule')||ql.includes('timeline')||ql.includes('deadline')){
+  resp='SCHEDULE OVERVIEW\n\n';
+  var earliest='',latest='';
+  for(var i=0;i<tasks.length;i++){
+    if(tasks[i].s&&(!earliest||tasks[i].s<earliest))earliest=tasks[i].s;
+    if(tasks[i].e&&(!latest||tasks[i].e>latest))latest=tasks[i].e;
+  }
+  resp+='Project Start: '+(earliest||'Not set')+'\n';
+  resp+='Project End: '+(latest||'Not set')+'\n';
+  resp+='Today: '+today+'\n\n';
+  if(earliest&&latest){
+    var totalDays=dd(earliest,latest);
+    var elapsed=dd(earliest,today);
+    var timePct=totalDays>0?Math.min(100,Math.round(elapsed/totalDays*100)):0;
+    resp+='Time Elapsed: '+elapsed+' of '+totalDays+' days ('+timePct+'%)\n';
+    resp+='Work Progress: '+fmtP(siteP)+'\n';
+    if(siteP<timePct-10)resp+='⚠️ Work progress ('+fmtP(siteP)+') is behind time progress ('+timePct+'%)\n';
+    else if(siteP>timePct+10)resp+='✅ Work is ahead of schedule!\n';
+    else resp+='✅ Work and time are aligned.\n';
+  }
+  if(overdueTasks>0)resp+='\n'+overdueTasks+' task(s) past deadline.';
+}
+
+/* Help */
+else if(ql.includes('help')||ql.includes('what can')||ql.includes('how to')){
+  resp='I can help you with:\n\n';
+  resp+='• "Project Summary" — overview of everything\n';
+  resp+='• "Budget Status" — cost and payment details\n';
+  resp+='• "Overdue Tasks" — what\'s behind schedule\n';
+  resp+='• "Safety Report" — LTI days, near misses\n';
+  resp+='• "Inspection Summary" — quality check results\n';
+  resp+='• "Risk Alerts" — things that need attention\n';
+  resp+='• "Cost Overview" — financial dashboard\n';
+  resp+='• "Task Status" — progress breakdown\n';
+  resp+='• "Team" — team members and departments\n';
+  resp+='• "Schedule" — timeline vs progress\n\n';
+  resp+='Or ask any question about your project in natural language!';
+}
+
+/* Conversational */
+else if(ql.includes('hello')||ql.includes('hi')||ql.includes('hey')){
+  resp='Hello! How can I help you today? Try asking about your project summary, budget, tasks, or inspections.';
+}
+else if(ql.includes('thank')){
+  resp='You\'re welcome! Let me know if you need anything else.';
+}
+
+/* Fallback — try to match keywords */
+else{
+  var matched=false;
+
+  if(ql.includes('how many')&&ql.includes('task')){
+    resp='Total tasks: '+totalTasks+'\nDone: '+doneTasks+'\nActive: '+activeTasks+'\nPending: '+pendingTasks;
+    matched=true;
+  }
+  if(ql.includes('how many')&&ql.includes('inspection')){
+    resp='Total inspections: '+totalInps+'\nConforming: '+confCount+'\nFor Review: '+revCount+'\nNon-Conforming: '+nonConfCount;
+    matched=true;
+  }
+  if(ql.includes('how many')&&ql.includes('project')){
+    resp='Sub-projects: '+projs.length+'\nSite (Master) + '+projs.length+' projects = '+(projs.length+1)+' total';
+    matched=true;
+  }
+  if(ql.includes('total')&&ql.includes('cost')){
+    resp='Total Contract: '+fmtD(totalC)+'\nTotal Paid: '+fmtD(totalPd)+'\nBalance: '+fmtD(balance);
+    matched=true;
+  }
+  if(ql.includes('progress')){
+    resp='Overall Site Progress: '+fmtP(siteP)+'\n\n';
+    for(var i=0;i<projSumm.length;i++){
+      resp+=projSumm[i].name+': '+fmtP(projSumm[i].prog)+'\n';
+    }
+    matched=true;
+  }
+
+  /* Try matching project names */
+  for(var i=0;i<projSumm.length;i++){
+    if(ql.includes(projSumm[i].name.toLowerCase())){
+      var ps=projSumm[i];
+      resp=ps.name.toUpperCase()+'\n\n';
+      resp+='Progress: '+fmtP(ps.prog)+'\n';
+      resp+='Tasks: '+ps.tasks+'\n';
+      resp+='Contract: '+fmtD(ps.cost)+'\n';
+      resp+='Paid: '+fmtD(ps.paid)+' ('+(ps.cost>0?Math.round(ps.paid/ps.cost*100):0)+'%)\n';
+      resp+='Balance: '+fmtD(ps.bal);
+      matched=true;
+      break;
+    }
+  }
+
+  if(!matched){
+    resp='I\'m not sure how to answer that. Try one of these:\n\n';
+    resp+='• Project Summary\n• Budget Status\n• Overdue Tasks\n';
+    resp+='• Safety Report\n• Inspection Summary\n• Risk Alerts\n';
+    resp+='• Schedule\n• Team\n\n';
+    resp+='Or ask a specific question like:\n';
+    resp+='"How many tasks are overdue?"\n';
+    resp+='"What is the total cost?"\n';
+    resp+='"Show me inspection results"';
+  }
+}
+
+aiMessages.push({role:'ai',text:resp});
+doRender();
+}
 /* === SAFETY === */
 var safeChecklist=[
 {cat:'PPE',items:['Hard hats not worn','Safety boots missing','Hi-vis vest missing','Safety glasses missing','Wrong gloves','No hearing protection','Fall harness missing','Damaged PPE','Others']},
