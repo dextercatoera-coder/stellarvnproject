@@ -267,8 +267,35 @@ try{
     localStorage.removeItem('buildsync_safetyInspections_remote');
   }
 }catch(e){}
-}catch(e){
-  console.error('Load error:',e);
+var sc=localStorage.getItem('ss_siteCost');
+siteCost=sc?parseFloat(sc):0;
+for(var i=0;i<S.tasks.length;i++){
+  if(!S.tasks[i].remarks)S.tasks[i].remarks=[];
+  if(!S.tasks[i].pred)S.tasks[i].pred='';
+  if(!S.tasks[i].assignee)S.tasks[i].assignee='';
+}
+var nw=false;
+for(var i=0;i<S.tasks.length;i++)if(S.tasks[i].wbs.indexOf('.')===-1&&!S.tasks[i].wt)nw=true;
+if(nw)calcWt(S.tasks);
+sortTasks(S.tasks);
+if(!localStorage.getItem('ss_v3')){
+  S.inspections=[];
+  localStorage.setItem('ss_v3','1');
+}
+for(var p=0;p<S.taskProjects.length;p++){
+  var pts=S.taskProjects[p].tasks||[];
+  for(var i=0;i<pts.length;i++){
+    if(!pts[i].remarks)pts[i].remarks=[];
+    if(!pts[i].pred)pts[i].pred='';
+    if(!pts[i].assignee)pts[i].assignee='';
+    if(pts[i].wt===undefined)pts[i].wt=(pts[i].wbs.indexOf('.')===-1)?5:0;
+  }
+  var needsWt=false;
+  for(var i=0;i<pts.length;i++){if(pts[i].wbs.indexOf('.')===-1&&!pts[i].wt)needsWt=true}
+  if(needsWt)calcWt(pts);
+  sortTasks(pts);
+}
+}catch(e){console.error('Load:',e)}
 }
 /* Merge Firebase teamMembers (no photos) with local (has photos) */
 try{
