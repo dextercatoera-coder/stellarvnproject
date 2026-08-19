@@ -1074,12 +1074,28 @@ setTimeout(function(){
   drawSC(months,lines,100,function(v){return v.toFixed(0)+'%'});
 },50);
 };
-/* === FIREBASE SYNC HELPERS === */
-function fbTasks(){try{if(typeof db!=='undefined'&&db)db.ref('ss/tasks').set(S.tasks||[])}catch(e){}}
-function fbProjects(){try{if(typeof db!=='undefined'&&db)db.ref('ss/taskProjects').set(S.taskProjects||[])}catch(e){}}
-function fbSiteCost(){try{if(typeof db!=='undefined'&&db)db.ref('ss/siteCost').set(siteCost||0)}catch(e){}}
-function fbSitePay(){try{if(typeof db!=='undefined'&&db)db.ref('ss/sitePayments').set(S.sitePayments||[])}catch(e){}}
-function fbInsp(){try{if(typeof db!=='undefined'&&db)db.ref('ss/inspections').set(S.inspections||[])}catch(e){}}
+/* === FIREBASE SYNC HELPER === */
+var _lastFbSync=0;
+function fbSync(){
+try{
+  if(typeof db==='undefined'||!db)return;
+  if(!S.tasks||S.tasks.length===0)return;
+  if(!cOn)return;
+  var now=Date.now();
+  if(now-_lastFbSync<2000)return;
+  _lastFbSync=now;
+  db.ref('ss').update({
+    tasks:S.tasks,
+    taskProjects:S.taskProjects||[],
+    sitePayments:S.sitePayments||[],
+    siteCost:siteCost||0
+  }).catch(function(e){console.error('fbSync err:',e)});
+}catch(e){}
+}
+function fbTasks(){fbSync()}
+function fbProjects(){fbSync()}
+function fbSiteCost(){fbSync()}
+function fbSitePay(){fbSync()}
 
 /* === TASKS === */
 R.tasks=function(){
