@@ -190,7 +190,6 @@ function nav(){var h='';for(var i=0;i<tabs.length;i++){if(!tabs[i]){h+='<div cla
 function go(id){tab=id;nav();doRender()}
 function doRender(){try{if(R[tab])R[tab]()}catch(e){$('app').innerHTML='<div class="card" style="color:var(--rd)"><b>Error:</b> '+H(e.message)+'</div>';console.error(e)}}
 function save(){try{['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','safetyInspections','photos','originalPlan','phWebhookUrl','phSPFolder','phSPSite','reports','reportConfig'].forEach(function(k){localStorage.setItem('ss_'+k,JSON.stringify(S[k]))});localStorage.setItem('ss_siteCost',String(siteCost));syncUp()}catch(e){}}
-fbSync();
 function syncUp(){
   try{
     if(typeof db!=='undefined'&&db){
@@ -270,7 +269,7 @@ function applyR(v){
   ['tasks','upds','vgc','taskProjects','sitePayments','safety','userLog','inspTemplates','inspections','teamMembers','photos'].forEach(function(k){
     if(v[k]!==undefined){S[k]=v[k];localStorage.setItem('ss_'+k,JSON.stringify(v[k]))}
   });
-  if(v.siteCost!==undefined){siteCost=parseFloat(v.siteCost)||0;localStorage.setItem('ss_siteCost',String(siteCost))}
+  if(v.siteCost!==undefined){siteCost=v.siteCost;localStorage.setItem('ss_siteCost',String(siteCost))}
   if(v.phWebhookUrl!==undefined){S.phWebhookUrl=v.phWebhookUrl;localStorage.setItem('ss_phWebhookUrl',v.phWebhookUrl)}
   if(v.phSPFolder!==undefined){S.phSPFolder=v.phSPFolder;localStorage.setItem('ss_phSPFolder',v.phSPFolder)}
   if(v.phSPSite!==undefined){S.phSPSite=v.phSPSite;localStorage.setItem('ss_phSPSite',v.phSPSite)}
@@ -1075,35 +1074,12 @@ setTimeout(function(){
   drawSC(months,lines,100,function(v){return v.toFixed(0)+'%'});
 },50);
 };
-/* === FIREBASE SYNC HELPER === */
-function fbSync(){
-try{
-  if(typeof db==='undefined'||!db)return;
-  var o={};
-  o.tasks=S.tasks||[];
-  o.taskProjects=S.taskProjects||[];
-  o.sitePayments=S.sitePayments||[];
-  o.siteCost=siteCost||0;
-  o.safety=S.safety||{};
-  o.safetyInspections=S.safetyInspections||[];
-  o.teamMembers=S.teamMembers||[];
-  o.inspections=S.inspections||[];
-  o.photos=S.photos||[];
-  o.upds=S.upds||[];
-  o.vgc=S.vgc||{};
-  o.userLog=S.userLog||[];
-  o.inspTemplates=S.inspTemplates||[];
-  o.phWebhookUrl=S.phWebhookUrl||'';
-  o.phSPFolder=S.phSPFolder||'';
-  o.phSPSite=S.phSPSite||'';
-  db.ref('ss').update(o).catch(function(e){console.error('fbSync write error:',e)});
-}catch(e){console.error('fbSync error:',e)}
-}
-/* Keep backward compat aliases */
-function fbTasks(){fbSync()}
-function fbProjects(){fbSync()}
-function fbSiteCost(){fbSync()}
-function fbSitePay(){fbSync()}
+/* === FIREBASE SYNC HELPERS === */
+function fbTasks(){try{if(typeof db!=='undefined'&&db)db.ref('ss/tasks').set(S.tasks||[])}catch(e){}}
+function fbProjects(){try{if(typeof db!=='undefined'&&db)db.ref('ss/taskProjects').set(S.taskProjects||[])}catch(e){}}
+function fbSiteCost(){try{if(typeof db!=='undefined'&&db)db.ref('ss/siteCost').set(siteCost||0)}catch(e){}}
+function fbSitePay(){try{if(typeof db!=='undefined'&&db)db.ref('ss/sitePayments').set(S.sitePayments||[])}catch(e){}}
+function fbInsp(){try{if(typeof db!=='undefined'&&db)db.ref('ss/inspections').set(S.inspections||[])}catch(e){}}
 
 /* === TASKS === */
 R.tasks=function(){
