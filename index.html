@@ -1103,7 +1103,8 @@ var h='<div style="display:flex;justify-content:space-between;align-items:center
 h+='<span></span>';
 h+='<div style="display:flex;gap:6px">';
 h+='<button class="btn bs" onclick="impDownloadTpl()"><i class="fas fa-download"></i> Template</button>';
-h+='<button class="btn bs bb" onclick="$(\'impF\').click()"><i class="fas fa-upload"></i> Import</button>';
+h+='<button class="btn bs bb" onclick="$(\'impF\').click()"><i class="fas fa-upload"></i> Import</button>';h+='<button class="btn bs" onclick="$(\'restoreF\').click()" style="border-color:var(--rd);color:var(--rd)"><i class="fas fa-cloud-upload-alt"></i> Restore Backup</button>';
+h+='<input type="file" id="restoreF" accept=".json" style="display:none" onchange="restoreFromBackup(this)">';
 h+='<input type="file" id="impF" accept=".xlsx,.xls,.csv" style="display:none" onchange="impTasks(this)">';
 h+='<button class="btn '+(showCost?'bs':'bp')+'" onclick="showCost=!showCost;doRender()"><i class="fas '+(showCost?'fa-eye':'fa-eye-slash')+'"></i> '+(showCost?'Hide Costs':'Show Costs')+'</button>';
 h+='</div></div>';
@@ -1429,6 +1430,51 @@ function addSP(){mO('Site Payment','<div class="fg"><label class="fl">Date</labe
 function savSP(){var a=parseFloat($('spA').value)||0;if(!a)return;S.sitePayments.push({id:Date.now(),date:$('spD').value,amount:a,desc:$('spDe').value.trim()});save();fbSitePay();mC();notify('Added');doRender()}
 
 function expProj(){if(typeof XLSX==='undefined')return notify('XLSX not loaded');var p=getProj();if(!p)return;var wb=XLSX.utils.book_new(),sd=[['WBS','Name','Cat','Dur','Start','End','Prog','WT%','Pred','Assignee']];for(var i=0;i<p.tasks.length;i++){var t=p.tasks[i];sd.push([t.wbs,t.name,t.cat,t.dur,t.s,t.e,t.prog,t.wt||0,t.pred||'',t.assignee||''])}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),'Tasks');XLSX.writeFile(wb,p.name.replace(/[^a-z0-9]/gi,'_')+'.xlsx');notify('Exported')}
+function restoreFromBackup(input){
+var f=input.files[0];
+if(!f)return;
+var rd=new FileReader();
+rd.onload=function(e){
+  try{
+    var data=JSON.parse(e.target.result);
+    var summary='';
+    var pushData={};
+    if(data.tasks&&data.tasks.length>0){S.tasks=data.tasks;pushData.tasks=data.tasks;summary+='Tasks: '+data.tasks.length+'\n'}
+    if(data.taskProjects&&data.taskProjects.length>0){S.taskProjects=data.taskProjects;pushData.taskProjects=data.taskProjects;summary+='Projects: '+data.taskProjects.length+'\n'}
+    if(data.sitePayments&&data.sitePayments.length>0){S.sitePayments=data.sitePayments;pushData.sitePayments=data.sitePayments;summary+='Payments: '+data.sitePayments.length+'\n'}
+    if(data.siteCost!==undefined){siteCost=data.siteCost;pushData.siteCost=data.siteCost;summary+='Cost: '+data.siteCost+'\n'}
+    if(data.safety&&Object.keys(data.safety).length>0){S.safety=data.safety;pushData.safety=data.safety;summary+='Safety: loaded\n'}
+    if(data.safetyInspections&&data.safetyInspections.length>0){S.safetyInspections=data.safetyInspections;pushData.safetyInspections=data.safetyInspections;summary+='Safety Inspections: '+data.safetyInspections.length+'\n'}
+    if(data.teamMembers&&data.teamMembers.length>0){S.teamMembers=data.teamMembers;pushData.teamMembers=data.teamMembers;summary+='Team: '+data.teamMembers.length+'\n'}
+    if(data.inspections&&data.inspections.length>0){S.inspections=data.inspections;pushData.inspections=data.inspections;summary+='Inspections: '+data.inspections.length+'\n'}
+    if(data.photos&&data.photos.length>0){S.photos=data.photos;pushData.photos=data.photos;summary+='Photos: '+data.photos.length+'\n'}
+    if(data.upds&&data.upds.length>0){S.upds=data.upds;pushData.upds=data.upds;summary+='Updates: '+data.upds.length+'\n'}
+    if(data.vgc){S.vgc=data.vgc;pushData.vgc=data.vgc}
+    if(data.userLog&&data.userLog.length>0){S.userLog=data.userLog;pushData.userLog=data.userLog}
+    if(data.phWebhookUrl!==undefined){S.phWebhookUrl=data.phWebhookUrl;pushData.phWebhookUrl=data.phWebhookUrl}
+    if(data.phSPFolder!==undefined){S.phSPFolder=data.phSPFolder;pushData.phSPFolder=data.phSPFolder}
+    if(data.phSPSite!==undefined){S.phSPSite=data.phSPSite;pushData.phSPSite=data.phSPSite}
+    if(!summary){alert('No data found in file');return}
+    if(!confirm('Restore this backup?\n\n'+summary+'\nThis will overwrite current data.'))return;
+    save();
+    if(typeof db!=='undefined'&&db){
+      db.ref('ss').update(pushData).then(function(){
+        notify('Backup restored and synced to Firebase');
+        doRender();
+      }).catch(function(err){
+        notify('Restored locally. Firebase sync failed: '+err.message);
+        doRender();
+      });
+    }else{
+      notify('Restored locally (Firebase not connected)');
+      doRender();
+    }
+  }catch(err){
+    alert('Error reading backup: '+err.message);
+  }
+};
+rd.readAsText(f);
+}
   /* === INSPECTION === */
 var selectedInps=[];
 var inspReady=false;
