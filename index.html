@@ -1436,10 +1436,16 @@ if(!f)return;
 var rd=new FileReader();
 rd.onload=function(e){
   try{
-    var raw=JSON.parse(e.target.result);
+      var raw=JSON.parse(e.target.result);
     var data=raw;
     if(raw.ss)data=raw.ss;
-    if(raw.data)data=raw.data;
+    if(raw.data){
+      if(raw.data.tasks||raw.data.taskProjects)data=raw.data;
+      else{
+        var userKeys=Object.keys(raw.data);
+        if(userKeys.length>0)data=raw.data[userKeys[0]];
+      }
+    }
     if(!data.tasks&&!data.taskProjects&&!data.safety){
       var keys=Object.keys(raw);
       for(var ki=0;ki<keys.length;ki++){
