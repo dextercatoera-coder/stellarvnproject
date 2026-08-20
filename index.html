@@ -303,7 +303,6 @@ function togAuth(){authMode=authMode==='login'?'signup':'login';$('lTitle').text
 function doLogin(){var em=$('lEmail').value.trim(),pw=$('lPass').value;if(!em||!pw||!fbAuth)return;$('lBtn').textContent='...';var fn=authMode==='signup'?fbAuth.createUserWithEmailAndPassword:fbAuth.signInWithEmailAndPassword;fn.call(fbAuth,em,pw).catch(function(e){$('lBtn').textContent='Sign In';$('lErr').textContent=e.message;$('lErr').style.display='block'})}
 function doLogout(){if(fbAuth)fbAuth.signOut();$('loginScr').style.display='none'}
 function skipAuth(){$('loginScr').style.display='none';$('mainApp').style.display='block';load();nav();doRender()}
-
 R.dash=function(){
 var s=S.safety||{},dLTI=dd(s.startDate||'2026-04-13',td());
 var oa=ovProg(S.tasks),sC=siteCost,sP=sPaid(),pC=0,pP=0;
@@ -419,6 +418,151 @@ h+='</tbody></table></div>';
 h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">Click column headers to sort</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">Click project name to view details</span></div>';
 h+='</div>';
 
+/* === LATEST REVISIONS === */
+h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">';
+
+/* Left: Latest Revisions Card */
+h+='<div class="card" style="border-left:4px solid var(--bl)">';
+h+='<div class="ch"><span class="ct" style="color:var(--bl)">Latest Revisions</span>';
+h+='<button class="btn bs" style="padding:2px 8px;font-size:.56rem" onclick="showAllRevisions()">View All</button></div>';
+
+var allRevisions=[];
+
+/* Collect task revisions */
+var tLog=S.userLog||[];
+for(var i=0;i<tLog.length;i++){
+  var e=tLog[i];
+  if(!e)continue;
+  allRevisions.push({
+    ts:e.ts||0,
+    user:e.user||'Unknown',
+    action:e.action||'',
+    detail:e.detail||e.action||'',
+    tab:e.tab||'',
+    type:'task'
+  });
+}
+
+/* Collect safety inspection revisions */
+var sInsps=S.safetyInspections||[];
+var recentSafety=sInsps.slice(0,5);
+for(var i=0;i<recentSafety.length;i++){
+  var si2=recentSafety[i];
+  allRevisions.push({
+    ts:si2.id||0,
+    user:si2.createdBy||'Unknown',
+    action:'Safety Inspection',
+    detail:(si2.area||'')+' - '+(si2.overall||''),
+    tab:'safety',
+    type:'safety'
+  });
+}
+
+/* Collect inspection revisions */
+var insps=S.inspections||[];
+var recentInsp=insps.slice(0,5);
+for(var i=0;i<recentInsp.length;i++){
+  var ri=recentInsp[i];
+  allRevisions.push({
+    ts:ri.id||0,
+    user:ri.email||ri.inspector||'Unknown',
+    action:'Daily Inspection',
+    detail:(ri.area||'')+' - '+(ri.conformance||ri.status||''),
+    tab:'insp',
+    type:'inspection'
+  });
+}
+
+/* Sort by most recent first */
+allRevisions.sort(function(a,b){return(b.ts||0)-(a.ts||0)});
+
+var showRevCount=Math.min(allRevisions.length,12);
+if(showRevCount===0){
+  h+='<div style="text-align:center;padding:24px;color:var(--t3);font-size:.76rem"><i class="fas fa-history" style="font-size:1.4rem;display:block;margin-bottom:8px;opacity:.4"></i>No revisions recorded yet.<br><span style="font-size:.62rem">Changes to tasks, costs, inspections will appear here.</span></div>';
+}else{
+  for(var i=0;i<showRevCount;i++){
+    var rv=allRevisions[i];
+    var rTime='';
+    if(rv.ts){
+      try{var rd=new Date(typeof rv.ts==='number'&&rv.ts<9999999999?rv.ts*1000:rv.ts);rTime=tAgo(rd.toISOString())}catch(e){rTime=''}
+    }
+    var rIcon=rv.type==='safety'?'fa-hard-hat':rv.type==='inspection'?'fa-clipboard-check':'fa-edit';
+    var rColor=rv.type==='safety'?'var(--rd)':rv.type==='inspection'?'var(--pu)':'var(--bl)';
+    var rBg=rv.type==='safety'?'rgba(204,51,51,.08)':rv.type==='inspection'?'rgba(155,89,182,.08)':'rgba(40,116,166,.08)';
+    h+='<div style="display:flex;gap:8px;padding:6px 8px;background:'+rBg+';border-radius:var(--r);margin-bottom:4px">';
+    h+='<i class="fas '+rIcon+'" style="color:'+rColor+';font-size:.68rem;margin-top:3px;flex-shrink:0;width:14px"></i>';
+    h+='<div style="flex:1;min-width:0">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center">';
+    h+='<span style="font-size:.7rem;font-weight:600;color:var(--t1)">'+H(rv.action)+'</span>';
+    h+='<span style="font-family:JetBrains Mono;font-size:.48rem;color:var(--t3);flex-shrink:0;margin-left:6px">'+H(rTime)+'</span>';
+    h+='</div>';
+    h+='<div style="font-size:.62rem;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+H(rv.detail)+'</div>';
+    h+='<div style="font-size:.52rem;color:var(--t3);font-family:JetBrains Mono">by '+H((rv.user||'Unknown').split('@')[0])+'</div>';
+    h+='</div></div>';
+  }
+}
+h+='</div>';
+
+/* Right: Who Changed What */
+h+='<div class="card" style="border-left:4px solid var(--pu)">';
+h+='<div class="ch"><span class="ct" style="color:var(--pu)">Data Changes by User</span></div>';
+
+var userChanges={};
+for(var i=0;i<allRevisions.length;i++){
+  var ur=allRevisions[i];
+  var uName=(ur.user||'Unknown').split('@')[0];
+  if(!userChanges[uName])userChanges[uName]={count:0,lastAction:'',lastTime:0,tabs:{}};
+  userChanges[uName].count++;
+  var tKey=ur.tab||ur.type||'other';
+  userChanges[uName].tabs[tKey]=(userChanges[uName].tabs[tKey]||0)+1;
+  if((ur.ts||0)>userChanges[uName].lastTime){
+    userChanges[uName].lastTime=ur.ts||0;
+    userChanges[uName].lastAction=ur.action;
+  }
+}
+
+var uArr=[];
+for(var uk in userChanges)uArr.push({name:uk,data:userChanges[uk]});
+uArr.sort(function(a,b){return b.data.count-a.data.count});
+
+if(uArr.length===0){
+  h+='<div style="text-align:center;padding:24px;color:var(--t3);font-size:.76rem"><i class="fas fa-users" style="font-size:1.4rem;display:block;margin-bottom:8px;opacity:.4"></i>No user activity recorded</div>';
+}else{
+  var maxU=uArr[0].data.count;
+  var uCols=['#2874a6','#2d8a32','#d4930d','#9b59b6','#cc3333','#b89630'];
+  for(var ui=0;ui<uArr.length;ui++){
+    var uo=uArr[ui];
+    var uw=Math.round(uo.data.count/maxU*100);
+    var uc=uCols[ui%uCols.length];
+    var lastTimeStr='';
+    if(uo.data.lastTime){
+      try{lastTimeStr=tAgo(new Date(typeof uo.data.lastTime==='number'&&uo.data.lastTime<9999999999?uo.data.lastTime*1000:uo.data.lastTime).toISOString())}catch(e){lastTimeStr=''}
+    }
+    h+='<div style="padding:8px 0;'+(ui<uArr.length-1?'border-bottom:1px solid var(--bd)':'')+'">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+    h+='<div>';
+    h+='<span style="font-size:.72rem;font-weight:600">'+H(uo.name)+'</span>';
+    h+='<span style="font-family:JetBrains Mono;font-size:.52rem;color:var(--t3);margin-left:6px">'+uo.data.count+' change'+(uo.data.count>1?'s':'')+'</span>';
+    h+='</div>';
+    h+='<span style="font-family:JetBrains Mono;font-size:.48rem;color:var(--t3)">'+lastTimeStr+'</span>';
+    h+='</div>';
+    h+='<div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:4px">';
+    h+='<div style="height:100%;width:'+uw+'%;background:'+uc+';border-radius:3px"></div>';
+    h+='</div>';
+    h+='<div style="font-size:.56rem;color:var(--t3)">Last: '+H(uo.data.lastAction||'-')+'</div>';
+    /* Tab breakdown */
+    var tabArr=[];
+    for(var tk in uo.data.tabs)tabArr.push(tk+': '+uo.data.tabs[tk]);
+    if(tabArr.length>0){
+      h+='<div style="font-size:.48rem;color:var(--t3);font-family:JetBrains Mono;margin-top:2px">'+H(tabArr.join(' | '))+'</div>';
+    }
+    h+='</div>';
+  }
+}
+h+='</div>';
+
+h+='</div>';
+
 h+='<div class="row2">';
 h+='<div class="card"><div class="ch"><span class="ct">Activity</span></div>';
 var log=S.userLog||[],show2=Math.min(log.length,8);
@@ -437,6 +581,58 @@ var curPos=wasFocused?document.activeElement.selectionStart:0;
 $('app').innerHTML=h;
 if(wasFocused)setTimeout(function(){var el=document.getElementById('dPQ');if(el){el.focus();el.setSelectionRange(curPos,curPos)}},0);
 };
+
+/* Show all revisions modal */
+function showAllRevisions(){
+var allRevisions=[];
+var tLog=S.userLog||[];
+for(var i=0;i<tLog.length;i++){
+  var e=tLog[i];if(!e)continue;
+  allRevisions.push({ts:e.ts||0,user:e.user||'Unknown',action:e.action||'',detail:e.detail||e.action||'',tab:e.tab||'',type:'task'});
+}
+var sInsps=S.safetyInspections||[];
+for(var i=0;i<sInsps.length;i++){
+  var si2=sInsps[i];
+  allRevisions.push({ts:si2.id||0,user:si2.createdBy||'Unknown',action:'Safety Inspection',detail:(si2.area||'')+' - '+(si2.overall||''),tab:'safety',type:'safety'});
+}
+var insps=S.inspections||[];
+for(var i=0;i<insps.length;i++){
+  var ri=insps[i];
+  allRevisions.push({ts:ri.id||0,user:ri.email||ri.inspector||'Unknown',action:'Daily Inspection',detail:(ri.area||'')+' - '+(ri.conformance||ri.status||''),tab:'insp',type:'inspection'});
+}
+allRevisions.sort(function(a,b){return(b.ts||0)-(a.ts||0)});
+
+var bd='<div style="max-height:65vh;overflow-y:auto">';
+bd+='<div style="font-size:.62rem;color:var(--t3);margin-bottom:10px">'+allRevisions.length+' total revisions</div>';
+
+if(allRevisions.length===0){
+  bd+='<div style="text-align:center;padding:40px;color:var(--t3)">No revisions recorded</div>';
+}else{
+  bd+='<table style="width:100%;font-size:.66rem;border-collapse:collapse"><thead><tr>';
+  bd+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">Time</th>';
+  bd+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">Type</th>';
+  bd+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">Action</th>';
+  bd+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">Details</th>';
+  bd+='<th style="text-align:left;padding:5px 6px;border-bottom:2px solid var(--bd);font-family:JetBrains Mono;font-size:.56rem">User</th>';
+  bd+='</tr></thead><tbody>';
+  for(var i=0;i<Math.min(allRevisions.length,100);i++){
+    var rv=allRevisions[i];
+    var rTime='';
+    if(rv.ts){try{rTime=tAgo(new Date(typeof rv.ts==='number'&&rv.ts<9999999999?rv.ts*1000:rv.ts).toISOString())}catch(e){rTime=''}}
+    var tc=rv.type==='safety'?'var(--rd)':rv.type==='inspection'?'var(--pu)':'var(--bl)';
+    bd+='<tr style="border-bottom:1px solid var(--bd)">';
+    bd+='<td style="padding:4px 6px;font-family:JetBrains Mono;font-size:.54rem;white-space:nowrap;color:var(--t3)">'+H(rTime)+'</td>';
+    bd+='<td style="padding:4px 6px"><span style="font-size:.52rem;padding:1px 6px;border-radius:3px;background:'+tc+'22;color:'+tc+';font-family:JetBrains Mono">'+H(rv.type)+'</span></td>';
+    bd+='<td style="padding:4px 6px;font-weight:600">'+H(rv.action)+'</td>';
+    bd+='<td style="padding:4px 6px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+H(rv.detail)+'">'+H(rv.detail)+'</td>';
+    bd+='<td style="padding:4px 6px;color:var(--t3);white-space:nowrap">'+H((rv.user||'Unknown').split('@')[0])+'</td>';
+    bd+='</tr>';
+  }
+  bd+='</tbody></table>';
+}
+bd+='</div>';
+mO('All Revisions',bd,'<button class="btn" onclick="mC()">Close</button>');
+}
 /* === GANTT === */
 R.gantt=function(){var m=mainT(),vk=Object.keys(S.vgc||{});var h='<div class="fbar"><label>View:</label><select onchange="vgSel=this.value;go(\'gantt\')" style="min-width:220px"><optgroup label="Site Schedule"></optgroup><option value="site"'+(vgSel==='site'?' selected':'')+'>Site Overview</option>';for(var i=0;i<m.length;i++)h+='<option value="detail_'+m[i].wbs+'"'+(vgSel==='detail_'+m[i].wbs?' selected':'')+'>'+m[i].wbs+'. '+H(m[i].name)+'</option>';if(S.taskProjects.length){h+='<optgroup label="Projects"></optgroup>';for(var i=0;i<S.taskProjects.length;i++){var pj=S.taskProjects[i];h+='<option value="proj_'+pj.id+'"'+(vgSel==='proj_'+pj.id?' selected':'')+'>Project: '+H(pj.name)+'</option>'}}if(vk.length){h+='<optgroup label="Vendors"></optgroup>';for(var i=0;i<vk.length;i++)h+='<option value="vg_'+vk[i]+'"'+(vgSel==='vg_'+vk[i]?' selected':'')+'>Vendor: '+H(vk[i])+'</option>'}h+='</select><button class="btn bs bp" onclick="addVG()">+ Vendor</button>';if(vgSel.indexOf('vg_')===0)h+=' <button class="btn bs bd" onclick="delVG()">Del</button>';h+='</div>';if(vgSel==='site')h+=siteGantt();else if(vgSel.indexOf('detail_')===0)h+=detailGantt(vgSel.substring(7));else if(vgSel.indexOf('proj_')===0)h+=projGantt(parseInt(vgSel.substring(5)));else if(vgSel.indexOf('vg_')===0)h+=vGantt(vgSel.substring(3));$('app').innerHTML=h};
 
