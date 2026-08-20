@@ -310,7 +310,7 @@ R.dash=function(){
 var s=S.safety||{},dLTI=dd(s.startDate||'2026-04-13',td());
 var oa=ovProg(S.tasks),sC=siteCost,sP=sPaid(),pC=0,pP=0;
 for(var i=0;i<S.taskProjects.length;i++){pC+=(S.taskProjects[i].cost||0);pP+=pPaid(S.taskProjects[i])}
-var ovC=sC+pC,ovP=sP+p+pP,ovPct=ovC>0?pct(ovP,ovC):0;
+var ovC=sC+pC,ovP=sP+pP,ovPct=ovC>0?pct(ovP,ovC):0;
 var pc=oa>=60?'var(--g)':oa>=30?'var(--or)':'var(--bl)';
 var money=function(v){return showCost?fmtD(v):'***'};
 var moneyPct=function(v){return showCost?(v+'%'):'***'};
