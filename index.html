@@ -3463,36 +3463,13 @@ return total;
 }
 
 var _safeTimer=null;
+var _safeTimer=null;
 function safeDebouncedSave(){
 if(_safeTimer)clearTimeout(_safeTimer);
 _safeTimer=setTimeout(function(){
   try{localStorage.setItem('ss_safety',JSON.stringify(S.safety))}catch(e){}
   save();
-  safeShowSaved();
 },500);
-}
-
-function safeSaveMetrics(){
-var sn=document.getElementById('safeNearInp');
-var si=document.getElementById('safeIncInp');
-var sd=document.getElementById('safeStartDate');
-if(sn)S.safety.nearMisses=parseInt(sn.value)||0;
-if(si)S.safety.incidents=parseInt(si.value)||0;
-if(sd)S.safety.startDate=sd.value;
-S.safety.safeHours=safeCalcTotalMH();
-try{localStorage.setItem('ss_safety',JSON.stringify(S.safety))}catch(e){}
-save();
-try{if(typeof db!=='undefined'&&db)db.ref('ss/safety').set(S.safety)}catch(e){}
-safeShowSaved();
-}
-
-function safeShowSaved(){
-var el=document.getElementById('safeSaveStatus');
-if(el){
-  el.innerHTML='<i class="fas fa-check-circle"></i> Saved at '+new Date().toLocaleTimeString();
-  el.style.color='var(--g)';
-  setTimeout(function(){if(el)el.innerHTML=''},3000);
-}
 }
 
 R.safety=function(){
@@ -3574,15 +3551,7 @@ if(mhLog.length>0){
   }
   h+='</div></div>';
 }
-h+='<div id="safeSaveStatus" style="font-size:.56rem;color:var(--g);margin-top:6px;font-family:JetBrains Mono"></div>';
 h+='</div>';
-
-/* Safety Metrics */
-h+='<div class="card" style="border-left:4px solid var(--bl)"><div class="ch"><span class="ct" style="color:var(--bl)">Safety Metrics</span></div>';
-h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">';
-h+='<div><label style="font-size:.6rem;color:var(--t3)">Near Misses</label><input type="number" id="safeNearInp" value="'+(s.nearMisses||0)+'" style="width:100%" oninput="S.safety.nearMisses=parseInt(this.value)||0;safeDebouncedSave()"></div>';
-h+='<div><button class="btn bp" onclick="safeSaveMetrics()" style="width:100%;height:32px"><i class="fas fa-save" style="margin-right:4px"></i> Save Metrics</button></div>';
-h+='</div></div>';
 
 h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">';
 h+='<div class="card"><div class="ch"><span class="ct" style="color:var(--bl)">Safety Triangle</span></div>';
