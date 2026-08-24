@@ -1052,37 +1052,54 @@ h+='<div class="card"><canvas id="scCV" width="920" height="380" style="width:10
 h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">';
 
 h+='<div class="card"><div class="ch"><span class="ct">Schedule Analysis</span><span style="font-family:JetBrains Mono;font-size:.56rem;color:var(--t3)">'+completeTasks.length+' done / '+m.length+' total</span></div>';
-h+='<div class="tw"><table><thead><tr><th>Task</th><th>Planned</th><th>Actual</th><th>Var</th><th>Status</th></tr></thead><tbody>';
-for(var i=0;i<m.length;i++){
-  var t=m[i];
-  if(!t.s||!t.e)continue;
-  var tEnd2=new Date(t.e+'T12:00');
-  var tStart2=new Date(t.s+'T12:00');
-  var expectedProg2=0;
-  if(now>=tEnd2)expectedProg2=100;
-  else if(now>=tStart2){
-    var elapsed2=dd(t.s,today);
-    expectedProg2=Math.min(100,Math.round(elapsed2/t.dur*100));
-  }
-  var actualProg2=t.prog||0;
-  var vari2=actualProg2-expectedProg2;
-  var status2,statusCol2;
-  if(actualProg2>=100){status2='Complete';statusCol2='var(--g)'}
-  else if(now>tEnd2&&actualProg2<100){status2='Overdue';statusCol2='var(--rd)'}
-  else if(vari2<-10){status2='Behind';statusCol2='var(--rd)'}
-  else if(vari2<0){status2='At Risk';statusCol2='var(--or)'}
-  else{status2='On Track';statusCol2='var(--g)'}
-  h+='<tr>';
-  h+='<td style="font-size:.72rem">'+H(t.n||t.name||'Task')+'</td>';
-  h+='<td style="text-align:center;font-size:.68rem">'+expectedProg2+'%</td>';
-  h+='<td style="text-align:center;font-size:.68rem">'+actualProg2+'%</td>';
-  h+='<td style="text-align:center;font-size:.68rem;color:'+(vari2>=0?'var(--g)':'var(--rd)')+'">'+(vari2>=0?'+':'')+vari2+'%</td>';
-  h+='<td><span style="color:'+statusCol2+';font-weight:600;font-size:.64rem">'+status2+'</span></td>';
-  h+='</tr>';
-}
-h+='</tbody></table></div></div>';
 
-h+='<div>';
+var summaryPct=oa;
+var baselineNow=bl[curMoI]||0;
+var summaryVar=summaryPct-baselineNow;
+
+h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0">';
+h+='<div style="text-align:center;padding:12px;background:var(--gc);border-radius:var(--r)">';
+h+='<div style="font-size:.48rem;color:var(--g);font-family:JetBrains Mono">% SUMMARY COMPLETION</div>';
+h+='<div style="font-size:1.6rem;font-weight:700;color:var(--g)">'+fmtP(summaryPct)+'</div>';
+h+='<div style="font-size:.52rem;color:var(--t3)">Total Progress (Tasks)</div></div>';
+h+='<div style="text-align:center;padding:12px;background:var(--blc);border-radius:var(--r)">';
+h+='<div style="font-size:.48rem;color:var(--bl);font-family:JetBrains Mono">BASELINE PLAN</div>';
+h+='<div style="font-size:1.6rem;font-weight:700;color:var(--bl)">'+fmtP(baselineNow)+'</div>';
+h+='<div style="font-size:.52rem;color:var(--t3)">Planned for '+today+'</div></div>';
+h+='<div style="text-align:center;padding:12px;background:'+(summaryVar>=0?'var(--gc)':'rgba(204,51,51,.12)')+';border-radius:var(--r)">';
+h+='<div style="font-size:.48rem;color:'+(summaryVar>=0?'var(--g)':'var(--rd)')+';font-family:JetBrains Mono">VARIANCE</div>';
+h+='<div style="font-size:1.6rem;font-weight:700;color:'+(summaryVar>=0?'var(--g)':'var(--rd)')+'">'+(summaryVar>=0?'+':'')+fmtP(summaryVar)+'</div>';
+h+='<div style="font-size:.52rem;color:var(--t3)">vs baseline</div></div></div>';
+
+var onTrackCount=m.length-completeTasks.length-delayedTasks.length-atRiskTasks.length;
+h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
+h+='<span style="font-size:.62rem;padding:3px 8px;border-radius:3px;background:rgba(45,138,50,.12);color:var(--g);font-weight:600">'+completeTasks.length+' Complete</span>';
+h+='<span style="font-size:.62rem;padding:3px 8px;border-radius:3px;background:rgba(40,116,166,.12);color:var(--bl);font-weight:600">'+onTrackCount+' On Track</span>';
+if(delayedTasks.length>0)h+='<span style="font-size:.62rem;padding:3px 8px;border-radius:3px;background:rgba(212,147,13,.12);color:var(--or);font-weight:600">'+delayedTasks.length+' Behind</span>';
+if(atRiskTasks.length>0)h+='<span style="font-size:.62rem;padding:3px 8px;border-radius:3px;background:rgba(204,51,51,.12);color:var(--rd);font-weight:600">'+atRiskTasks.length+' Overdue</span>';
+h+='</div>';
+
+if(delayedTasks.length>0||atRiskTasks.length>0){
+  h+='<div style="border-top:1px solid var(--bd);padding-top:8px">';
+  var issues=[];
+  for(var di=0;di<delayedTasks.length;di++)issues.push({task:delayedTasks[di].task,variance:delayedTasks[di].variance});
+  for(var ai=0;ai<atRiskTasks.length;ai++)issues.push({task:atRiskTasks[ai].task,variance:atRiskTasks[ai].prog-100});
+  issues.sort(function(a,b){return a.variance-b.variance});
+  var showCount=Math.min(issues.length,5);
+  for(var ii=0;ii<showCount;ii++){
+    var iss=issues[ii];
+    var issCol=iss.variance<-20?'var(--rd)':iss.variance<-10?'var(--or)':'var(--t3)';
+    h+='<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:.68rem">';
+    h+='<span style="width:6px;height:6px;border-radius:50%;background:'+issCol+';flex-shrink:0"></span>';
+    h+='<span style="flex:1">'+H(iss.task.n||iss.task.name||'Task')+'</span>';
+    h+='<span style="font-family:JetBrains Mono;font-size:.62rem;color:'+issCol+'">'+(iss.variance>=0?'+':'')+iss.variance+'%</span>';
+    h+='</div>';
+  }
+  if(issues.length>showCount)h+='<div style="font-size:.58rem;color:var(--t3);padding:4px 0">+'+(issues.length-showCount)+' more tasks</div>';
+  h+='</div>';
+}
+
+h+='</div>';
 
 h+='<div class="card" style="margin-bottom:12px"><div class="ch"><span class="ct">Risk Assessment</span></div>';
 h+='<div style="margin-top:10px">';
