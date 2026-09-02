@@ -3480,15 +3480,17 @@ return total;
 }
 
 var _safeTimer=null;
-var _safeTimer=null;
-function safeDebouncedSave(){
-if(_safeTimer)clearTimeout(_safeTimer);
-_safeTimer=setTimeout(function(){
-  try{localStorage.setItem('ss_safety',JSON.stringify(S.safety))}catch(e){}
-  save();
-},500);
+function safeDebouncedSave() {
+  if (_safeTimer) clearTimeout(_safeTimer);
+  _safeTimer = setTimeout(function () { safePersist(); }, 500);
 }
-
+function safePersist() {
+  if (!S.safety) S.safety = {};
+  S.safety.safeHours = safeCalcTotalMH();
+  try { localStorage.setItem('ss_safety', JSON.stringify(S.safety)); } catch (e) {}
+  try { save(); } catch (e) {}
+  try { if (typeof db !== 'undefined' && db) db.ref('ss/safety').set(S.safety); } catch (e) {}
+}
 R.safety=function(){
 if(!S.safety)S.safety={};
 if(!S.safety.manHoursLog)S.safety.manHoursLog=[];
@@ -3558,7 +3560,7 @@ if(mhLog.length>0){
     h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);text-align:right;font-weight:700;color:var(--bl);font-family:JetBrains Mono">'+(m.manHours||0).toLocaleString()+'</td>';
     h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);font-size:.58rem;color:var(--t3)">'+H(m.notes||'-')+'</td>';
     h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);font-family:JetBrains Mono;font-size:.54rem;color:var(--t3)">'+H(m.recordedOn||'')+'</td>';
-    h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);text-align:center"><button style="background:transparent;border:0;color:var(--rd);cursor:pointer;font-size:.72rem" onclick="safeDelMH('+mi+')">&times;</button></td>';
+    h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);text-align:center"><button style="background:transparent;border:0;color:var(--rd);cursor:pointer;font-size:.72rem" onclick="safeDelMH('+m.id+')">&times;</button></td>';
     h+='</tr>';
   }
   h+='</tbody></table></div>';
@@ -3721,44 +3723,61 @@ if(el){
 }
 }
 
-function safeSaveMH(){
-var con=document.getElementById('mhCon').value;
-if(con==='__custom'){
-  con=document.getElementById('mhConNew').value.trim();
-  if(!con){alert('Enter contractor name');return}
-}
-if(!con){alert('Select a contractor');return}
-var val=parseInt(document.getElementById('mhVal').value)||0;
-if(!val||val<=0){alert('Enter man-hours value');return}
-var from=document.getElementById('mhFrom').value||'';
-var to=document.getElementById('mhTo').value||td();
-var notes=document.getElementById('mhNotes').value.trim()||'';
-if(!S.safety)S.safety={};
-if(!Array.isArray(S.safety.manHoursLog))S.safety.manHoursLog=[];
-S.safety.manHoursLog.push({id:Date.now(),contractor:con,manHours:val,dateFrom:from,dateTo:to,notes:notes,recordedOn:td()});
-S.safety.safeHours=safeCalcTotalMH();
-try{localStorage.setItem('ss_safety',JSON.stringify(S.safety))}catch(e){}
-save();
-try{if(typeof db!=='undefined'&&db)db.ref('ss/safety').set(S.safety)}catch(e){}
-mC();
-notify(con+': +'+val.toLocaleString()+' hours (Total: '+S.safety.safeHours.toLocaleString()+')');
-doRender();
+function safeSaveMH() {
+  var conEl  = document.getElementById('mhCon');
+  var valEl  = document.getElementById('mhVal');
+  var fromEl = document.getElementById('mhFrom');
+  var toEl   = document.getElementById('mhTo');
+  var notesEl= document.getElementById('mhNotes');
+  if (!conEl || !valEl) { alert('Form error – please try again.'); return; }
+
+  var con = conEl.value;
+  if (con === '__custom') {
+    var newEl = document.getElementById('mhConNew');
+    con = newEl ? newEl.value.trim() : '';
+    if (!con) { alert('Enter contractor name'); return; }
+  }
+  if (!con) { alert('Select a contractor'); return; }
+
+  var val = parseInt(valEl.value) || 0;
+  if (!val || val <= 0) { alert('Enter man-hours value'); return; }
+
+  var from  = fromEl  ? fromEl.value  : '';
+  var to    = toEl    ? toEl.value    : td();
+  var notes = notesEl ? notesEl.value.trim() : '';
+
+  if (!S.safety) S.safety = {};
+  if (!Array.isArray(S.safety.manHoursLog)) S.safety.manHoursLog = [];
+
+  S.safety.manHoursLog.push({
+    id: Date.now(),
+    contractor: con,
+    manHours: val,
+    dateFrom: from,
+    dateTo: to,
+    notes: notes,
+    recordedOn: td()
+  });
+
+  safePersist();
+  mC();
+  notify(con + ': +' + val.toLocaleString() + ' hours (Total: ' + safeCalcTotalMH().toLocaleString() + ')');
+  doRender();
 }
 
-function safeDelMH(idx){
-var log=(S.safety&&S.safety.manHoursLog)?S.safety.manHoursLog:[];
-if(idx<0||idx>=log.length)return;
-var m=log[idx];
-if(!confirm('Delete '+m.contractor+' '+m.manHours.toLocaleString()+' hours?'))return;
-log.splice(idx,1);
-var total=0;
-for(var i=0;i<log.length;i++)total+=(log[i].manHours||0);
-S.safety.safeHours=total;
-try{localStorage.setItem('ss_safety',JSON.stringify(S.safety))}catch(e){}
-save();
-try{if(typeof db!=='undefined'&&db)db.ref('ss/safety').set(S.safety)}catch(e){}
-notify('Deleted. New total: '+total.toLocaleString());
-doRender();
+function safeDelMH(entryId) {
+  var log = (S.safety && S.safety.manHoursLog) ? S.safety.manHoursLog : [];
+  var idx = -1;
+  for (var i = 0; i < log.length; i++) {
+    if (log[i].id === entryId) { idx = i; break; }
+  }
+  if (idx < 0) { alert('Entry not found'); return; }
+  var m = log[idx];
+  if (!confirm('Delete ' + m.contractor + ' ' + m.manHours.toLocaleString() + ' hours?')) return;
+  log.splice(idx, 1);
+  safePersist();
+  notify('Deleted. New total: ' + safeCalcTotalMH().toLocaleString());
+  doRender();
 }
 
 function safeAddInsp(){
