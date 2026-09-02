@@ -3560,9 +3560,9 @@ if(mhLog.length>0){
     h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);text-align:right;font-weight:700;color:var(--bl);font-family:JetBrains Mono">'+(m.manHours||0).toLocaleString()+'</td>';
     h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);font-size:.58rem;color:var(--t3)">'+H(m.notes||'-')+'</td>';
     h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);font-family:JetBrains Mono;font-size:.54rem;color:var(--t3)">'+H(m.recordedOn||'')+'</td>';
-    h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);text-align:center;white-space:nowrap">';
-h+='<button style="background:transparent;border:0;color:var(--bl);cursor:pointer;font-size:.66rem;margin-right:4px" onclick="safeEditMH('+m.id+')" title="Edit"><i class="fas fa-pen"></i></button>';
-h+='<button style="background:transparent;border:0;color:var(--rd);cursor:pointer;font-size:.72rem" onclick="safeDelMH('+m.id+')" title="Delete">&times;</button>';
+ h+='<td style="padding:4px 6px;border-bottom:1px solid var(--bd);text-align:center;white-space:nowrap">';
+h+='<button style="background:transparent;border:0;color:var(--bl);cursor:pointer;font-size:.66rem;margin-right:4px;text-decoration:underline" onclick="safeEditMH('+m.id+')">Edit</button>';
+h+='<button style="background:transparent;border:0;color:var(--rd);cursor:pointer;font-size:.72rem" onclick="safeDelMH('+m.id+')">&times;</button>';
 h+='</td>';
     h+='</tr>';
   }
